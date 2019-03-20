@@ -1,0 +1,62 @@
+#map {
+    width: 100vw;
+    height: 100vh;
+}
+
+.leaflet-div-icon {
+    background: inherit;
+    border: 0;
+}
+
+.photo img {
+    width: 20px;
+}
+.roadsign {
+    display: inline-block;
+}
+
+/* signs */
+.roadsign.b {
+    background: #fff;
+    color: #000;
+    border: 1px solid #f00;
+    border-radius: 50%;
+}
+.roadsign.c {
+    background: navy;
+    color: #fff;
+    border-radius: 50%;
+}
+.roadsign.e {
+    background: #fff;
+    color: #000;
+    border:  1px solid #000;
+}
+.roadsign.ip {
+    background: navy;
+    color: #fff;
+    border-radius: 5%;
+}
+.roadsign.is {
+    background: #fff;
+    color: #21663a;
+    border: 1px solid #21663a;
+    border-radius: 5%;
+}
+
+/* end signs diagonal strikethrough */
+.roadsign.b.x {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), #f00, #fff calc(50% + 2px) );
+}
+.roadsign.c.x {
+    background: linear-gradient(to bottom right, navy calc(50% - 2px), #fff, navy calc(50% + 2px) );
+}
+.roadsign.e.x {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), #000, #fff calc(50% + 2px) );
+}
+.roadsign.ip.x {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), navy, #fff calc(50% + 2px) );
+}
+.roadsign.is.x {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), #21663a, #fff calc(50% + 2px) );
+}
