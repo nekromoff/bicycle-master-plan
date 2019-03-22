@@ -18,7 +18,8 @@ var overlays = {
 L.control.layers(baselayers, overlays, {
     hideSingleBase: true
 }).addTo(map);
-markers.checkIn(roadsigns);
-markers.checkIn(photos);
-markers.addTo(map);
+clusters_roadsigns.checkIn(roadsigns);
+clusters_photos.checkIn(photos);
+clusters_roadsigns.addTo(map);
+clusters_photos.addTo(map);
 map.addLayer(roadsigns);

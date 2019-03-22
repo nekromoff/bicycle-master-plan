@@ -26,7 +26,8 @@
         var roadsigns = L.layerGroup();
         var photos = L.layerGroup();
         var paths = L.layerGroup();
-        var markers = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 15 });
+        var clusters_roadsigns = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 15 });
+        var clusters_photos = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 17 });
         @foreach ($markers as $id => $marker)
             L.marker([{{ $marker->lat }},{{ $marker->lon }}]
             @if ($marker->type==1)
