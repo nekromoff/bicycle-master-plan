@@ -49,12 +49,12 @@
                 +'">{{ str_replace('X', '', $marker->name) }}</div>' })
             @elseif ($marker->type==2)
                 ,{ icon: new L.DivIcon({
-                    html: '<div class="photo"><img src="../storage/app/photos/thumbs/{{$marker->filename}}"></div>' })
+                    html: '<div class="photo"><img src="{{ asset('storage/photos/thumbs/'.$marker->filename') }}"></div>' })
             @endif
             }).bindPopup(
                 'Značka {{ $marker->name }}'
             @if ($marker->filename)
-                +'<a href="../storage/app/photos/{{$marker->filename}}" target="_blank"><img src="../storage/app/photos/thumbs/{{$marker->filename}}"></a>'
+                +'<a href="{{ asset('storage/photos/'.$marker->filename') }}" target="_blank"><img src="{{ asset('storage/photos/thumbs/'.$marker->filename') }}"></a>'
             @endif
             @if (isset($marker->relations) and count($marker->relations))
                 +'<br>Číslo trasy: '
