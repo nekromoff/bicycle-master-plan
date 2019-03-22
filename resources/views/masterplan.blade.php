@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
         <link rel="stylesheet" href="{{ asset('css/main.css') }}">
-        <title>Pasport cyklotrás, Bratislava</title>
+        <title>{{config('map.name')}}</title>
     </head>
     <body>
         <div id="map"></div>
@@ -21,11 +21,14 @@
        integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
        crossorigin=""></script>
         <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-        <script src="{{ asset('js/main.js') }}"></script>
+        <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script>
-        var markers = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
+        var roadsigns = L.layerGroup();
+        var photos = L.layerGroup();
+        var paths = L.layerGroup();
+        var markers = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 15 });
         @foreach ($markers as $id => $marker)
-            markers.addLayer(L.marker([{{ $marker->lat }},{{ $marker->lon }}]
+            L.marker([{{ $marker->lat }},{{ $marker->lon }}]
             @if ($marker->type==1)
                 ,{ icon: new L.DivIcon({
                     html: '<div class="roadsign'+
@@ -48,7 +51,7 @@
                 ,{ icon: new L.DivIcon({
                     html: '<div class="photo"><img src="../storage/app/photos/thumbs/{{$marker->filename}}"></div>' })
             @endif
-            }).addTo(map).bindPopup(
+            }).bindPopup(
                 'Značka {{ $marker->name }}'
             @if ($marker->filename)
                 +'<a href="../storage/app/photos/{{$marker->filename}}" target="_blank"><img src="../storage/app/photos/thumbs/{{$marker->filename}}"></a>'
@@ -62,9 +65,54 @@
             @if ($marker->note)
                 +'<br>{{$marker->note}}'
             @endif
-            ));
+            ).addTo(
+            @if ($marker->type==1)
+                roadsigns
+            @elseif ($marker->type==2)
+                photos
+            @endif
+            );
         @endforeach
-        map.addLayer(markers);
+        @if (count($paths))
+            @foreach ($paths as $path)
+                L.polyline([
+                @foreach ($path['nodes'] as $node)
+                    [{{$node[0]}},{{$node[1]}}]
+                    @if (!$loop->last)
+                        ,
+                    @endif
+                @endforeach
+                ], {
+                    @if (isset($path['info']['state']) and $path['info']['state']=='proposed')
+                        color: 'red', weight: 3, dashArray: '8 8', opacity: 0.6
+                    @else
+                        color: 'blue', weight: 3
+                    @endif
+                })
+                @if (isset($path['info']))
+                    .bindPopup(
+                @endif
+                @if (isset($path['info']['name']))
+                    '{{$path['info']['name']}}'+
+                @endif
+                @if (isset($path['info']['ref']))
+                    '<br>Číslo trasy: {{$path['info']['ref']}}'+
+                @endif
+                @if (isset($path['info']['operator']))
+                    '<br>Správca: {{$path['info']['operator']}}'+
+                @endif
+                @if (isset($path['info']))
+                    @foreach ($path['info'] as $key=>$value)
+                        '<br>{{$key}}={{$value}}'+
+                    @endforeach
+                @endif
+                @if (isset($path['info']))
+                    '')
+                @endif
+                .addTo(paths);
+            @endforeach
+        @endif
     </script>
+    <script src="{{ asset('js/main.js') }}"></script>
     </body>
 </html>

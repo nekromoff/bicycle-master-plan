@@ -12,3 +12,4 @@
  */
 
 Route::get('/', ['uses' => 'MasterplanController@map', 'as' => 'map']);
+Route::get('/refresh/{force?}', ['uses' => 'MasterplanController@refreshOSMData', 'as' => 'get']);
