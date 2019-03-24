@@ -23,37 +23,52 @@
         <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script>
+        var map_center=[{{ config('map.center')[0] }},{{ config('map.center')[1] }}];
+        var map_zoom={{ config('map.zoom') }};
         var roadsigns = L.layerGroup();
         var photos = L.layerGroup();
+        var developments = L.layerGroup();
         var paths = L.layerGroup();
         var clusters_roadsigns = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 15 });
         var clusters_photos = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 17 });
         @foreach ($markers as $id => $marker)
             L.marker([{{ $marker->lat }},{{ $marker->lon }}]
-            @if ($marker->type==1)
-                ,{ icon: new L.DivIcon({
-                    html: '<div class="roadsign'+
-                @if ($marker->name[0] == 'B')
-                    ' b'
-                @elseif ($marker->name[0] == 'C')
-                    ' c'
-                @elseif ($marker->name[0] == 'E')
-                    ' e'
-                @elseif (stripos($marker->name, 'IP') !== false)
-                    ' ip'
-                @elseif (stripos($marker->name, 'IP') !== false)
-                    ' is'
+            @if ($marker->layer_id==1)
+                @if ($marker->type==1)
+                    ,{ icon: new L.DivIcon({ html: '<div class="roadsign'+
+                    @if ($marker->name[0] == 'B')
+                        ' b'
+                    @elseif ($marker->name[0] == 'C')
+                        ' c'
+                    @elseif ($marker->name[0] == 'E')
+                        ' e'
+                    @elseif (stripos($marker->name, 'IP') !== false)
+                        ' ip'
+                    @elseif (stripos($marker->name, 'IP') !== false)
+                        ' is'
+                    @endif
+                    @if (stripos($marker->name, 'X') !== false)
+                        +' x'
+                    @endif
+                    +'">{{ str_replace('X', '', $marker->name) }}</div>' })
+                @elseif ($marker->type==2)
+                    ,{ icon: new L.DivIcon({ html: '<div class="photo"><img src="{{ asset('storage/photos/thumbs/'.$marker->filename) }}"></div>' })
                 @endif
-                @if (stripos($marker->name, 'X') !== false)
-                    +' x'
-                @endif
-                +'">{{ str_replace('X', '', $marker->name) }}</div>' })
-            @elseif ($marker->type==2)
-                ,{ icon: new L.DivIcon({
-                    html: '<div class="photo"><img src="{{ asset('storage/photos/thumbs/'.$marker->filename) }}"></div>' })
+            @elseif ($marker->layer_id==2)
+                ,{ icon: new L.DivIcon({ html: '<div class="development"></div>' })
             @endif
-            }).bindPopup(
-                'Značka {{ $marker->name }}'
+            }).bindPopup(''
+            @if ($marker->layer_id==1)
+                @if ($marker->type==1)
+                    +'Značka '
+                @elseif ($marker->type==2)
+                    +'Fotka '
+                @endif
+            @endif
+                +'{{ $marker->name }}'
+            @if ($marker->description)
+                +'<br>{{$marker->description}}'
+            @endif
             @if ($marker->filename)
                 +'<a href="{{ asset('storage/photos/'.$marker->filename) }}" target="_blank"><img src="{{ asset('storage/photos/thumbs/'.$marker->filename) }}"></a>'
             @endif
@@ -61,16 +76,23 @@
                 +'<br>Číslo trasy: '
                 @foreach ($marker->relations as $relation)
                      +'{{ $cycleways[$relation->cycleway_id]->sign }}'
+                     @if (!$loop->last)
+                        ,
+                     @endif
                 @endforeach
             @endif
             @if ($marker->note)
                 +'<br>{{$marker->note}}'
             @endif
             ).addTo(
-            @if ($marker->type==1)
-                roadsigns
-            @elseif ($marker->type==2)
-                photos
+            @if ($marker->layer_id==1)
+                @if ($marker->type==1)
+                    roadsigns
+                @elseif ($marker->type==2)
+                    photos
+                @endif
+            @elseif ($marker->layer_id==2)
+                developments
             @endif
             );
         @endforeach

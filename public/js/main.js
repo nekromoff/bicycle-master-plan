@@ -3,8 +3,8 @@ var base = L.tileLayer('//tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?ap
     maxZoom: 20
 });
 var map = L.map('map', {
-    center:  [48.1469961, 17.0969001],
-    zoom:  15,
+    center: map_center,
+    zoom: map_zoom,
     layers: [base, roadsigns]
 });
 var baselayers = {
@@ -13,7 +13,8 @@ var baselayers = {
 var overlays = {
     "Značky": roadsigns,
     "Fotky": photos,
-    "Trasy": paths
+    "Trasy": paths,
+    "EIA projekty": developments
 };
 L.control.layers(baselayers, overlays, {
     hideSingleBase: true

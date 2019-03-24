@@ -6,7 +6,10 @@ use App\Cycleway;
 use App\Layer;
 use App\Marker;
 use App\Relation;
+use Google_Client;
+use Google_Service_Sheets;
 use Illuminate\Http\Request;
+use Revolution\Google\Sheets\Sheets;
 use Storage;
 
 class MasterplanController extends Controller
@@ -120,5 +123,50 @@ class MasterplanController extends Controller
         $overpass = 'https://overpass.kumi.systems/api/interpreter?data=' . urlencode($data);
         $content = file_get_contents($overpass);
         Storage::put($filename, $content);
+    }
+
+    public function refreshEIAData(Request $request)
+    {
+        $client = new Google_Client();
+        $client->setApplicationName(config('google.APPLICATION_NAME'));
+        $client->setClientId(config('google.CLIENT_ID'));
+        $client->setScopes([config('google.SPREADSHEETS_SCOPE')]);
+        $client->setAuthConfig(config('google.KEY_FILE'));
+        $client->useApplicationDefaultCredentials();
+
+        if ($client->isAccessTokenExpired()) {
+            $client->refreshTokenWithAssertion();
+        }
+
+        $service_token = $client->getAccessToken();
+
+        $service = new \Google_Service_Sheets($client);
+
+        $sheets = new Sheets();
+        $sheets->setService($service);
+
+        $rows = $sheets->spreadsheet(config('google.EIA_FILE'))->sheet(config('google.EIA_SHEET'))->all();
+        $structure = config('google.SHEET_STRUCTURE');
+        for ($i = 1; $i < count($rows); $i++) {
+            $name = trim($rows[$i][$structure['name']]);
+            $coords = trim($rows[$i][$structure['coords']]);
+            $coords = explode(',', $coords);
+            // skip records without coords
+            if (count($coords) > 1 and $coords[0]) {
+                $lat = trim($coords[0]);
+                $lon = trim($coords[1]);
+                $description = trim($rows[$i][$structure['description']]);
+                $cycleways = explode(',', trim($rows[$i][$structure['cycleways']]));
+                $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '']);
+                foreach ($cycleways as $cycleway) {
+                    $cycleway = trim($cycleway);
+                    // skip records with cycleways not filled (#N/A in Google sheets)
+                    if ($cycleway and $cycleway != '#N/A') {
+                        $cycleway_record = Cycleway::updateOrCreate(['sign' => $cycleway], ['name' => $cycleway, 'description' => '', 'url' => '']);
+                        Relation::updateOrCreate(['marker_id' => $marker->id, 'cycleway_id' => $cycleway_record->id]);
+                    }
+                }
+            }
+        }
     }
 }

@@ -60,3 +60,8 @@
 .roadsign.is.x {
     background: linear-gradient(to bottom right, #fff calc(50% - 2px), #21663a, #fff calc(50% + 2px) );
 }
+
+.development::before {
+    content: "🏗️";
+    font-size: 200%;
+}
