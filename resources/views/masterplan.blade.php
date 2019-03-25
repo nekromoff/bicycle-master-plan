@@ -44,7 +44,7 @@
                         ' e'
                     @elseif (stripos($marker->name, 'IP') !== false)
                         ' ip'
-                    @elseif (stripos($marker->name, 'IP') !== false)
+                    @elseif (stripos($marker->name, 'IS') !== false)
                         ' is'
                     @endif
                     @if (stripos($marker->name, 'X') !== false)
