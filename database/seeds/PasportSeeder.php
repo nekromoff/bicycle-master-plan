@@ -35,10 +35,10 @@ class PasportSeeder extends Seeder
                 $coords = explode(' ', $coords);
                 $deg = trim(str_replace('°', '', str_replace('N', '', $coords[0])));
                 $min = trim(str_replace("'", '', $coords[1]));
-                $lat = $deg + $min;
+                $lat = $deg + $min / 100;
                 $deg = trim(str_replace('°', '', str_replace('E', '', $coords[2])));
                 $min = trim(str_replace("'", '', $coords[3]));
-                $lon = $deg + $min;
+                $lon = $deg + $min / 100;
             } else {
                 $coords = explode(',', $coords);
                 $lat = trim(str_replace('"', '', $coords[0]));
