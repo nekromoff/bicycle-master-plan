@@ -7,6 +7,9 @@
     background: inherit;
     border: 0;
 }
+.leaflet-popup img {
+    width: 200px;
+}
 
 .photo img {
     width: 20px;
@@ -22,12 +25,12 @@
     border: 1px solid #f00;
     border-radius: 50%;
 }
-.roadsign.c {
+.roadsign.c, .roadsign.ca, .roadsign.cb, .roadsign.cx {
     background: navy;
     color: #fff;
     border-radius: 50%;
 }
-.roadsign.e {
+.roadsign.e, .roadsign.eb, .roadsign.ec, .roadsign.ed {
     background: #fff;
     color: #000;
     border:  1px solid #000;
@@ -37,31 +40,58 @@
     color: #fff;
     border-radius: 5%;
 }
-.roadsign.is {
+.roadsign.is, .roadsign.isa, .roadsign.isb, .roadsign.isc, .roadsign.isd, .roadsign.ise, .roadsign.isf, .roadsign.isg, .roadsign.ish, .roadsign.isi, roadsign.isj {
     background: #fff;
     color: #21663a;
     border: 1px solid #21663a;
     border-radius: 5%;
 }
+.roadsign.p {
+    margin: 0 5px;
+    vertical-align: middle;
+    width: 20px;
+    height: 16px;
+    border-top: solid 20px red;
+    border-left: solid 12px transparent;
+    border-right: solid 12px transparent;
+    color: transparent;
+}
+.roadsign.p::after {
+    position: relative;
+    top: -23px;
+    left: -22px;
+    color: #fff;
+    content: "P1";
+    font-weight: bold;
+}
 
 /* end signs diagonal strikethrough */
-.roadsign.b.x {
+.roadsign.bx {
     background: linear-gradient(to bottom right, #fff calc(50% - 2px), #f00, #fff calc(50% + 2px) );
 }
-.roadsign.c.x {
+.roadsign.cx {
     background: linear-gradient(to bottom right, navy calc(50% - 2px), #fff, navy calc(50% + 2px) );
 }
-.roadsign.e.x {
+.roadsign.ex {
     background: linear-gradient(to bottom right, #fff calc(50% - 2px), #000, #fff calc(50% + 2px) );
 }
-.roadsign.ip.x {
+.roadsign.ipx {
     background: linear-gradient(to bottom right, #fff calc(50% - 2px), navy, #fff calc(50% + 2px) );
 }
-.roadsign.is.x {
+.roadsign.isx {
     background: linear-gradient(to bottom right, #fff calc(50% - 2px), #21663a, #fff calc(50% + 2px) );
 }
 
 .development::before {
     content: "🏗️";
     font-size: 200%;
+}
+
+.bikeshare {
+    width: 20px;
+    height: 17px;
+    background-image: url(../images/whitebikes.png);
+    background-size: 20px 17px;
+    display: block;
+    border: 1px dotted #000;
 }

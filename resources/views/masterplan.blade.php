@@ -23,79 +23,30 @@
         <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script>
-        var map_center=[{{ config('map.center')[0] }},{{ config('map.center')[1] }}];
-        var map_zoom={{ config('map.zoom') }};
-        var roadsigns = L.layerGroup();
-        var photos = L.layerGroup();
-        var developments = L.layerGroup();
-        var paths = L.layerGroup();
-        var clusters_roadsigns = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 15 });
-        var clusters_photos = L.markerClusterGroup.layerSupport({ disableClusteringAtZoom: 17 });
-        @foreach ($markers as $id => $marker)
-            L.marker([{{ $marker->lat }},{{ $marker->lon }}]
-            @if ($marker->layer_id==1)
-                @if ($marker->type==1)
-                    ,{ icon: new L.DivIcon({ html: '<div class="roadsign'+
-                    @if ($marker->name[0] == 'B')
-                        ' b'
-                    @elseif ($marker->name[0] == 'C')
-                        ' c'
-                    @elseif ($marker->name[0] == 'E')
-                        ' e'
-                    @elseif (stripos($marker->name, 'IP') !== false)
-                        ' ip'
-                    @elseif (stripos($marker->name, 'IS') !== false)
-                        ' is'
-                    @endif
-                    @if (stripos($marker->name, 'X') !== false)
-                        +' x'
-                    @endif
-                    +'">{{ str_replace('X', '', $marker->name) }}</div>' })
-                @elseif ($marker->type==2)
-                    ,{ icon: new L.DivIcon({ html: '<div class="photo"><img src="{{ asset('storage/photos/thumbs/'.$marker->filename) }}"></div>' })
-                @endif
-            @elseif ($marker->layer_id==2)
-                ,{ icon: new L.DivIcon({ html: '<div class="development"></div>' })
-            @endif
-            }).bindPopup(''
-            @if ($marker->layer_id==1)
-                @if ($marker->type==1)
-                    +'Značka '
-                @elseif ($marker->type==2)
-                    +'Fotka '
+        @foreach (config('map.layers') as $layer_id=>$layer)
+            @if ($layer['type']=='base')
+                var base = L.tileLayer('{{$layer['url']}}', {
+                    {!!Helper::jsGetOptions($layer['options'])!!}
+                });
+            @elseif ($layer['type']=='marker')
+                @if (isset($layer['types']))
+                    @foreach ($layer['types'] as $type_id=>$type)
+                        var layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
+                        @if (isset($type['cluster']) and $type['cluster']==true)
+                            var clusters_layer{{$layer_id}}_type{{$type_id}} = L.markerClusterGroup.layerSupport({
+                                {!!Helper::jsGetOptions($type['options'])!!}
+                            });
+                        @endif
+                    @endforeach
+                @else
+                    var layer{{$layer_id}}_type0 = L.layerGroup();
                 @endif
             @endif
-                +'{{ $marker->name }}'
-            @if ($marker->description)
-                +'<br>{{$marker->description}}'
-            @endif
-            @if ($marker->filename)
-                +'<a href="{{ asset('storage/photos/'.$marker->filename) }}" target="_blank"><img src="{{ asset('storage/photos/thumbs/'.$marker->filename) }}"></a>'
-            @endif
-            @if (isset($marker->relations) and count($marker->relations))
-                +'<br>Číslo trasy: '
-                @foreach ($marker->relations as $relation)
-                     +'{{ $cycleways[$relation->cycleway_id]->sign }}'
-                     @if (!$loop->last)
-                        ,
-                     @endif
-                @endforeach
-            @endif
-            @if ($marker->note)
-                +'<br>{{$marker->note}}'
-            @endif
-            ).addTo(
-            @if ($marker->layer_id==1)
-                @if ($marker->type==1)
-                    roadsigns
-                @elseif ($marker->type==2)
-                    photos
-                @endif
-            @elseif ($marker->layer_id==2)
-                developments
-            @endif
-            );
         @endforeach
+        @foreach ($markers as $id => $marker)
+            {!!Helper::jsGetMarker($marker, $cycleways)!!}
+        @endforeach
+        var paths = L.layerGroup();
         @if (count($paths))
             @foreach ($paths as $path)
                 L.polyline([
@@ -135,7 +86,38 @@
                 .addTo(paths);
             @endforeach
         @endif
+        var map = L.map('map', {
+            center: [{{ config('map.center')[0] }},{{config('map.center')[1] }}],
+            zoom: {{ config('map.zoom') }},
+            layers: [
+                @foreach (config('map.default_layers') as $layer)
+                    {{$layer}}
+                    @if (!$loop->last)
+                        ,
+                    @endif
+                @endforeach
+            ]
+        });
+        var baselayers = {
+            'base': {{config('map.default_layers')[0]}},
+        };
+        var overlays = {
+            "Trasy": paths,
+            {!!Helper::jsGetOverlays()!!}
+        };
+        L.control.layers(baselayers, overlays, {
+            hideSingleBase: true
+        }).addTo(map);
+        {!!Helper::jsSetupClusters()!!}
+        @foreach (config('map.default_layers') as $layer)
+            @if ($layer!='base')
+                {{$layer}}.addTo(map);
+                @if (!$loop->last)
+                    ,
+                @endif
+            @endif
+        @endforeach
     </script>
-    <script src="{{ asset('js/main.js') }}"></script>
+    <ascript src="{{ asset('js/main.js') }}"></script>
     </body>
 </html>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Cycleway;
+use App\Helpers\Helper;
 use App\Layer;
 use App\Marker;
 use App\Relation;
@@ -123,6 +124,31 @@ class MasterplanController extends Controller
         $overpass = 'https://overpass.kumi.systems/api/interpreter?data=' . urlencode($data);
         $content = file_get_contents($overpass);
         Storage::put($filename, $content);
+    }
+
+    public function refreshBikeshareData(Request $request)
+    {
+        $bikeshares = config('bikeshare.bikeshares');
+        foreach ($bikeshares as $bikeshare) {
+            $url = trim($bikeshare['url']);
+            $content = file_get_contents($url);
+            $stands = json_decode($content, true);
+            foreach ($stands as $stand) {
+                $name = trim($stand[$bikeshare['name']]);
+                $description = trim($stand[$bikeshare['description']]);
+                if (is_array($bikeshare['coords'])) {
+                    $lat = trim($stand[$bikeshare['coords'][0]]);
+                    $lon = trim($stand[$bikeshare['coords'][1]]);
+                } else {
+                    $coords = explode(',', $stand[$bikeshare['coords']]);
+                    $lat = trim($coords[0]);
+                    $lon = trim($coords[1]);
+                }
+                $filename = trim($stand[$bikeshare['filename']]);
+                // not used $bikeshare['bicycle_count']
+                $marker = Marker::updateOrCreate(['layer_id' => 3, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename]);
+            }
+        }
     }
 
     public function refreshEIAData(Request $request)

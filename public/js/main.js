@@ -1,7 +1,4 @@
-var base = L.tileLayer('//tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?apikey=22dfe3fe43fe4b71870f0d767e697b76', {
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 20
-});
+console.log('here ');
 var map = L.map('map', {
     center: map_center,
     zoom: map_zoom,
