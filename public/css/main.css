@@ -117,7 +117,7 @@
     stroke: #00f;
     stroke-width: 3;
 }
-.highway-cycleway, .highway-service.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
+.highway-cycleway, .highway-service.bicycle-yes, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
     stroke: #00f;
     stroke-width: 3;
 }
