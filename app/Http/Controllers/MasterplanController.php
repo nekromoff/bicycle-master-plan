@@ -114,7 +114,7 @@ class MasterplanController extends Controller
         }
         $filename = 'osm/ways.json';
         if (isset($request->force) or !Storage::exists($filename) or Storage::lastModified($filename) < time() - 86400) {
-            $data = '[out:json]; (way[cycleway](' . $bounding_box . '); way["cycleway:left"](' . $bounding_box . '); way["cycleway:right"](' . $bounding_box . '); way[highway=pedestrian](' . $bounding_box . '); way[highway=cycleway](' . $bounding_box . '); way[bicycle=designated](' . $bounding_box . '); ); out body; >; out skel qt;';
+            $data = '[out:json]; (way[cycleway](' . $bounding_box . '); way["cycleway:left"](' . $bounding_box . '); way["cycleway:right"](' . $bounding_box . '); way[highway=pedestrian](' . $bounding_box . '); way[highway=cycleway](' . $bounding_box . '); way[bicycle=yes](' . $bounding_box . '); way[bicycle=designated](' . $bounding_box . '); ); out body; >; out skel qt;';
             MasterplanController::fetchAndSaveOverpassData($filename, $data);
         }
     }

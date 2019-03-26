@@ -95,3 +95,46 @@
     display: block;
     border: 1px dotted #000;
 }
+
+.state-proposed {
+    color: #f00;
+    stroke: #f00;
+    stroke-width: 3;
+    stroke-dasharray: 8 8;
+    stroke-opacity: 0.4;
+}
+.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite {
+    color: #0f0;
+    stroke: #0f0;
+    stroke-width: 3;
+}
+.bicycle-oneway-yes, .bicycle-designated, .complete-yes {
+    stroke: #00f;
+    stroke-width: 3;
+}
+.cycleway-lane, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
+    color: #00f;
+    stroke: #00f;
+    stroke-width: 3;
+}
+.highway-cycleway, .highway-service.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
+    stroke: #00f;
+    stroke-width: 3;
+}
+.highway-footway.bicycle-yes, .highway-residential.bicycle-yes, .highway-pedestrian.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .network-lcn:not(.state-proposed), .ramp-yes {
+    stroke: #0f0;
+    stroke-width: 3;
+}
+.highway-pedestrian {
+    color: #00ffc4;
+    stroke: #00ffc4;
+    stroke-width: 2;
+}
+[class*="mtb-scale"], .bicycle-yes.surface-gravel, .highway-cycleway.surface-gravel, .highway-track.bicycle-yes {
+    color: #aa5500;
+    stroke: #aa5500 !important;
+    stroke-width: 3;
+}
+.access-private, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no {
+    stroke: transparent !important;
+}

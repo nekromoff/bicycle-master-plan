@@ -41,49 +41,17 @@
                 @else
                     var layer{{$layer_id}}_type0 = L.layerGroup();
                 @endif
+            @elseif ($layer['type']=='path')
+                var layer{{$layer_id}}_type0 = L.layerGroup();
             @endif
         @endforeach
         @foreach ($markers as $id => $marker)
             {!!Helper::jsGetMarker($marker, $cycleways)!!}
         @endforeach
-        var paths = L.layerGroup();
+        var paths= L.layerGroup();
         @if (count($paths))
             @foreach ($paths as $path)
-                L.polyline([
-                @foreach ($path['nodes'] as $node)
-                    [{{$node[0]}},{{$node[1]}}]
-                    @if (!$loop->last)
-                        ,
-                    @endif
-                @endforeach
-                ], {
-                    @if (isset($path['info']['state']) and $path['info']['state']=='proposed')
-                        color: 'red', weight: 3, dashArray: '8 8', opacity: 0.6
-                    @else
-                        color: 'blue', weight: 3
-                    @endif
-                })
-                @if (isset($path['info']))
-                    .bindPopup(
-                @endif
-                @if (isset($path['info']['name']))
-                    '{{$path['info']['name']}}'+
-                @endif
-                @if (isset($path['info']['ref']))
-                    '<br>Číslo trasy: {{$path['info']['ref']}}'+
-                @endif
-                @if (isset($path['info']['operator']))
-                    '<br>Správca: {{$path['info']['operator']}}'+
-                @endif
-                @if (isset($path['info']))
-                    @foreach ($path['info'] as $key=>$value)
-                        '<br>{{$key}}={{$value}}'+
-                    @endforeach
-                @endif
-                @if (isset($path['info']))
-                    '')
-                @endif
-                .addTo(paths);
+                {!!Helper::jsGetPath($path)!!}
             @endforeach
         @endif
         var map = L.map('map', {
@@ -99,15 +67,16 @@
             ]
         });
         var baselayers = {
-            'base': {{config('map.default_layers')[0]}},
+            'base': {{config('map.default_layers')[0]}}
         };
         var overlays = {
-            "Trasy": paths,
+            'Cyklotrasy<br><span class="cycleway-lane">━━━</span> Značené (samostatné)<br><span class="cycleway-shared_lane">━━━</span> Značené (v premávke)<br><span class="highway-pedestrian">━━━</span> Primárne pešie trasy<br><span class="mtb-scale">━━━</span> Pre horské bicykle<br><span class="state-proposed">━ ━ ━</span> Plánované': paths,
             {!!Helper::jsGetOverlays()!!}
         };
         L.control.layers(baselayers, overlays, {
             hideSingleBase: true
         }).addTo(map);
+        paths.addTo(map);
         {!!Helper::jsSetupClusters()!!}
         @foreach (config('map.default_layers') as $layer)
             @if ($layer!='base')
@@ -118,6 +87,5 @@
             @endif
         @endforeach
     </script>
-    <ascript src="{{ asset('js/main.js') }}"></script>
     </body>
 </html>
