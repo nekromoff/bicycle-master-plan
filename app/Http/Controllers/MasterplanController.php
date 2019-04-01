@@ -86,7 +86,7 @@ class MasterplanController extends Controller
 
     public function fetchAndSaveOverpassData($filename, $data)
     {
-        $overpass = 'https://overpass.kumi.systems/api/interpreter?data=' . urlencode($data);
+        $overpass = config('map.osm_server') . '?data=' . urlencode($data);
         $content = file_get_contents($overpass);
         Storage::put($filename, $content);
     }
