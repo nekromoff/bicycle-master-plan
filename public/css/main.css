@@ -103,7 +103,7 @@
     stroke-dasharray: 8 8;
     stroke-opacity: 0.4;
 }
-.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite {
+.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .network-lcn:not(.state-proposed) {
     color: #0f0;
     stroke: #0f0;
     stroke-width: 3;
@@ -121,7 +121,7 @@
     stroke: #00f;
     stroke-width: 3;
 }
-.highway-footway.bicycle-yes, .highway-residential.bicycle-yes, .highway-pedestrian.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .network-lcn:not(.state-proposed), .ramp-yes {
+.highway-footway.bicycle-yes, .highway-residential.bicycle-yes, .highway-pedestrian.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes {
     stroke: #0f0;
     stroke-width: 3;
 }
