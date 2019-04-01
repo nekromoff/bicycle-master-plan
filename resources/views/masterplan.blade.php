@@ -28,6 +28,14 @@
                 var base = L.tileLayer('{{$layer['url']}}', {
                     {!!Helper::jsGetOptions($layer['options'])!!}
                 });
+            @elseif ($layer['type']=='path')
+                @if (isset($layer['types']))
+                    @foreach ($layer['types'] as $type_id=>$type)
+                        var layerpath{{$layer_id}}_type{{$type_id}} = L.layerGroup();
+                    @endforeach
+                @else
+                    var layerpath{{$layer_id}}_type0 = L.layerGroup();
+                @endif
             @elseif ($layer['type']=='marker')
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)
@@ -41,19 +49,14 @@
                 @else
                     var layer{{$layer_id}}_type0 = L.layerGroup();
                 @endif
-            @elseif ($layer['type']=='path')
-                var layer{{$layer_id}}_type0 = L.layerGroup();
             @endif
+        @endforeach
+        @foreach ($paths as $path)
+            {!!Helper::jsGetPath($path)!!}
         @endforeach
         @foreach ($markers as $id => $marker)
             {!!Helper::jsGetMarker($marker, $cycleways)!!}
         @endforeach
-        var paths= L.layerGroup();
-        @if (count($paths))
-            @foreach ($paths as $path)
-                {!!Helper::jsGetPath($path)!!}
-            @endforeach
-        @endif
         var map = L.map('map', {
             center: [{{ config('map.center')[0] }},{{config('map.center')[1] }}],
             zoom: {{ config('map.zoom') }},
@@ -70,13 +73,11 @@
             'base': {{config('map.default_layers')[0]}}
         };
         var overlays = {
-            'Cyklotrasy<br><span class="cycleway-lane">━━━</span> Značené (samostatné)<br><span class="cycleway-shared_lane">━━━</span> Značené (v premávke)<br><span class="highway-pedestrian">━━━</span> Primárne pešie trasy<br><span class="mtb-scale">━━━</span> Pre horské bicykle<br><span class="state-proposed">━ ━ ━</span> Plánované': paths,
             {!!Helper::jsGetOverlays()!!}
         };
         L.control.layers(baselayers, overlays, {
             hideSingleBase: true
         }).addTo(map);
-        paths.addTo(map);
         {!!Helper::jsSetupClusters()!!}
         @foreach (config('map.default_layers') as $layer)
             @if ($layer!='base')
