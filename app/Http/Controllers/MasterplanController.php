@@ -72,11 +72,11 @@ class MasterplanController extends Controller
     public function refreshOSMData(Request $request)
     {
         $bounding_box = config('map.bounding_box');
-        $osm_data = str_replace('{{bbox}}', $bounding_box, config('map.osm_data'));
+        $osm_data = config('map.osm_data');
         if (is_array($osm_data)) {
             foreach ($osm_data as $data) {
                 $filename = 'osm/' . $data['file'];
-                $data = $data['data'];
+                $data = str_replace('{{bbox}}', $bounding_box, $data['data']);
                 if (isset($request->force) or !Storage::exists($filename) or Storage::lastModified($filename) < time() - 86400) {
                     MasterplanController::fetchAndSaveOverpassData($filename, $data);
                 }
