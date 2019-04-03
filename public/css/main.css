@@ -107,6 +107,11 @@
     stroke-dasharray: 8 8;
     stroke-opacity: 0.4;
 }
+.highway-pedestrian {
+    color: #00ffc4;
+    stroke: #00ffc4;
+    stroke-width: 2;
+}
 .cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .network-lcn:not(.state-proposed):not(.highway-cycleway) {
     color: #0f0;
     stroke: #0f0;
@@ -125,14 +130,9 @@
     stroke: #00f;
     stroke-width: 3;
 }
-.highway-footway.bicycle-yes, .highway-residential.bicycle-yes, .highway-service.bicycle-yes, .highway-pedestrian.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes {
+.highway-footway.bicycle-yes, .highway-residential.bicycle-yes, .highway-service.bicycle-yes, .highway-pedestrian.bicycle-yes, .highway-pedestrian.bicycle-designated, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes {
     stroke: #0f0;
     stroke-width: 3;
-}
-.highway-pedestrian {
-    color: #00ffc4;
-    stroke: #00ffc4;
-    stroke-width: 2;
 }
 [class*="mtb-scale"], .bicycle-yes.surface-gravel, .highway-cycleway.surface-gravel, .highway-track.bicycle-yes {
     color: #aa5500;
