@@ -117,7 +117,7 @@
     stroke: #0f0;
     stroke-width: 3;
 }
-.bicycle-oneway-yes, .bicycle-designated, .complete-yes {
+.bicycle-oneway-yes, .bicycle-designated, .complete-yes, .cycleway-crossing {
     stroke: #00f;
     stroke-width: 3;
 }
