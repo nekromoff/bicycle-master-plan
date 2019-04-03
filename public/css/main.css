@@ -116,7 +116,7 @@
     stroke: #00f;
     stroke-width: 3;
 }
-.cycleway-lane, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
+.cycleway-lane, .cycleway-shared_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
     color: #00f;
     stroke: #00f;
     stroke-width: 3;
