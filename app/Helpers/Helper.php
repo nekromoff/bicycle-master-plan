@@ -140,6 +140,9 @@ class Helper
         if (isset($path['info']['bicycle:oneway'])) {
             $code .= ' bicycle-oneway-' . strtolower($path['info']['bicycle:oneway']);
         }
+        if (isset($path['info']['bicycle:practical'])) {
+            $code .= ' bicycle-practical-' . strtolower($path['info']['bicycle:practical']);
+        }
         if (isset($path['info']['segregated'])) {
             $code .= ' segregated-' . strtolower($path['info']['segregated']);
         }
