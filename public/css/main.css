@@ -143,6 +143,7 @@
     stroke-dasharray: 4 8;
 }
 .area-yes {
+    stroke: transparent !important;
     fill: none;
 }
 .access-private, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no {
