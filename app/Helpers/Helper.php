@@ -98,6 +98,9 @@ class Helper
             $counter++;
         }
         $code .= '], { className: \'path';
+        if (isset($path['info']['area'])) {
+            $code .= ' area-' . strtolower($path['info']['area']);
+        }
         if (isset($path['info']['state'])) {
             $code .= ' state-' . strtolower($path['info']['state']);
         }
@@ -152,11 +155,17 @@ class Helper
         if (isset($path['info']['barrier'])) {
             $code .= ' barrier-' . strtolower($path['info']['barrier']);
         }
+        if (isset($path['info']['tunnel'])) {
+            $code .= ' tunnel-' . strtolower($path['info']['tunnel']);
+        }
         if (isset($path['info']['network'])) {
             $code .= ' network-' . strtolower($path['info']['network']);
         }
         if (isset($path['info']['mtb:scale'])) {
             $code .= ' mtb-scale-' . strtolower($path['info']['mtb:scale']);
+        }
+        if (isset($path['info']['incline'])) {
+            $code .= ' incline-' . strtolower(str_replace('%', '', $path['info']['incline']));
         }
         $code .= '\'})';
         if (isset($path['info'])) {
