@@ -2,6 +2,7 @@
 
 return [
 
+    'GTM_ID'             => '', // google tag manager ID
     'APPLICATION_NAME'   => '', // name of your app
     'CLIENT_ID'          => '', // client ID
     'KEY_FILE'           => '', // .json file in public/ directory
