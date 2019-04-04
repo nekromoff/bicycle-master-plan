@@ -139,7 +139,7 @@
     stroke: #aa5500 !important;
     stroke-width: 3;
 }
-[class*="incline"], [class*="tunnel"] {
+[class*="incline"]:not(.incline-0):not(.incline-up):not(.incline-down), [class*="tunnel"] {
     stroke-dasharray: 4 8;
 }
 .area-yes {
