@@ -107,31 +107,31 @@
     stroke-dasharray: 8 8;
     stroke-opacity: 0.4;
 }
-.highway-pedestrian, .highway-path {
-    color: #00ffc4;
-    stroke: #00ffc4;
+.highway-pedestrian, .highway-path, .highway-footway {
+    color: #a6cee3;
+    stroke: #a6cee3;
     stroke-width: 2;
 }
 .cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .network-lcn:not(.state-proposed):not(.highway-cycleway), .bicycle-practical-yes {
-    color: #0f0;
-    stroke: #0f0;
+    color: #33a02c;
+    stroke: #33a02c;
     stroke-width: 3;
 }
 .bicycle-oneway-yes, .bicycle-designated, .bicycle-official, .complete-yes, .cycleway-crossing {
-    stroke: #00f;
+    stroke: #1f78b4;
     stroke-width: 3;
 }
 .cycleway-lane, .cycleway-shared_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
-    color: #00f;
-    stroke: #00f;
+    color: #1f78b4;
+    stroke: #1f78b4;
     stroke-width: 3;
 }
 .highway-cycleway, .highway-pedestrian.bicycle-designated, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
-    stroke: #00f;
+    stroke: #1f78b4;
     stroke-width: 3;
 }
 .highway-living_street, .highway-path.bicycle-yes, .highway-footway.bicycle-yes, .highway-residential.bicycle-yes, .highway-service.bicycle-yes, .highway-pedestrian.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes, .highway-primary.bicycle-yes, .highway-secondary.bicycle-yes, .highway-tertiary.bicycle-yes {
-    stroke: #0f0;
+    stroke: #33a02c;
     stroke-width: 3;
 }
 [class*="mtb-scale"], .bicycle-yes.surface-gravel, .highway-cycleway.surface-gravel, .highway-track.bicycle-yes {
@@ -140,7 +140,7 @@
     stroke-width: 3;
 }
 [class*="incline"]:not(.incline-0):not(.incline-up):not(.incline-down), [class*="tunnel"] {
-    stroke-dasharray: 4 8;
+    stroke-dasharray: 6 8;
 }
 .area-yes {
     stroke: transparent !important;
@@ -148,4 +148,8 @@
 }
 .access-private, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no {
     stroke: transparent !important;
+}
+
+.path.bicycle-practical-yes {
+    stroke-dasharray: 2 8;
 }
