@@ -127,11 +127,11 @@
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.highway-cycleway, .highway-pedestrian.bicycle-designated, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
+.highway-cycleway, .highway-pedestrian.bicycle-designated, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .highway-path.bicycle-yes, .highway-footway.bicycle-yes, .highway-pedestrian.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.highway-living_street, .highway-path.bicycle-yes, .highway-footway.bicycle-yes, .highway-residential.bicycle-yes, .highway-service.bicycle-yes, .highway-pedestrian.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes, .highway-primary.bicycle-yes, .highway-secondary.bicycle-yes, .highway-tertiary.bicycle-yes {
+.highway-living_street, .highway-residential.bicycle-yes, .highway-service.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes, .highway-primary.bicycle-yes, .highway-secondary.bicycle-yes, .highway-tertiary.bicycle-yes {
     stroke: #33a02c;
     stroke-width: 3;
 }
