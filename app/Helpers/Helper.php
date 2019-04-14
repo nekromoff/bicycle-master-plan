@@ -86,6 +86,7 @@ class Helper
 
     public static function jsGetPath($path)
     {
+        setlocale(LC_CTYPE, 'sk_SK.UTF-8');
         $layer_config = config('map.layers');
         $code = 'L.polyline([';
         $counter = 0;
@@ -98,83 +99,14 @@ class Helper
             $counter++;
         }
         $code .= '], { className: \'path';
-        if (isset($path['info']['area'])) {
-            $code .= ' area-' . strtolower($path['info']['area']);
-        }
-        if (isset($path['info']['state'])) {
-            $code .= ' state-' . strtolower($path['info']['state']);
-        }
-        if (isset($path['info']['complete'])) {
-            $code .= ' complete-' . strtolower($path['info']['complete']);
-        }
-        if (isset($path['info']['motor_vehicle'])) {
-            $code .= ' motor_vehicle-' . strtolower($path['info']['motor_vehicle']);
-        }
-        if (isset($path['info']['motorcar'])) {
-            $code .= ' motorcar-' . strtolower($path['info']['motorcar']);
-        }
-        if (isset($path['info']['maxspeed'])) {
-            $code .= ' maxspeed-' . strtolower($path['info']['maxspeed']);
-        }
-        if (isset($path['info']['access'])) {
-            $code .= ' access-' . strtolower($path['info']['access']);
-        }
-        if (isset($path['info']['highway'])) {
-            $code .= ' highway-' . strtolower($path['info']['highway']);
-        }
-        if (isset($path['info']['oneway'])) {
-            $code .= ' oneway-' . strtolower($path['info']['oneway']);
-        }
-        if (isset($path['info']['cycleway'])) {
-            $code .= ' cycleway-' . strtolower($path['info']['cycleway']);
-        }
-        if (isset($path['info']['cycleway:left'])) {
-            $code .= ' cycleway-left-' . strtolower($path['info']['cycleway:left']);
-        }
-        if (isset($path['info']['cycleway:right'])) {
-            $code .= ' cycleway-right-' . strtolower($path['info']['cycleway:right']);
-        }
-        if (isset($path['info']['bicycle'])) {
-            $code .= ' bicycle-' . strtolower($path['info']['bicycle']);
-        }
-        if (isset($path['info']['bicycle:oneway'])) {
-            $code .= ' bicycle-oneway-' . strtolower($path['info']['bicycle:oneway']);
-        }
-        if (isset($path['info']['bicycle:practical'])) {
-            $code .= ' bicycle-practical-' . strtolower($path['info']['bicycle:practical']);
-        }
-        if (isset($path['info']['segregated'])) {
-            $code .= ' segregated-' . strtolower($path['info']['segregated']);
-        }
-        if (isset($path['info']['bridge'])) {
-            $code .= ' bridge-' . strtolower($path['info']['bridge']);
-        }
-        if (isset($path['info']['ramp'])) {
-            $code .= ' ramp-' . strtolower($path['info']['ramp']);
-        }
-        if (isset($path['info']['surface'])) {
-            $code .= ' surface-' . strtolower($path['info']['surface']);
-        }
-        if (isset($path['info']['barrier'])) {
-            $code .= ' barrier-' . strtolower($path['info']['barrier']);
-        }
-        if (isset($path['info']['tunnel'])) {
-            $code .= ' tunnel-' . strtolower($path['info']['tunnel']);
-        }
-        if (isset($path['info']['network'])) {
-            $code .= ' network-' . strtolower($path['info']['network']);
-        }
-        if (isset($path['info']['mtb:scale'])) {
-            $code .= ' mtb-scale-' . strtolower($path['info']['mtb:scale']);
-        }
-        if (isset($path['info']['incline'])) {
-            $code .= ' incline-' . strtolower(str_replace('%', '', $path['info']['incline']));
+        foreach ($path['info'] as $key => $value) {
+            $code .= ' ' . preg_replace('/[^A-Za-z0-9_]/', '-', $key) . '-' . preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $value)));
         }
         $code .= '\'})';
         if (isset($path['info'])) {
             $code .= '.bindPopup(\'';
             if (isset($path['info']['name'])) {
-                $code .= $path['info']['name'];
+                $code .= '<strong>' . $path['info']['name'] . '</strong>';
             }
             if (isset($path['info']['ref'])) {
                 $code .= '<br>Číslo trasy: ' . $path['info']['ref'];

@@ -113,7 +113,7 @@
     stroke: #a6cee3;
     stroke-width: 2;
 }
-.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .network-lcn:not(.state-proposed):not(.highway-cycleway), .bicycle-practical-yes {
+.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .network-lcn:not(.state-proposed):not(.highway-cycleway), .bicycle-practical-yes, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane {
     color: #33a02c;
     stroke: #33a02c;
     stroke-width: 3;
@@ -127,7 +127,7 @@
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.highway-cycleway, .highway-pedestrian.bicycle-designated, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .highway-path.bicycle-yes, .highway-footway.bicycle-yes, .highway-pedestrian.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
+.highway-cycleway, .highway-pedestrian.bicycle-designated, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .highway-path.bicycle-yes, .highway-footway.cycleway-shared_lane, .highway-footway.bicycle-yes, .highway-pedestrian.bicycle-yes, .maxspeed-5.bicycle-yes, .maxspeed-10.bicycle-yes, .maxspeed-15.bicycle-yes {
     stroke: #1f78b4;
     stroke-width: 3;
 }
