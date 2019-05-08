@@ -147,7 +147,6 @@ class MasterplanController extends Controller
                 } else {
                     $description = trim($rows[$i][$structure['description']]);
                 }
-                dump($description);
                 $cycleways = explode(',', trim($rows[$i][$structure['cycleways']]));
                 $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '']);
                 foreach ($cycleways as $cycleway) {
