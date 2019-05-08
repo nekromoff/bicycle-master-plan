@@ -129,7 +129,25 @@ class MasterplanController extends Controller
             if (count($coords) > 1 and $coords[0]) {
                 $lat = trim($coords[0]);
                 $lon = trim($coords[1]);
-                $description = trim($rows[$i][$structure['description']]);
+                if (is_array($structure['description'])) {
+                    $description = '';
+                    foreach ($structure['description'] as $key => $column) {
+                        $temp_desc = trim($rows[$i][$column]);
+                        if ($temp_desc) {
+                            if (stripos($temp_desc, 'http:') !== false or stripos($temp_desc, 'https:') !== false) {
+                                $temp_desc = '<a href="' . $temp_desc . '">' . $temp_desc . '</a>';
+                            }
+                            $description .= $temp_desc;
+                            // add line break, if not last one
+                            if ($key < count($structure['description']) - 1) {
+                                $description .= '<br>';
+                            }
+                        }
+                    }
+                } else {
+                    $description = trim($rows[$i][$structure['description']]);
+                }
+                dump($description);
                 $cycleways = explode(',', trim($rows[$i][$structure['cycleways']]));
                 $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '']);
                 foreach ($cycleways as $cycleway) {

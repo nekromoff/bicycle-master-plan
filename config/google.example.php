@@ -9,6 +9,6 @@ return [
     'SPREADSHEETS_SCOPE' => 'https://www.googleapis.com/auth/spreadsheets',
     'EIA_FILE'           => '', // ID of file
     'EIA_SHEET'          => '', // Name of sheet to extract data from
-    'SHEET_STRUCTURE'    => ['name' => 0, 'coords' => 1, 'description' => 2, 'cycleways' => 3], // sheet columns to extract data from, 0 = column A
+    'SHEET_STRUCTURE'    => ['name' => 0, 'coords' => 1, 'description' => 2, 'cycleways' => 3], // sheet columns to extract data from, 0 = column A; description could be an array, if multiple values should be extracted
 
 ];
