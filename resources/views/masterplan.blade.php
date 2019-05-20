@@ -33,6 +33,7 @@
        crossorigin=""></script>
         <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
+        <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script>
         @foreach (config('map.layers') as $layer_id=>$layer)
             @if ($layer['type']=='base')
