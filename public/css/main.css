@@ -1,3 +1,10 @@
+/*
+workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
+*/
+.leaflet-fade-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-zoom-animated {
+    will-change:auto !important;
+}
+
 #map {
     width: 100vw;
     height: 100vh;
@@ -16,6 +23,34 @@
 }
 .roadsign {
     display: inline-block;
+}
+
+/* parking */
+.parking {
+    display: inline-block;
+}
+.parking::after {
+    color: #432100;
+    content: "∩";
+    font-size: 120%;
+    font-weight: bold;
+    text-shadow: 1px 1px 10px rgba(5, 5, 5, 1);
+}
+.parking.bicycle_parking-rack::after, .parking.bicycle_parking-racks::after {
+    content: "∆";
+}
+.parking.bicycle_parking-shed::after {
+    border-top: 1px solid #432100;
+    border-left: 1px solid #432100;
+    border-right: 1px solid #432100;
+}
+.parking.bicycle_parking-informal::after {
+    content: "?";
+    color: #ff8a8a;
+}
+.parking.bicycle_parking-anchors::after, .parking.bicycle_parking-wall_loops::after, .parking.bicycle_parking-ground_slots::after {
+    content: "x";
+    color: #ff8a8a;
 }
 
 /* signs */
@@ -80,6 +115,12 @@
 }
 .roadsign.isx {
     background: linear-gradient(to bottom right, #fff calc(50% - 2px), #21663a, #fff calc(50% + 2px) );
+}
+
+/* special path marking sign / not a real roadsign */
+.roadsign.pathsign {
+    background: navy;
+    color: #fff;
 }
 
 .development::before {

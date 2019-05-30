@@ -31,7 +31,7 @@ class MasterplanController extends Controller
         $osm_data = str_replace('{{bbox}}', $bounding_box, config('map.osm_data'));
         foreach (config('map.layers') as $layer_id => $layer) {
             $i = count($paths);
-            if ($layer['type'] == 'path') {
+            if ($layer['type'] == 'path' and isset($layer['file'])) {
                 $filename = 'osm/' . $layer['file'];
                 $content = Storage::get($filename);
                 $result = json_decode($content);
@@ -63,8 +63,24 @@ class MasterplanController extends Controller
                         $i++;
                     }
                 }
+            } elseif ($layer['type'] == 'marker' and isset($layer['file'])) {
+                $filename = 'osm/' . $layer['file'];
+                $content = Storage::get($filename);
+                $result = json_decode($content);
+                $data = $result->elements;
+                foreach ($data as $item) {
+                    if ($item->type == 'node') {
+                        $marker_new_id = 'l' . $layer_id . '-' . $item->id;
+                        $markers_new[$marker_new_id] = ['lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
+                        if (isset($item->tags)) {
+                            $markers_new[$marker_new_id]['info'] = (array) $item->tags;
+                        }
+                        $markers_new[$marker_new_id] = (object) $markers_new[$marker_new_id];
+                    }
+                }
             }
         }
+        $markers = $markers->union(collect($markers_new));
 
         return view('masterplan', ['layers' => $layers, 'markers' => $markers, 'cycleways' => $cycleways, 'paths' => $paths]);
     }

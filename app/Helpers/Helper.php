@@ -131,6 +131,11 @@ class Helper
         $layer_config = config('map.layers');
         $code = 'L.marker([' . $marker->lat . ',' . $marker->lon . '], { icon: new L.DivIcon({ html: \'<div class="';
         $normalized = strtolower(preg_replace('/[0-9]/', '', $marker->name));
+        if (isset($marker->info)) {
+            foreach ($marker->info as $key => $value) {
+                $code .= preg_replace('/[^A-Za-z0-9_]/', '-', $key) . '-' . preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $value))) . ' ';
+            }
+        }
         // multiple types
         if (isset($layer_config[$marker->layer_id]['types'])) {
             $code .= $layer_config[$marker->layer_id]['types'][$marker->type]['class'] . ' ' . $normalized . '">';
@@ -152,11 +157,32 @@ class Helper
                 }
             }
         }
-        $code .= '</div>\' }) }).bindPopup(\'' . $marker->name;
-        if ($marker->description) {
-            $code .= '<br>' . $marker->description;
+        $code .= '</div>\' }) }).bindPopup(\'';
+        if (isset($marker->name) and $marker->name) {
+            $code .= '<strong>' . $marker->name . '</strong>';
+        } elseif (isset($marker->info['name'])) {
+            $code .= '<strong>' . $marker->info['name'] . '</strong>';
         }
-        if ($marker->filename) {
+        if (isset($marker->description) and $marker->description) {
+            $code .= '<br>' . $marker->description;
+        } elseif (isset($marker->info['description']) and $marker->info['description']) {
+            $code .= '<br>' . $marker->info['description'];
+        }
+        if (isset($marker->info['bicycle_parking'])) {
+            $code .= '<br>Stojan pre bicykle';
+            if ($marker->info['bicycle_parking'] == 'stands' or $marker->info['bicycle_parking'] == 'wide_stands') {
+                $code .= ' typu U (bezpečný)';
+            } elseif ($marker->info['bicycle_parking'] == 'rack' or $marker->info['bicycle_parking'] == 'racks') {
+                $code .= ' typu A (bezpečný)';
+            } elseif ($marker->info['bicycle_parking'] == 'shed') {
+                $code .= ' krytý (bezpečný)';
+            } elseif ($marker->info['bicycle_parking'] == 'informal') {
+                $code .= ' neformálny (zábradlie, plot a pod.)';
+            } else {
+                $code .= ' nevhodný (tzv. lámač kolies)';
+            }
+        }
+        if (isset($marker->filename) and $marker->filename) {
             $code .= '<br><a href="' . Helper::getFilename($marker->filename, false) . '" target="_blank"><img src="' . Helper::getFilename($marker->filename) . '" alt="' . $marker->filename . '"></a>';
         }
         if (isset($marker->relations) and count($marker->relations)) {
@@ -167,6 +193,11 @@ class Helper
                 if ($key != $count) {
                     $code .= ', ';
                 }
+            }
+        }
+        if (isset($marker->info)) {
+            foreach ($marker->info as $key => $value) {
+                $code .= '<br>' . $key . '=' . $value;
             }
         }
         if (isset($layer_config[$marker->layer_id]['types'])) {
