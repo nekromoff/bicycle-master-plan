@@ -109,10 +109,10 @@ class Helper
                 $code .= '<strong>' . $path['info']['name'] . '</strong>';
             }
             if (isset($path['info']['ref'])) {
-                $code .= '<br>Číslo trasy: ' . $path['info']['ref'];
+                $code .= '<br>' . __('Path number') . ': ' . $path['info']['ref'];
             }
             if (isset($path['info']['operator'])) {
-                $code .= '<br>Správca: ' . $path['info']['operator'];
+                $code .= '<br>' . __('Operator') . ': ' . $path['info']['operator'];
             }
             foreach ($path['info'] as $key => $value) {
                 $code .= '<br>' . $key . '=' . $value;
@@ -169,24 +169,24 @@ class Helper
             $code .= '<br>' . $marker->info['description'];
         }
         if (isset($marker->info['bicycle_parking'])) {
-            $code .= '<br>Stojan pre bicykle';
+            $code .= '<br>' . __('Bicycle stand') . ' ';
             if ($marker->info['bicycle_parking'] == 'stands' or $marker->info['bicycle_parking'] == 'wide_stands') {
-                $code .= ' typu U (bezpečný)';
+                $code .= __('U type (safe)');
             } elseif ($marker->info['bicycle_parking'] == 'rack' or $marker->info['bicycle_parking'] == 'racks') {
-                $code .= ' typu A (bezpečný)';
+                $code .= __('A type (safe)');
             } elseif ($marker->info['bicycle_parking'] == 'shed') {
-                $code .= ' krytý (bezpečný)';
+                $code .= __('covered (safe)');
             } elseif ($marker->info['bicycle_parking'] == 'informal') {
-                $code .= ' neformálny (zábradlie, plot a pod.)';
+                $code .= __('informal (railing etc.)');
             } else {
-                $code .= ' nevhodný (tzv. lámač kolies)';
+                $code .= __('not suitable');
             }
         }
         if (isset($marker->filename) and $marker->filename) {
             $code .= '<br><a href="' . Helper::getFilename($marker->filename, false) . '" target="_blank"><img src="' . Helper::getFilename($marker->filename) . '" alt="' . $marker->filename . '"></a>';
         }
         if (isset($marker->relations) and count($marker->relations)) {
-            $code .= '<br>Číslo trasy: ';
+            $code .= '<br>' . __('Path number') . ': ';
             $count = count($marker->relations) - 1;
             foreach ($marker->relations as $key => $relation) {
                 $code .= $cycleways[$relation->cycleway_id]->sign;
