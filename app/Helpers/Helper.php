@@ -108,6 +108,9 @@ class Helper
             if (isset($path['info']['name'])) {
                 $code .= '<strong>' . $path['info']['name'] . '</strong>';
             }
+            if (isset($path['info']['embankment']) or isset($path['info']['mtb']) or isset($path['info']['mtb-scale'])) {
+                $code .= '<br><strong>Zelená trasa s dobrou kvalitou ovzdušia.</strong>';
+            }
             if (isset($path['info']['ref'])) {
                 $code .= '<br>' . __('Path number') . ': ' . $path['info']['ref'];
             }
