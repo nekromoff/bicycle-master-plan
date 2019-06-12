@@ -52,6 +52,11 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     content: "x";
     color: #ff8a8a;
 }
+.amenity-bicycle_repair_station::after, service-bicycle-pump-yes::after {
+    content: "🔧";
+    border: 2px solid #000;
+    border-radius: 50%;
+}
 
 /* signs */
 .roadsign.b {
