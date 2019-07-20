@@ -166,7 +166,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     stroke: #a6cee3;
     stroke-width: 2;
 }
-.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .network-lcn:not(.state-proposed):not(.highway-cycleway), .lcn-yes, .lcn-proposed, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane {
+.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .network-lcn:not(.state-proposed):not(.highway-cycleway), .lcn-yes, .access-private.lcn-yes, .lcn-proposed, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane {
     color: #33a02c;
     stroke: #33a02c;
     stroke-width: 3;
