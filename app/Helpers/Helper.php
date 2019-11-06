@@ -118,7 +118,7 @@ class Helper
                 $code .= '<br>' . __('Operator') . ': ' . $path['info']['operator'];
             }
             foreach ($path['info'] as $key => $value) {
-                $code .= '<br>' . $key . '=' . $value;
+                $code .= '<br>' . $key . '=' . addslashes($value);
             }
         }
         $code .= '\')';
