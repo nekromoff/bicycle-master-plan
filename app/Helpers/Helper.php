@@ -106,7 +106,7 @@ class Helper
         if (isset($path['info'])) {
             $code .= '.bindPopup(\'';
             if (isset($path['info']['name'])) {
-                $code .= '<strong>' . $path['info']['name'] . '</strong>';
+                $code .= '<strong>' . addslashes($path['info']['name']) . '</strong>';
             }
             if (isset($path['info']['embankment']) or isset($path['info']['mtb']) or isset($path['info']['mtb-scale'])) {
                 $code .= '<br><strong>Zelená trasa s dobrou kvalitou ovzdušia.</strong>';
