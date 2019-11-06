@@ -115,7 +115,7 @@ class Helper
                 $code .= '<br>' . __('Path number') . ': ' . $path['info']['ref'];
             }
             if (isset($path['info']['operator'])) {
-                $code .= '<br>' . __('Operator') . ': ' . $path['info']['operator'];
+                $code .= '<br>' . __('Operator') . ': ' . addslashes($path['info']['operator']);
             }
             foreach ($path['info'] as $key => $value) {
                 $code .= '<br>' . $key . '=' . addslashes($value);
@@ -144,7 +144,7 @@ class Helper
             $code .= $layer_config[$marker->layer_id]['types'][$marker->type]['class'] . ' ' . $normalized . '">';
             if (isset($layer_config[$marker->layer_id]['types'][$marker->type]['icon'])) {
                 if ($layer_config[$marker->layer_id]['types'][$marker->type]['icon'] == 'name') {
-                    $code .= $marker->name . '</div>';
+                    $code .= addslashes($marker->name) . '</div>';
                 } elseif ($layer_config[$marker->layer_id]['types'][$marker->type]['icon'] == 'filename') {
                     $code .= '<img src="' . Helper::getFilename($marker->filename) . '" alt="' . $marker->filename . '">';
                 }
@@ -167,9 +167,9 @@ class Helper
             $code .= '<strong>' . addslashes($marker->info['name']) . '</strong>';
         }
         if (isset($marker->description) and $marker->description) {
-            $code .= '<br>' . $marker->description;
+            $code .= '<br>' . addslashes($marker->description);
         } elseif (isset($marker->info['description']) and $marker->info['description']) {
-            $code .= '<br>' . $marker->info['description'];
+            $code .= '<br>' . addslashes($marker->info['description']);
         }
         if (isset($marker->info['bicycle_parking'])) {
             $code .= '<br>' . __('Bicycle stand') . ' ';
@@ -200,7 +200,7 @@ class Helper
         }
         if (isset($marker->info)) {
             foreach ($marker->info as $key => $value) {
-                $code .= '<br>' . $key . '=' . $value;
+                $code .= '<br>' . $key . '=' . addslashes($value);
             }
         }
         if (isset($layer_config[$marker->layer_id]['types'])) {
