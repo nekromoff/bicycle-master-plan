@@ -100,13 +100,13 @@ class Helper
         }
         $code .= '], { className: \'path';
         foreach ($path['info'] as $key => $value) {
-            $code .= ' ' . preg_replace('/[^A-Za-z0-9_]/', '-', $key) . '-' . addslashes(preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $value))));
+            $code .= ' ' . preg_replace('/[^A-Za-z0-9_]/', '-', $key) . '-' . preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $value)));
         }
         $code .= '\'})';
         if (isset($path['info'])) {
             $code .= '.bindPopup(\'';
             if (isset($path['info']['name'])) {
-                $code .= '<strong>' . $path['info']['name'] . '</strong>';
+                $code .= '<strong>' . addslashes($path['info']['name']) . '</strong>';
             }
             if (isset($path['info']['embankment']) or isset($path['info']['mtb']) or isset($path['info']['mtb-scale'])) {
                 $code .= '<br><strong>Zelená trasa s dobrou kvalitou ovzdušia.</strong>';
@@ -118,7 +118,7 @@ class Helper
                 $code .= '<br>' . __('Operator') . ': ' . $path['info']['operator'];
             }
             foreach ($path['info'] as $key => $value) {
-                $code .= '<br>' . $key . '=' . $value;
+                $code .= '<br>' . $key . '=' . addslashes($value);
             }
         }
         $code .= '\')';
@@ -136,7 +136,7 @@ class Helper
         $normalized = strtolower(preg_replace('/[0-9]/', '', $marker->name));
         if (isset($marker->info)) {
             foreach ($marker->info as $key => $value) {
-                $code .= preg_replace('/[^A-Za-z0-9_]/', '-', $key) . '-' . addslashes(preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $value)))) . ' ';
+                $code .= preg_replace('/[^A-Za-z0-9_]/', '-', $key) . '-' . preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $value))) . ' ';
             }
         }
         // multiple types
@@ -162,9 +162,9 @@ class Helper
         }
         $code .= '</div>\' }) }).bindPopup(\'';
         if (isset($marker->name) and $marker->name) {
-            $code .= '<strong>' . $marker->name . '</strong>';
+            $code .= '<strong>' . addslashes($marker->name) . '</strong>';
         } elseif (isset($marker->info['name'])) {
-            $code .= '<strong>' . $marker->info['name'] . '</strong>';
+            $code .= '<strong>' . addslashes($marker->info['name']) . '</strong>';
         }
         if (isset($marker->description) and $marker->description) {
             $code .= '<br>' . $marker->description;
