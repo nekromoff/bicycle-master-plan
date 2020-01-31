@@ -123,7 +123,7 @@ class Helper
         }
         $code .= '\')';
         if (isset($path['info']['ref'])) {
-            $code .= '.setText(\'' . $path['info']['ref'] . '                   \')';
+            $code .= '.setText(\'' . $path['info']['ref'] . '\')';
         }
         $code .= '.addTo(layer' . $path['layer_id'] . '_type0);';
         echo $code;

@@ -90,6 +90,10 @@
         L.control.layers(baselayers, overlays, {
             hideSingleBase: true
         }).addTo(map);
+        var intro = L.popup({
+            closeButton: true,
+            autoClose: true
+        }).setLatLng(map.getBounds().getCenter()).setContent('{!! addslashes(config('map.intro')) !!}').openOn(map);
         {!!Helper::jsSetupClusters()!!}
         @foreach (config('map.default_layers') as $layer)
             @if ($layer!='base')

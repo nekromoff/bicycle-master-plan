@@ -4,6 +4,8 @@ return [
 
     // Website/map name
     'name'           => 'Your city bicycle master plan map',
+    // intro informational popup
+    'intro'          => '<h1>Your city bicycle map</h1><p>You can use this map to find your way around by bicycle. And more info can be put here.</p>',
     // Bounding box for fetching data from Overpass API
     'bounding_box'   => '48.086565298417796,16.9573974609375,48.253026757626124,17.238235473632812',
     // Map center
