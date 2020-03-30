@@ -34,7 +34,9 @@
         <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
+        <script src="{{asset('js/main.js')}}"></script>
         <script>
+        var layers=[];
         @foreach (config('map.layers') as $layer_id=>$layer)
             @if ($layer['type']=='base')
                 var base = L.tileLayer('{{$layer['url']}}', {
@@ -44,24 +46,30 @@
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)
                         var layerpath{{$layer_id}}_type{{$type_id}} = L.layerGroup();
+                        layers[{{$layer_id}}]=layerpath{{$layer_id}}_type{{$type_id}};
                     @endforeach
                 @else
                     var layerpath{{$layer_id}}_type0 = L.layerGroup();
+                    layers[{{$layer_id}}]=layerpath{{$layer_id}}_type0;
                 @endif
             @elseif ($layer['type']=='combined')
                 var layer{{$layer_id}}_type0 = L.layerGroup();
+                layers[{{$layer_id}}]=layer{{$layer_id}}_type0;
             @elseif ($layer['type']=='marker')
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)
                         var layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
+                        layers[{{$layer_id}}]=layer{{$layer_id}}_type{{$type_id}};
                         @if (isset($type['cluster']) and $type['cluster']==true)
                             var clusters_layer{{$layer_id}}_type{{$type_id}} = L.markerClusterGroup.layerSupport({
                                 {!!Helper::jsGetOptions($type['options'])!!}
                             });
+                            layers[{{$layer_id}}]=clusters_layer{{$layer_id}}_type{{$type_id}};
                         @endif
                     @endforeach
                 @else
                     var layer{{$layer_id}}_type0 = L.layerGroup();
+                    layers[{{$layer_id}}]=layer{{$layer_id}}_type0;
                 @endif
             @endif
         @endforeach
@@ -92,6 +100,7 @@
         L.control.layers(baselayers, overlays, {
             hideSingleBase: true
         }).addTo(map);
+        L.control.scale({imperial: false}).addTo(map);
         var intro = L.popup({
             closeButton: true,
             autoClose: true

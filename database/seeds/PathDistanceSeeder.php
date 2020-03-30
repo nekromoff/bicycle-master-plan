@@ -31,7 +31,7 @@ class PathDistanceSeeder extends Seeder
                 continue;
             }
             Path::updateOrCreate(['layer_id' => 8, 'type' => 3, 'lat_start' => $lat_start, 'lon_start' => $lon_start, 'lat_end' => $lat_end, 'lon_end' => $lon_end, 'name' => $name], ['description' => $description, 'filename' => '']);
-            $marker = Marker::updateOrCreate(['layer_id' => 8, 'type' => 3, 'lat' => $point_center[0], 'lon' => $point_center[1], 'name' => $description], ['description' => 'Minúty: ' . $description, 'filename' => '']);
+            $marker = Marker::updateOrCreate(['layer_id' => 8, 'type' => 3, 'lat' => $point_center[0], 'lon' => $point_center[1], 'name' => $description], ['description' => 'Minutes: ' . $description, 'filename' => '']);
         }
 
         $csv_file = public_path() . '/sources/distances-points.csv';
