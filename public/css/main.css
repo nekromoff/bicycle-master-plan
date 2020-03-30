@@ -213,3 +213,26 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
 .path.lcn-yes, .path.lcn-proposed {
     stroke-dasharray: 2 8;
 }
+
+.distances {
+    background: #aa007f;
+    color: #fff;
+    border: 1px solid #fff;
+    width: max-content;
+    padding: 2px 4px;
+    text-align: center;
+    font-weight: bold;
+}
+.distances[class*="description-minuty"] {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    color: #aa007f;
+    width: max-content;
+    font-weight: bold;
+    font-size: 150%;
+}
+.class-distances {
+    color: #aa007f;
+    stroke: #aa007f;
+    stroke-width: 5;
+}

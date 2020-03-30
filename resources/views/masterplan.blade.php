@@ -48,6 +48,8 @@
                 @else
                     var layerpath{{$layer_id}}_type0 = L.layerGroup();
                 @endif
+            @elseif ($layer['type']=='combined')
+                var layer{{$layer_id}}_type0 = L.layerGroup();
             @elseif ($layer['type']=='marker')
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)

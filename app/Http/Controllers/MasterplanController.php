@@ -6,6 +6,7 @@ use App\Cycleway;
 use App\Helpers\Helper;
 use App\Layer;
 use App\Marker;
+use App\Path;
 use App\Relation;
 use Google_Client;
 use Google_Service_Sheets;
@@ -20,6 +21,7 @@ class MasterplanController extends Controller
     {
         $layers = Layer::get()->keyBy('id');
         $markers = Marker::with('relations')->get();
+        $paths_db = Path::get();
         $cycleways = Cycleway::get()->keyBy('id');
         // load map relations
 
@@ -63,6 +65,18 @@ class MasterplanController extends Controller
                         $i++;
                     }
                 }
+            } elseif ($layer['type'] == 'path') {
+                $temp_paths = $paths_db;
+                $temp_paths = $temp_paths->where('layer_id', $layer_id);
+                foreach ($paths_db as $path) {
+                    $paths[$i]['layer_id'] = $path->layer_id;
+                    $paths[$i]['info']['name'] = $path->name;
+                    $paths[$i]['info']['description'] = $path->description;
+                    $paths[$i]['info']['class'] = $layer['class'];
+                    $paths[$i]['nodes'][] = [$path->lat_start, $path->lon_start];
+                    $paths[$i]['nodes'][] = [$path->lat_end, $path->lon_end];
+                    $i++;
+                }
             } elseif ($layer['type'] == 'marker' and isset($layer['file'])) {
                 $filename = 'osm/' . $layer['file'];
                 $content = Storage::get($filename);
@@ -77,6 +91,18 @@ class MasterplanController extends Controller
                         }
                         $markers_new[$marker_new_id] = (object) $markers_new[$marker_new_id];
                     }
+                }
+            } elseif ($layer['type'] == 'combined') {
+                $temp_paths = $paths_db;
+                $temp_paths = $temp_paths->where('layer_id', $layer_id);
+                foreach ($temp_paths as $path) {
+                    $paths[$i]['layer_id'] = $path->layer_id;
+                    $paths[$i]['info']['name'] = $path->name;
+                    $paths[$i]['info']['description'] = $path->description;
+                    $paths[$i]['info']['class'] = $layer['class'];
+                    $paths[$i]['nodes'][] = [$path->lat_start, $path->lon_start];
+                    $paths[$i]['nodes'][] = [$path->lat_end, $path->lon_end];
+                    $i++;
                 }
             }
         }

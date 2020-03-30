@@ -133,11 +133,14 @@ class Helper
     {
         $layer_config = config('map.layers');
         $code = 'L.marker([' . $marker->lat . ',' . $marker->lon . '], { icon: new L.DivIcon({ html: \'<div class="';
-        $normalized = strtolower(preg_replace('/[0-9]/', '', $marker->name));
+        $normalized = preg_replace('/[^A-Za-z]/', '', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $marker->name)));
         if (isset($marker->info)) {
             foreach ($marker->info as $key => $value) {
                 $code .= preg_replace('/[^A-Za-z0-9_]/', '-', $key) . '-' . preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $value))) . ' ';
             }
+        }
+        if (isset($marker->description)) {
+            $code .= 'description-' . preg_replace('/[^A-Za-z0-9_]/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $marker->description))) . ' ';
         }
         // multiple types
         if (isset($layer_config[$marker->layer_id]['types'])) {

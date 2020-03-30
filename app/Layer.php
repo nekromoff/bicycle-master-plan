@@ -11,4 +11,9 @@ class Layer extends Model
         return $this->hasMany('\App\Marker');
     }
 
+    public function paths()
+    {
+        return $this->hasMany('\App\Path');
+    }
+
 }
