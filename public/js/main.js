@@ -33,8 +33,7 @@ function toggleLayers(layers_found) {
     layers.forEach(function(layer) {
         map.removeLayer(layer);
     });
-    layers_found.forEach(function(layer) {
-        layer_id=layer;
+    layers_found.forEach(function(layer_id) {
         if (layers[layer_id]!=undefined) {
             map.addLayer(layers[layer_id]);
         }
