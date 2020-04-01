@@ -36,7 +36,6 @@
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
         <script>
-        var layers=[];
         @foreach (config('map.layers') as $layer_id=>$layer)
             @if ($layer['type']=='base')
                 var base = L.tileLayer('{{$layer['url']}}', {
@@ -45,31 +44,25 @@
             @elseif ($layer['type']=='path')
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)
-                        var layerpath{{$layer_id}}_type{{$type_id}} = L.layerGroup();
-                        layers[{{$layer_id}}]=layerpath{{$layer_id}}_type{{$type_id}};
+                        layers.layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
                     @endforeach
                 @else
-                    var layerpath{{$layer_id}}_type0 = L.layerGroup();
-                    layers[{{$layer_id}}]=layerpath{{$layer_id}}_type0;
+                    layers.layer{{$layer_id}} = L.layerGroup();
                 @endif
             @elseif ($layer['type']=='combined')
-                var layer{{$layer_id}}_type0 = L.layerGroup();
-                layers[{{$layer_id}}]=layer{{$layer_id}}_type0;
+                layers.layer{{$layer_id}} = L.layerGroup();
             @elseif ($layer['type']=='marker')
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)
-                        var layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
-                        layers[{{$layer_id}}]=layer{{$layer_id}}_type{{$type_id}};
+                        layers.layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
                         @if (isset($type['cluster']) and $type['cluster']==true)
-                            var clusters_layer{{$layer_id}}_type{{$type_id}} = L.markerClusterGroup.layerSupport({
+                            clusters_layer{{$layer_id}}_type{{$type_id}} = L.markerClusterGroup.layerSupport({
                                 {!!Helper::jsGetOptions($type['options'])!!}
                             });
-                            layers[{{$layer_id}}]=clusters_layer{{$layer_id}}_type{{$type_id}};
                         @endif
                     @endforeach
                 @else
-                    var layer{{$layer_id}}_type0 = L.layerGroup();
-                    layers[{{$layer_id}}]=layer{{$layer_id}}_type0;
+                    layers.layer{{$layer_id}} = L.layerGroup();
                 @endif
             @endif
         @endforeach
@@ -79,12 +72,19 @@
         @foreach ($markers as $id => $marker)
             {!!Helper::jsGetMarker($marker, $cycleways)!!}
         @endforeach
+        options.zoom={{ config('map.zoom') }};
+        options.center=[{{ config('map.center')[0] }},{{config('map.center')[1] }}];
+        initializeOptions();
         var map = L.map('map', {
-            center: [{{ config('map.center')[0] }},{{config('map.center')[1] }}],
-            zoom: {{ config('map.zoom') }},
+            center: options.center,
+            zoom: options.zoom,
             layers: [
                 @foreach (config('map.default_layers') as $layer)
-                    {{$layer}}
+                    @if ($layer!='base')
+                        layers.layer{{$layer}}
+                    @else
+                        {{$layer}}
+                    @endif
                     @if (!$loop->last)
                         ,
                     @endif
@@ -106,14 +106,6 @@
             autoClose: true
         }).setLatLng(map.getBounds().getCenter()).setContent('{!! addslashes(config('map.intro')) !!}').openOn(map);
         {!!Helper::jsSetupClusters()!!}
-        @foreach (config('map.default_layers') as $layer)
-            @if ($layer!='base')
-                {{$layer}}.addTo(map);
-                @if (!$loop->last)
-                    ,
-                @endif
-            @endif
-        @endforeach
     </script>
     </body>
 </html>

@@ -236,3 +236,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     stroke: #aa007f;
     stroke-width: 5;
 }
+
+.hidden {
+    display: none;
+}

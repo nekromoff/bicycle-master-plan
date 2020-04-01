@@ -61,7 +61,7 @@ class MasterplanController extends Controller
                         if (isset($item->tags)) {
                             $paths[$i]['info'] = (array) $item->tags;
                         }
-                        $paths[$i]['layer_id'] = 'path' . $layer_id;
+                        $paths[$i]['layer_id'] = $layer_id;
                         $i++;
                     }
                 }
