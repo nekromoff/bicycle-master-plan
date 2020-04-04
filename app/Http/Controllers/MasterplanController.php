@@ -19,19 +19,7 @@ class MasterplanController extends Controller
 
     public function map(Request $request)
     {
-        $this->initialize();
-        $this->layers = Layer::get()->keyBy('id');
-        $this->markers = Marker::with('relations')->get();
-        $this->paths_db = Path::get();
-        $this->cycleways = Cycleway::get()->keyBy('id');
-        foreach (config('map.layers') as $layer_id => $layer) {
-            $this->processMapfeatures($layer, $layer_id);
-        }
-        if (isset($this->markers_new)) {
-            $this->markers = $this->markers->union(collect($this->markers_new));
-        }
-
-        return view('masterplan', ['layers' => $this->layers, 'markers' => $this->markers, 'cycleways' => $this->cycleways, 'paths' => $this->paths]);
+        return view('masterplan');
     }
 
     private function initialize()

@@ -116,25 +116,13 @@ function fetchLayer(layer_id, type) {
         layer_id=parts[0];
         type=parts[1];
     }
-    var epoch_timestamp=Math.round((new Date()).getTime() / 1000);
-    var name='masterplan_layer'+layer_id;
+    url='data/layer/'+layer_id;
     if (type) {
-        name=name+'_type'+type;
+        url=url+'/'+type;
     }
-    data=localStorage.getItem(name);
-    if (!data || JSON.parse(data)['time']<(epoch_timestamp-86400)) { // 86400
-        url='data/layer/'+layer_id;
-        if (type) {
-            url=url+'/'+type;
-        }
-        jQuery.get(url).done(function(data) {
-            content={ 'time': epoch_timestamp, 'data': data };
-            localStorage.setItem(name, JSON.stringify(content));
-            parseLayer(data, layer_id, type);
-        });
-    } else {
-        parseLayer(JSON.parse(data)['data'], layer_id, type);
-    }
+    jQuery.get(url).done(function(data) {
+        parseLayer(data, layer_id, type);
+    });
 }
 
 function parseLayer(data, layer_id, type) {
@@ -148,7 +136,7 @@ function parseLayer(data, layer_id, type) {
         core.layers_parsed[parsed_key]=true;
     }
     if (core.config.layers[layer_id].types!=undefined && type) {
-            map.addLayer(core.layers['layer'+layer_id+'_type'+type]);
+        map.addLayer(core.layers['layer'+layer_id+'_type'+type]);
     } else {
         map.addLayer(core.layers['layer'+layer_id]);
     }

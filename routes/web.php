@@ -13,7 +13,7 @@
 
 Route::get('/', ['uses' => 'MasterplanController@map', 'as' => 'map']);
 
-Route::prefix('data')->group(function () {
+Route::prefix('data')->middleware('cache.headers:public;max_age=86400;immutable;etag')->group(function () {
     Route::get('layer/{id}/{type?}', ['uses' => 'MasterplanController@pushData', 'as' => 'data.layer']);
 });
 
