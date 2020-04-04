@@ -252,8 +252,7 @@ function parseMarkers(data, layer_id, type) {
         if (marker.filename!=undefined && marker.filename) {
             popup_content=popup_content+'<br><a href="' + getFilename(marker.filename, false) + '" target="_blank"><img src="' + getFilename(marker.filename) + '" alt="' + marker.filename + '"></a>';
         }
-        if (marker.relations!=undefined) {
-            console.log(marker.relations);
+        if (marker.relations!=undefined && marker.relations.length) {
             popup_content=popup_content+'<br>Path number: ';
             for (key in marker.relations) {
                 popup_content=popup_content+data.cycleways[marker.relations[key].cycleway_id].sign;
