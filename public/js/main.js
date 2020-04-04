@@ -118,6 +118,9 @@ function fetchLayer(layer_id, type) {
     }
     var epoch_timestamp=Math.round((new Date()).getTime() / 1000);
     var name='masterplan_layer'+layer_id;
+    if (type) {
+        name=name+'_type'+type;
+    }
     data=localStorage.getItem(name);
     if (!data || JSON.parse(data)['time']<(epoch_timestamp-86400)) { // 86400
         url='data/layer/'+layer_id;
@@ -210,6 +213,7 @@ function parseMarkers(data, layer_id, type) {
             if (core.config.layers[layer_id].types[type].icon=='name') {
                 marker_content=marker_content+marker.name+'</div>';
             } else if (core.config.layers[layer_id].types[type].icon=='filename') {
+                console.log(marker);
                 marker_content=marker_content+'<img src="' + getFilename(marker.filename) + '" alt="' + marker.filename + '">';
             }
         } else {
