@@ -119,7 +119,7 @@ function fetchLayer(layer_id, type) {
     var epoch_timestamp=Math.round((new Date()).getTime() / 1000);
     var name='masterplan_layer'+layer_id;
     data=localStorage.getItem(name);
-    if (!data || JSON.parse(data)['time']<(epoch_timestamp-1)) { // 86400
+    if (!data || JSON.parse(data)['time']<(epoch_timestamp-86400)) { // 86400
         url='data/layer/'+layer_id;
         if (type) {
             url=url+'/'+type;
