@@ -11,7 +11,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==" crossorigin=""/>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+  integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+  crossorigin=""/>
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
         <link rel="stylesheet" href="{{ asset('css/main.css') }}">
@@ -23,19 +25,18 @@
         height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <!-- End Google Tag Manager (noscript) -->
         <div id="map"></div>
-        <!-- Optional JavaScript -->
         <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-        <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
-       integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
-       crossorigin=""></script>
+        <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
         <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
         <script>
+        core.config={!! json_encode(config('map')) !!};
+        core.storage_path='{{asset('...')}}'.replace('...','');
         @foreach (config('map.layers') as $layer_id=>$layer)
             @if ($layer['type']=='base')
                 var base = L.tileLayer('{{$layer['url']}}', {
@@ -44,44 +45,48 @@
             @elseif ($layer['type']=='path')
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)
-                        layers.layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
+                        core.layers.layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
                     @endforeach
                 @else
-                    layers.layer{{$layer_id}} = L.layerGroup();
+                    core.layers.layer{{$layer_id}} = L.layerGroup();
                 @endif
             @elseif ($layer['type']=='combined')
-                layers.layer{{$layer_id}} = L.layerGroup();
+                core.layers.layer{{$layer_id}} = L.layerGroup();
             @elseif ($layer['type']=='marker')
                 @if (isset($layer['types']))
                     @foreach ($layer['types'] as $type_id=>$type)
-                        layers.layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
+                        core.layers.layer{{$layer_id}}_type{{$type_id}} = L.layerGroup();
                         @if (isset($type['cluster']) and $type['cluster']==true)
-                            clusters_layer{{$layer_id}}_type{{$type_id}} = L.markerClusterGroup.layerSupport({
+                            core.clusters.layer{{$layer_id}}_type{{$type_id}} = L.markerClusterGroup.layerSupport({
                                 {!!Helper::jsGetOptions($type['options'])!!}
                             });
                         @endif
                     @endforeach
                 @else
-                    layers.layer{{$layer_id}} = L.layerGroup();
+                    core.layers.layer{{$layer_id}} = L.layerGroup();
                 @endif
             @endif
         @endforeach
-        @foreach ($paths as $path)
-            {!!Helper::jsGetPath($path)!!}
-        @endforeach
-        @foreach ($markers as $id => $marker)
-            {!!Helper::jsGetMarker($marker, $cycleways)!!}
-        @endforeach
-        options.zoom={{ config('map.zoom') }};
-        options.center=[{{ config('map.center')[0] }},{{config('map.center')[1] }}];
-        initializeOptions();
+<?php
+/*
+@foreach ($paths as $path)
+{!!Helper::jsGetPath($path)!!}
+@endforeach
+@foreach ($markers as $id => $marker)
+{!!Helper::jsGetMarker($marker, $cycleways)!!}
+@endforeach
+ */
+;?>
+        core.options.zoom={{ config('map.zoom') }};
+        core.options.center=[{{ config('map.center')[0] }},{{config('map.center')[1] }}];
+        forceOptions();
         var map = L.map('map', {
-            center: options.center,
-            zoom: options.zoom,
+            center: core.options.center,
+            zoom: core.options.zoom,
             layers: [
                 @foreach (config('map.default_layers') as $layer)
                     @if ($layer!='base')
-                        layers.layer{{$layer}}
+                        core.layers.layer{{$layer}}
                     @else
                         {{$layer}}
                     @endif

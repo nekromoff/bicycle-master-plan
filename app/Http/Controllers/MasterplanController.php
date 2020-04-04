@@ -19,96 +19,56 @@ class MasterplanController extends Controller
 
     public function map(Request $request)
     {
-        $layers = Layer::get()->keyBy('id');
-        $markers = Marker::with('relations')->get();
-        $paths_db = Path::get();
-        $cycleways = Cycleway::get()->keyBy('id');
-        // load map relations
-
-        $nodes = [];
-        $paths = [];
-        $relations = [];
-        $parents = [];
-        $bounding_box = config('map.bounding_box');
-        $osm_data = str_replace('{{bbox}}', $bounding_box, config('map.osm_data'));
+        $this->initialize();
+        $this->layers = Layer::get()->keyBy('id');
+        $this->markers = Marker::with('relations')->get();
+        $this->paths_db = Path::get();
+        $this->cycleways = Cycleway::get()->keyBy('id');
         foreach (config('map.layers') as $layer_id => $layer) {
-            $i = count($paths);
-            if ($layer['type'] == 'path' and isset($layer['file'])) {
-                $filename = 'osm/' . $layer['file'];
-                $content = Storage::get($filename);
-                $result = json_decode($content);
-                $data = $result->elements;
-                // preprocess nodes
-                foreach ($data as $item) {
-                    if ($item->type == 'node') {
-                        $nodes[$item->id] = ['lat' => $item->lat, 'lon' => $item->lon];
-                    } elseif ($item->type == 'relation') {
-                        $relations[$item->id] = $item->tags;
-                        foreach ($item->members as $member) {
-                            $parents[$member->ref] = $item->id;
-                        }
-                    }
-                }
-                foreach ($data as $item) {
-                    if ($item->type == 'way') {
-                        foreach ($item->nodes as $node) {
-                            if (isset($parents[$item->id])) {
-                                $relation_id = $parents[$item->id];
-                                $paths[$i]['info'] = (array) $relations[$relation_id];
-                            }
-                            $paths[$i]['nodes'][] = [$nodes[$node]['lat'], $nodes[$node]['lon']];
-                        }
-                        if (isset($item->tags)) {
-                            $paths[$i]['info'] = (array) $item->tags;
-                        }
-                        $paths[$i]['layer_id'] = $layer_id;
-                        $i++;
-                    }
-                }
-            } elseif ($layer['type'] == 'path') {
-                $temp_paths = $paths_db;
-                $temp_paths = $temp_paths->where('layer_id', $layer_id);
-                foreach ($paths_db as $path) {
-                    $paths[$i]['layer_id'] = $path->layer_id;
-                    $paths[$i]['info']['name'] = $path->name;
-                    $paths[$i]['info']['description'] = $path->description;
-                    $paths[$i]['info']['class'] = $layer['class'];
-                    $paths[$i]['nodes'][] = [$path->lat_start, $path->lon_start];
-                    $paths[$i]['nodes'][] = [$path->lat_end, $path->lon_end];
-                    $i++;
-                }
-            } elseif ($layer['type'] == 'marker' and isset($layer['file'])) {
-                $filename = 'osm/' . $layer['file'];
-                $content = Storage::get($filename);
-                $result = json_decode($content);
-                $data = $result->elements;
-                foreach ($data as $item) {
-                    if ($item->type == 'node') {
-                        $marker_new_id = 'l' . $layer_id . '-' . $item->id;
-                        $markers_new[$marker_new_id] = ['lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
-                        if (isset($item->tags)) {
-                            $markers_new[$marker_new_id]['info'] = (array) $item->tags;
-                        }
-                        $markers_new[$marker_new_id] = (object) $markers_new[$marker_new_id];
-                    }
-                }
-            } elseif ($layer['type'] == 'combined') {
-                $temp_paths = $paths_db;
-                $temp_paths = $temp_paths->where('layer_id', $layer_id);
-                foreach ($temp_paths as $path) {
-                    $paths[$i]['layer_id'] = $path->layer_id;
-                    $paths[$i]['info']['name'] = $path->name;
-                    $paths[$i]['info']['description'] = $path->description;
-                    $paths[$i]['info']['class'] = $layer['class'];
-                    $paths[$i]['nodes'][] = [$path->lat_start, $path->lon_start];
-                    $paths[$i]['nodes'][] = [$path->lat_end, $path->lon_end];
-                    $i++;
-                }
-            }
+            $this->processMapfeatures($layer, $layer_id);
         }
-        $markers = $markers->union(collect($markers_new));
+        if (isset($this->markers_new)) {
+            $this->markers = $this->markers->union(collect($this->markers_new));
+        }
 
-        return view('masterplan', ['layers' => $layers, 'markers' => $markers, 'cycleways' => $cycleways, 'paths' => $paths]);
+        return view('masterplan', ['layers' => $this->layers, 'markers' => $this->markers, 'cycleways' => $this->cycleways, 'paths' => $this->paths]);
+    }
+
+    private function initialize()
+    {
+        $this->nodes = [];
+        $this->paths = [];
+        $this->relations = [];
+        $this->parents = [];
+        $bounding_box = config('map.bounding_box');
+    }
+
+    public function pushData(Request $request)
+    {
+        $this->initialize();
+        $this->markers = Marker::with('relations')->where('layer_id', $request->id);
+        if (isset($request->type)) {
+            $this->markers = $this->markers->where('type', $request->type);
+        }
+        $this->markers = $this->markers->get();
+        $this->paths_db = Path::where('layer_id', $request->id);
+        if (isset($request->type)) {
+            $this->paths_db = $this->paths_db->where('type', $request->type);
+        }
+        $this->paths_db = $this->paths_db->get();
+        $this->cycleways = Cycleway::get()->keyBy('id');
+
+        $layer = config('map.layers')[$request->id];
+        $this->processMapfeatures($layer, $request->id);
+        if (isset($this->markers_new)) {
+            $this->markers = $this->markers->union(collect($this->markers_new));
+        }
+
+        $content['markers'] = $this->markers;
+        $content['paths'] = $this->paths;
+        $content['cycleways'] = $this->cycleways;
+
+        return response()->json($content);
     }
 
     public function refreshOSMData(Request $request)
@@ -259,4 +219,82 @@ class MasterplanController extends Controller
         $sheets->setService($service);
         return $sheets;
     }
+
+    private function processMapfeatures($layer, $layer_id)
+    {
+        $i = count($this->paths);
+        if ($layer['type'] == 'path' and isset($layer['file'])) {
+            $filename = 'osm/' . $layer['file'];
+            $content = Storage::get($filename);
+            $result = json_decode($content);
+            $data = $result->elements;
+            // preprocess nodes
+            foreach ($data as $item) {
+                if ($item->type == 'node') {
+                    $this->nodes[$item->id] = ['lat' => $item->lat, 'lon' => $item->lon];
+                } elseif ($item->type == 'relation') {
+                    $this->relations[$item->id] = $item->tags;
+                    foreach ($item->members as $member) {
+                        $this->parents[$member->ref] = $item->id;
+                    }
+                }
+            }
+            foreach ($data as $item) {
+                if ($item->type == 'way') {
+                    foreach ($item->nodes as $node) {
+                        if (isset($this->parents[$item->id])) {
+                            $relation_id = $this->parents[$item->id];
+                            $this->paths[$i]['info'] = (array) $this->relations[$relation_id];
+                        }
+                        $this->paths[$i]['nodes'][] = [$this->nodes[$node]['lat'], $this->nodes[$node]['lon']];
+                    }
+                    if (isset($item->tags)) {
+                        $this->paths[$i]['info'] = (array) $item->tags;
+                    }
+                    $this->paths[$i]['layer_id'] = $layer_id;
+                    $i++;
+                }
+            }
+        } elseif ($layer['type'] == 'path') {
+            $temp_paths = $this->paths_db;
+            $temp_paths = $temp_paths->where('layer_id', $layer_id);
+            foreach ($temp_paths as $path) {
+                $this->paths[$i]['layer_id'] = $path->layer_id;
+                $this->paths[$i]['info']['name'] = $path->name;
+                $this->paths[$i]['info']['description'] = $path->description;
+                $this->paths[$i]['info']['class'] = $layer['class'];
+                $this->paths[$i]['nodes'][] = [$path->lat_start, $path->lon_start];
+                $this->paths[$i]['nodes'][] = [$path->lat_end, $path->lon_end];
+                $i++;
+            }
+        } elseif ($layer['type'] == 'marker' and isset($layer['file'])) {
+            $filename = 'osm/' . $layer['file'];
+            $content = Storage::get($filename);
+            $result = json_decode($content);
+            $data = $result->elements;
+            foreach ($data as $item) {
+                if ($item->type == 'node') {
+                    $marker_new_id = 'l' . $layer_id . '-' . $item->id;
+                    $this->markers_new[$marker_new_id] = ['lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
+                    if (isset($item->tags)) {
+                        $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
+                    }
+                    $this->markers_new[$marker_new_id] = (object) $this->markers_new[$marker_new_id];
+                }
+            }
+        } elseif ($layer['type'] == 'combined') {
+            $temp_paths = $this->paths_db;
+            $temp_paths = $temp_paths->where('layer_id', $layer_id);
+            foreach ($temp_paths as $path) {
+                $this->paths[$i]['layer_id'] = $path->layer_id;
+                $this->paths[$i]['info']['name'] = $path->name;
+                $this->paths[$i]['info']['description'] = $path->description;
+                $this->paths[$i]['info']['class'] = $layer['class'];
+                $this->paths[$i]['nodes'][] = [$path->lat_start, $path->lon_start];
+                $this->paths[$i]['nodes'][] = [$path->lat_end, $path->lon_end];
+                $i++;
+            }
+        }
+    }
+
 }

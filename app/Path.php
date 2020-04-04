@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Path extends Model
 {
     protected $fillable = ['layer_id', 'type', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'name', 'description', 'filename'];
+    protected $hidden = ['created_at', 'updated_at'];
 
     public function relations()
     {

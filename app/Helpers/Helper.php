@@ -34,14 +34,14 @@ class Helper
             if (isset($layer_config[$layer_id]['types'])) {
                 $counter_type = 0;
                 foreach ($layer_config[$layer_id]['types'] as $type_id => $type) {
-                    echo "'" . $type['name'] . "': layers.layer" . $layer_id . '_type' . $type_id;
+                    echo "'" . $type['name'] . "': core.layers.layer" . $layer_id . '_type' . $type_id;
                     if ($counter_type < count($layer_config[$layer_id]['types']) - 1) {
                         echo ', ';
                     }
                     $counter_type++;
                 }
             } else {
-                echo "'" . $layer_config[$layer_id]['name'] . "': layers.layer";
+                echo "'" . $layer_config[$layer_id]['name'] . "': core.layers.layer";
                 // if ($layer_config[$layer_id]['type'] == 'path') {
                 //     echo 'path';
                 // }
@@ -61,13 +61,13 @@ class Helper
             if (isset($layer_config[$layer_id]['types'])) {
                 foreach ($layer_config[$layer_id]['types'] as $type_id => $type) {
                     if ($type['cluster'] == true) {
-                        echo 'clusters_layer' . $layer_id . '_type' . $type_id . '.checkIn(layers.layer' . $layer_id . '_type' . $type_id . ');' . "\n";
-                        echo 'clusters_layer' . $layer_id . '_type' . $type_id . '.addTo(map);' . "\n";
+                        echo 'core.clusters.layer' . $layer_id . '_type' . $type_id . '.checkIn(core.layers.layer' . $layer_id . '_type' . $type_id . ');' . "\n";
+                        echo 'core.clusters.layer' . $layer_id . '_type' . $type_id . '.addTo(map);' . "\n";
                     }
                 }
             } elseif (isset($layer_config[$layer_id]['cluster']) and $layer_config[$layer_id]['cluster'] == true) {
-                echo 'clusters_layer' . $layer_id . '.checkIn(layers.layer' . $layer_id . ');' . "\n";
-                echo 'clusters_layer' . $layer_id . '.addTo(map);' . "\n";
+                echo 'core.clusters.layer' . $layer_id . '.checkIn(core.layers.layer' . $layer_id . ');' . "\n";
+                echo 'core.clusters.layer' . $layer_id . '.addTo(map);' . "\n";
             }
         }
     }
@@ -125,7 +125,7 @@ class Helper
         if (isset($path['info']['ref'])) {
             $code .= '.setText(\'' . $path['info']['ref'] . '\')';
         }
-        $code .= '.addTo(layers.layer' . $path['layer_id'] . ');';
+        $code .= '.addTo(core.layers.layer' . $path['layer_id'] . ');';
         echo $code;
     }
 
@@ -207,9 +207,9 @@ class Helper
             }
         }
         if (isset($layer_config[$marker->layer_id]['types'])) {
-            $code .= '\').addTo(layers.layer' . $marker->layer_id . '_type' . $marker->type . ');';
+            $code .= '\').addTo(core.layers.layer' . $marker->layer_id . '_type' . $marker->type . ');';
         } else {
-            $code .= '\').addTo(layers.layer' . $marker->layer_id . ');';
+            $code .= '\').addTo(core.layers.layer' . $marker->layer_id . ');';
         }
         echo $code;
     }

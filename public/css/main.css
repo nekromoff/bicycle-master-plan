@@ -20,7 +20,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
 }
 
 .photo img {
-    width: 20px;
+    width: 50px;
 }
 .roadsign {
     display: inline-block;
@@ -74,7 +74,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
 .roadsign.e, .roadsign.eb, .roadsign.ec, .roadsign.ed {
     background: #fff;
     color: #000;
-    border:  1px solid #000;
+    border: 1px solid #000;
 }
 .roadsign.ip {
     background: navy;
