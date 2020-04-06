@@ -311,7 +311,7 @@ function createMarker(e) {
     if (core.editable_marker) {
         map.removeLayer(core.editable_marker);
     }
-    core.editable_marker=L.marker([e.latlng.lat, e.latlng.lng]).addTo(map).bindPopup($('#form').clone().attr('id', 'editable').html(), { minWidth: core.options.popup_width }).openPopup();
+    core.editable_marker=L.marker([e.latlng.lat, e.latlng.lng]).addTo(map).bindPopup($('#form').clone().attr('id', 'editable').html(), { minWidth: core.options.popup_width, keepInView: true }).openPopup();
     $('.leaflet-popup-content form input[name=lat]').val(e.latlng.lat);
     $('.leaflet-popup-content form input[name=lon]').val(e.latlng.lng);
     $('.leaflet-popup-content form').on('submit', function(e) {
