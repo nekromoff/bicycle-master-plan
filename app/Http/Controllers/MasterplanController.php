@@ -72,9 +72,11 @@ class MasterplanController extends Controller
         $content['success'] = 0;
         if ($this->editable_layer_id) {
             $filename = '';
-            if ($file and $file->getClientMimeType() == 'image/jpg' or $file->getClientMimeType() == 'image/jpeg' or $file->getClientMimeType() == 'image/png') {
-                $path = Storage::putFile('public/uploads', $file);
-                $filename = basename($path);
+            if ($file) {
+                if ($file->getClientMimeType() == 'image/jpg' or $file->getClientMimeType() == 'image/jpeg' or $file->getClientMimeType() == 'image/png') {
+                    $path = Storage::putFile('public/uploads', $file);
+                    $filename = basename($path);
+                }
             }
             $marker = new Marker;
             $marker->layer_id = $this->editable_layer_id;
