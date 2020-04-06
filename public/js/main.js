@@ -4,13 +4,20 @@ core.layers=[];
 core.clusters=[];
 core.markers=[];
 core.paths=[];
-
 core.layers_parsed=[];
+core.options.popup_width=50*Math.max(document.documentElement.clientWidth, window.innerWidth || 0)/100; //50% of viewport
+if (core.options.popup_width<200) {
+    core.options.popup_width=200;
+}
+core.editable_marker=false;
 
 $(document).ready(function() {
+    $('#intro_off').on('click', function() {
+        setCookie('intro_off', 1, 180);
+        map.closePopup();
+    })
     // if location fragment exists on launch
     if (window.location.hash) {
-        map.closePopup(intro);
         setupMap();
     } else {
         for (layer_key in core.config.default_layers) {
@@ -31,6 +38,7 @@ $(document).ready(function() {
     map.on('zoomend', rewriteFragment);
     map.on('overlayadd', rewriteFragment);
     map.on('overlayremove', rewriteFragment);
+    map.on('dblclick', createMarker);
 });
 
 function forceOptions() {
@@ -201,15 +209,14 @@ function parseMarkers(data, layer_id, type) {
             if (core.config.layers[layer_id].types[type].icon=='name') {
                 marker_content=marker_content+marker.name+'</div>';
             } else if (core.config.layers[layer_id].types[type].icon=='filename') {
-                console.log(marker);
-                marker_content=marker_content+'<img src="' + getFilename(marker.filename) + '" alt="' + marker.filename + '">';
+                marker_content=marker_content+'<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '">';
             }
         } else {
             marker_content=marker_content+core.config.layers[layer_id].class+'">';
             if (core.config.layers[layer_id].icon=='name') {
                 marker_content=marker_content+marker.name+'</div>';
             } else if (core.config.layers[layer_id].icon=='filename') {
-                marker_content=marker_content+'<img src="' + getFilename(marker.filename) + '" alt="' + marker.filename + '">';
+                marker_content=marker_content+'<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '">';
             }
         }
 
@@ -242,7 +249,7 @@ function parseMarkers(data, layer_id, type) {
             }
         }
         if (marker.filename!=undefined && marker.filename) {
-            popup_content=popup_content+'<br><a href="' + getFilename(marker.filename, false) + '" target="_blank"><img src="' + getFilename(marker.filename) + '" alt="' + marker.filename + '"></a>';
+            popup_content=popup_content+'<br><a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '"></a>';
         }
         if (marker.relations!=undefined && marker.relations.length) {
             popup_content=popup_content+'<br>Path number: ';
@@ -280,23 +287,76 @@ function normalize(text) {
     return text;
 }
 
-function getFilename(filename, thumb = true) {
+function getFilename(layer_id, filename, thumb = true) {
     // URL
     if (filename.indexOf('http://')!=-1 || filename.indexOf('https://')!=-1) {
         url = filename;
     } else {
-        // file in storage
-        path = 'storage/photos/thumbs/';
-        if (!thumb) {
-            path = 'storage/photos/';
+        // default path to file in storage
+        path = 'storage/';
+        if (layer_id==999) {
+            path = path+'uploads/';
+        } else {
+            path = path+'photos/';
+            if (thumb) {
+                path=path+'thumbs/';
+            }
         }
         url = core.storage_path+path+filename;
     }
     return url;
 }
 
-/*
-                                    L.polyline([[48.0577198,17.1588219],[48.0572613,17.1594371],[48.0540635,17.1636517],[48.0532544,17.1647505],[48.0521715,17.1662553],[48.0515535,17.1673497],[48.0507836,17.1690633],[48.0504381,17.1701152],[48.0501549,17.1710317],[48.0499183,17.1721572],[48.0494866,17.1746782],[48.0493935,17.1752185],[48.0492204,17.1760066],[48.0485217,17.1810833],[48.0482257,17.1832456],[48.047979,17.1850308],[48.0476519,17.1865758],[48.047228,17.1882752],[48.0467338,17.1899404],[48.0463494,17.1908845],[48.0457433,17.1923093],[48.0448862,17.1940002],[48.0443762,17.194847],[48.0438643,17.1956712],[48.0434027,17.1963696],[48.0429581,17.1970643],[48.0423441,17.1978196],[48.041093,17.1993237],[48.0401748,17.2002503],[48.0394599,17.2007212],[48.0376191,17.2018523]], { className: 'path name-cunovska-radiala network-lcn operator-cyklokoalicia ref-r28 route-bicycle state-proposed type-route'}).bindPopup('<strong>Čunovská radiála</strong><br>Path number: R28<br>Operator: Cyklokoalícia<br>name=Čunovská radiála<br>network=lcn<br>operator=Cyklokoalícia<br>ref=R28<br>route=bicycle<br>state=proposed<br>type=route').setText('R28').addTo(layers.layer4);
+function createMarker(e) {
+    if (core.editable_marker) {
+        map.removeLayer(core.editable_marker);
+    }
+    core.editable_marker=L.marker([e.latlng.lat, e.latlng.lng]).addTo(map).bindPopup($('#form').clone().attr('id', 'editable').html(), { minWidth: core.options.popup_width }).openPopup();
+    $('.leaflet-popup-content form input[name=lat]').val(e.latlng.lat);
+    $('.leaflet-popup-content form input[name=lon]').val(e.latlng.lng);
+    $('.leaflet-popup-content form').on('submit', function(e) {
+        action=$('.leaflet-popup-content form').clone().attr('action');
+        core.editable_marker.setPopupContent('Creating... Please wait.');
+        $.ajax({
+            type: 'POST',
+            url: action,
+            data: new FormData(this),
+            dataType: 'json',
+            contentType: false,
+            cache: false,
+            processData:false,
+            success: function(data) {
+                if (data.success) {
+                    message='Thank you for making our map better. Your marker will be displayed after we review and accept your submission.';
+                } else {
+                    message='Something failed. Please try again.';
+                }
+                core.editable_marker.setPopupContent(message);
+            }
+        });
+        return false;
+    });
+}
 
-                                    L.polyline([[48.1499778,17.0659268],[48.1500959,17.0655835],[48.1501299,17.0654595],[48.1501415,17.0654032],[48.1501559,17.0653321],[48.1502104,17.0651556]], { className: 'path highway-residential is_in-bratislava---karlova-ves lcn-yes maxspeed-30 source-maxspeed-sign'}).bindPopup('<br>highway=residential<br>is_in=Bratislava - Karlova Ves<br>lcn=yes<br>maxspeed=30<br>source:maxspeed=sign').addTo(layers.layer5);
-*/
+function setCookie(cname, cvalue, exdays) {
+  var d = new Date();
+  d.setTime(d.getTime() + (exdays*24*60*60*1000));
+  var expires = "expires="+ d.toUTCString();
+  document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+  var name = cname + "=";
+  var decodedCookie = decodeURIComponent(document.cookie);
+  var ca = decodedCookie.split(';');
+  for(var i = 0; i <ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}

@@ -11,15 +11,20 @@ use App\Relation;
 use Google_Client;
 use Google_Service_Sheets;
 use Illuminate\Http\Request;
+use Kris\LaravelFormBuilder\FormBuilder;
 use Revolution\Google\Sheets\Sheets;
 use Storage;
 
 class MasterplanController extends Controller
 {
 
-    public function map(Request $request)
+    public function map(FormBuilder $formBuilder, Request $request)
     {
-        return view('masterplan');
+        $form = $formBuilder->create('App\Forms\AddMarkerForm', [
+            'url'    => route('data.save'),
+            'method' => 'POST',
+        ]);
+        return view('masterplan', compact('form'));
     }
 
     private function initialize()
@@ -28,13 +33,14 @@ class MasterplanController extends Controller
         $this->paths = [];
         $this->relations = [];
         $this->parents = [];
+        $this->editable_layer_id = $this->findEditableLayer();
         $bounding_box = config('map.bounding_box');
     }
 
     public function pushData(Request $request)
     {
         $this->initialize();
-        $this->markers = Marker::with('relations')->where('layer_id', $request->id);
+        $this->markers = Marker::with('relations')->where('approved', 1)->where('layer_id', $request->id);
         if (isset($request->type)) {
             $this->markers = $this->markers->where('type', $request->type);
         }
@@ -57,6 +63,42 @@ class MasterplanController extends Controller
         $content['cycleways'] = $this->cycleways;
 
         return response()->json($content);
+    }
+
+    public function saveData(Request $request)
+    {
+        $this->initialize();
+        $file = $request->file('file');
+        $content['success'] = 0;
+        if ($this->editable_layer_id) {
+            $filename = '';
+            if ($file and $file->getClientMimeType() == 'image/jpg' or $file->getClientMimeType() == 'image/jpeg' or $file->getClientMimeType() == 'image/png') {
+                $path = Storage::putFile('public/uploads', $file);
+                $filename = basename($path);
+            }
+            $marker = new Marker;
+            $marker->layer_id = $this->editable_layer_id;
+            $marker->type = 2;
+            $marker->lat = $request->lat;
+            $marker->lon = $request->lon;
+            $marker->name = $request->name;
+            $marker->description = $request->description;
+            $marker->filename = $filename;
+            $marker->approved = 0;
+            $marker->save();
+            $content['success'] = 1;
+        }
+        return response()->json($content);
+    }
+
+    private function findEditableLayer()
+    {
+        foreach (config('map.layers') as $layer_id => $layer) {
+            if (isset($layer['editable']) and $layer['editable']) {
+                return $layer_id;
+            }
+        }
+        return false;
     }
 
     public function refreshOSMData(Request $request)
@@ -101,7 +143,7 @@ class MasterplanController extends Controller
                 }
                 $filename = trim($stand[$bikeshare['filename']]);
                 // not used $bikeshare['bicycle_count']
-                $marker = Marker::updateOrCreate(['layer_id' => 3, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename]);
+                $marker = Marker::updateOrCreate(['layer_id' => 3, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'approved' => 1]);
             }
         }
     }
@@ -138,7 +180,7 @@ class MasterplanController extends Controller
                     $description = trim($rows[$i][$structure['description']]);
                 }
                 $cycleways = explode(',', trim($rows[$i][$structure['cycleways']]));
-                $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '']);
+                $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '', 'approved' => 1]);
                 foreach ($cycleways as $cycleway) {
                     $cycleway = trim($cycleway);
                     // skip records with cycleways not filled (#N/A in Google sheets)
@@ -173,7 +215,7 @@ class MasterplanController extends Controller
                         $lat = trim($coords[0]);
                         $lon = trim($coords[1]);
                     }
-                    $marker = Marker::updateOrCreate(['layer_id' => $layer_id, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename]);
+                    $marker = Marker::updateOrCreate(['layer_id' => $layer_id, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'approved' => 1]);
                     if (isset($row[$feed['cycleways']])) {
                         $cycleways = explode(',', trim($row[$feed['cycleways']]));
                         foreach ($cycleways as $cycleway) {

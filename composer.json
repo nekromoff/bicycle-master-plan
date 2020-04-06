@@ -9,6 +9,7 @@
         "asimlqt/php-google-spreadsheet-client": "^3.0",
         "doctrine/dbal": "^2.9",
         "fideloper/proxy": "^4.0",
+        "kris/laravel-form-builder": "1.6.*",
         "laravel/framework": "5.8.*",
         "laravel/tinker": "^1.0",
         "revolution/laravel-google-sheets": "^4.0"

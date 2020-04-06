@@ -13,7 +13,7 @@ return [
     // Map zoom
     'zoom'           => 15,
     // Layers to be displayed by default (array) / must match layers below
-    'default_layers' => ['base', 'layer1_type1'],
+    'default_layers' => ['base', '1/1'],
     // Layers
     'layers'         => [
         0 => [ // always base/tile layer
@@ -50,10 +50,12 @@ return [
             ],
         ],
         2 => [
-            'type'  => 'marker',
-            'name'  => 'Developments',
-            'class' => 'development',
+            'type'     => 'marker',
+            'name'     => 'Developments',
+            'class'    => 'development',
+            'editable' => true,
         ],
+        // only one layer can be editable! (first layer found with editable=true will be used)
         3 => [
             'type'  => 'marker',
             'name'  => 'Bikesharing stations',

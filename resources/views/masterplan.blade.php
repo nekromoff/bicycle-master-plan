@@ -68,16 +68,6 @@
                 @endif
             @endif
         @endforeach
-<?php
-/*
-@foreach ($paths as $path)
-{!!Helper::jsGetPath($path)!!}
-@endforeach
-@foreach ($markers as $id => $marker)
-{!!Helper::jsGetMarker($marker, $cycleways)!!}
-@endforeach
- */
-;?>
         core.options.zoom={{ config('map.zoom') }};
         core.options.center=[{{ config('map.center')[0] }},{{config('map.center')[1] }}];
         forceOptions();
@@ -107,11 +97,13 @@
             hideSingleBase: true
         }).addTo(map);
         L.control.scale({imperial: false}).addTo(map);
-        var intro = L.popup({
-            closeButton: true,
-            autoClose: true
-        }).setLatLng(map.getBounds().getCenter()).setContent('{!! addslashes(config('map.intro')) !!}').openOn(map);
+        if (!getCookie('intro_off')) {
+            core.options.intro = L.popup({ closeButton: true, autoClose: true, minWidth: core.options.popup_width}).setLatLng(map.getBounds().getCenter()).setContent('{!! addslashes(config('map.intro')) !!}').openOn(map);
+        }
         {!!Helper::jsSetupClusters()!!}
     </script>
+    <div id="form" class="d-none">
+        {!! form($form) !!}
+    </div>
     </body>
 </html>
