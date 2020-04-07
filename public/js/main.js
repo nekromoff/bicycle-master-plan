@@ -334,6 +334,7 @@ function createMarker(e) {
                 core.editable_marker.setPopupContent(message);
             }
         });
+        pushEvent('markersubmit');
         return false;
     });
 }
@@ -359,4 +360,10 @@ function getCookie(cname) {
     }
   }
   return "";
+}
+
+function pushEvent(datalayer_event) {
+    if (dataLayer) {
+        dataLayer.push({event: datalayer_event});
+    }
 }
