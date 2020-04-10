@@ -29,6 +29,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
 }
 .roadsign {
     display: inline-block;
+    width: max-content;
 }
 
 /* parking */
@@ -159,56 +160,53 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     content: "🔴";
 }
 
-.user-created {
+.user-created::before {
     content: " ";
-    width: 20px;
-    height: 20px;
-    background-image: url(../images/icons/unknown.svg);
-    background-size: 20px 20px;
+    font-weight: bold;
+    width: 1.4rem;
+    height: 1.4rem;
     display: block;
 }
-
-.stairs::before {
-    content: " ";
-    width: 20px;
-    height: 20px;
-    background-image: url(../images/icons/stairs.svg);
-    background-size: 20px 20px;
-    filter: grayscale(100%);
-    display: block;
-}
-.works::before {
-    content: " ";
-    width: 20px;
-    height: 20px;
+.user-created.works::before {
     background-image: url(../images/icons/cone.svg);
-    background-size: 20px 20px;
+    background-size: 1.4rem 1.4rem;
     filter: saturate(120%);
-    display: block;
 }
-.warning::before {
-    content: " ";
-    width: 20px;
-    height: 20px;
-    background-image: url(../images/icons/warning.svg);
-    background-size: 20px 20px;
-    display: block;
+.user-created.warning {
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 24px solid red;
+    position:relative;
 }
-.info::before {
-    content: " ";
-    width: 20px;
-    height: 20px;
-    background-image: url(../images/icons/info.svg);
-    background-size: 20px 20px;
-    display: block;
+.user-created.warning::before {
+    content: "!";
+    position: absolute;
+    top: 3px;
+    left: -10px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 19px solid white;
 }
-.unknown::before {
-    content: " ";
-    width: 20px;
-    height: 20px;
-    background-image: url(../images/icons/unknown.svg);
-    background-size: 20px 20px;
+.user-created.info::before {
+    content: "i";
+    color: #fff;
+    background: navy;
+    border: 1px solid navy;
     display: block;
+    text-align: center;
+}
+.user-created.unknown::before {
+    content: "?";
+    color: white;
+    background: #dd2e44;
+    border: 1px solid #dd2e44;
+    border-radius: 50%;
+    display: block;
+    text-align: center;
 }
 
 .state-proposed {
