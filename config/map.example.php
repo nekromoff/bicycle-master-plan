@@ -50,10 +50,20 @@ return [
             ],
         ],
         2 => [
-            'type'     => 'marker',
-            'name'     => 'Developments',
-            'class'    => 'development',
-            'editable' => true,
+            'type'           => 'marker',
+            'name'           => 'Developments',
+            'class'          => 'development',
+            'editable'       => true,
+            'editable_types' => [
+                1 => [
+                    'name'  => 'Warning',
+                    'class' => 'warning',
+                ],
+                2 => [
+                    'name'  => 'Information',
+                    'class' => 'info',
+                ],
+            ],
         ],
         // only one layer can be editable! (first layer found with editable=true will be used)
         3 => [

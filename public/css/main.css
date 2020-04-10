@@ -25,6 +25,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
 
 .photo img {
     width: 50px;
+    background-color: rgba(255, 255, 255, 0.7);
 }
 .roadsign {
     display: inline-block;
@@ -158,6 +159,58 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     content: "🔴";
 }
 
+.user-created {
+    content: " ";
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/icons/unknown.svg);
+    background-size: 20px 20px;
+    display: block;
+}
+
+.stairs::before {
+    content: " ";
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/icons/stairs.svg);
+    background-size: 20px 20px;
+    filter: grayscale(100%);
+    display: block;
+}
+.works::before {
+    content: " ";
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/icons/cone.svg);
+    background-size: 20px 20px;
+    filter: saturate(120%);
+    display: block;
+}
+.warning::before {
+    content: " ";
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/icons/warning.svg);
+    background-size: 20px 20px;
+    display: block;
+}
+.info::before {
+    content: " ";
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/icons/info.svg);
+    background-size: 20px 20px;
+    display: block;
+}
+.unknown::before {
+    content: " ";
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/icons/unknown.svg);
+    background-size: 20px 20px;
+    display: block;
+}
+
 .state-proposed {
     color: #f00;
     stroke: #f00;
@@ -244,3 +297,33 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
 .hidden {
     display: none;
 }
+/*
+//Wraperclass for the divicon
+.map-label {
+  position: absolute;
+  bottom: 0;
+  left: -50%;
+  text-align: center;
+}
+//Wrap the content of the divicon (text) in this class
+.map-label-content {
+  position: relative;
+  left: -50%;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 5px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #444;
+  border-bottom: 0;
+  padding: 1px 3px;
+}
+//Add this arrow
+.map-label-arrow {
+  width: 0px;
+  height: 0px;
+  left: 50%;
+  border-style: solid;
+  border-color: #444 transparent transparent transparent;
+  border-width: 10px 6px 0 6px; //[first number is height, second/fourth are rigth/left width]
+  margin-left: -6px;
+} */

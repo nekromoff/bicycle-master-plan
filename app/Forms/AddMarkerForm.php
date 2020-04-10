@@ -9,7 +9,7 @@ class AddMarkerForm extends Form
     {
         $this
             ->add('name', 'text', ['label' => 'Title:', 'wrapper' => ['class' => 'form-group input-group-sm']])
-            ->add('description', 'textarea', ['label' => 'Description:', 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
+            ->add('description', 'textarea', ['label' => 'Description:', 'attr' => ['rows' => 3], 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
                 'text' => 'Description or URL',
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
@@ -18,8 +18,11 @@ class AddMarkerForm extends Form
                 'text' => 'Photo or image - JPG or PNG allowed.',
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
-            ]])
-            ->add('lat', 'hidden')
+            ]]);
+        if ($this->formOptions['editable_layer_id'] and isset(config('map.layers')[$this->formOptions['editable_layer_id']]['editable_types'])) {
+            $this->add('type', 'choice', ['label' => 'Type:', 'choices' => collect(config('map.layers')[$this->formOptions['editable_layer_id']]['editable_types'])->pluck('name')->toArray(), 'wrapper' => ['class' => 'form-group input-group-sm']]);
+        }
+        $this->add('lat', 'hidden')
             ->add('lon', 'hidden')
             ->add('submit', 'submit', ['label' => 'Create marker', 'attr' => ['class' => 'btn btn-primary btn-block']]);
     }

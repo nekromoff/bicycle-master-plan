@@ -5,7 +5,7 @@ core.clusters=[];
 core.markers=[];
 core.paths=[];
 core.layers_parsed=[];
-core.options.popup_width=50*Math.max(document.documentElement.clientWidth, window.innerWidth || 0)/100; //50% of viewport
+core.options.popup_width=35*Math.max(document.documentElement.clientWidth, window.innerWidth || 0)/100; //50% of viewport
 if (core.options.popup_width<200) {
     core.options.popup_width=200;
 }
@@ -38,7 +38,9 @@ $(document).ready(function() {
     map.on('zoomend', rewriteFragment);
     map.on('overlayadd', rewriteFragment);
     map.on('overlayremove', rewriteFragment);
-    map.on('dblclick', createMarker);
+    if (core.editable_layer_id) {
+        map.on('contextmenu', createMarker);
+    }
 });
 
 function forceOptions() {
@@ -79,6 +81,17 @@ function setupMap() {
             core.options.center[1]=undefined;
             map.setView([core.options.center['lat'],core.options.center['lng']], core.options.zoom);
         }
+        // open marker on load
+        // if (part.indexOf('m')!=-1) {
+        //     orig_marker_id=part.replace('m','');
+        //     for (marker_id in core.markers) {
+        //         if (core.markers[marker_id].options.orig_id==orig_marker_id) {
+        //             core.markers[marker_id].openPopup();
+        //         }
+        //     marker_bounds = core.markers[marker_id].getLatLng();
+        //     map.fitBounds(marker_bounds);
+        //     }f
+        // }
     });
 }
 
@@ -195,6 +208,9 @@ function parseMarkers(data, layer_id, type) {
     for (key in data.markers) {
         marker=data.markers[key];
         marker_content='<div class="'+normalize(marker.name)+' ';
+        if (core.config.layers[layer_id].editable && core.config.layers[layer_id].editable_types) {
+            marker_content=marker_content+normalize(core.config.layers[layer_id].editable_types[marker.type].class)+' ';
+        }
         if (marker.info!=undefined) {
             for (key in marker.info) {
                 marker_content=marker_content+normalize(key)+'-'+normalize(marker.info[key])+' ';
@@ -222,7 +238,7 @@ function parseMarkers(data, layer_id, type) {
 
         marker_content=marker_content+'</div>';
         marker_id=core.markers.length;
-        core.markers[marker_id]=L.marker([marker.lat,marker.lon], { icon: new L.DivIcon({ html: marker_content }) });
+        core.markers[marker_id]=L.marker([marker.lat,marker.lon], { icon: new L.DivIcon({ html: marker_content }), orig_id: marker.id, orig_type: marker.type });
         popup_content='';
         if (marker.name!=undefined && marker.name) {
             popup_content=popup_content+'<strong>'+marker.name+'</strong>';
@@ -294,7 +310,7 @@ function getFilename(layer_id, filename, thumb = true) {
     } else {
         // default path to file in storage
         path = 'storage/';
-        if (layer_id==999) {
+        if (layer_id==core.editable_layer_id) {
             path = path+'uploads/';
         } else {
             path = path+'photos/';
@@ -366,4 +382,13 @@ function pushEvent(datalayer_event) {
     if (dataLayer) {
         dataLayer.push({event: datalayer_event});
     }
+}
+
+function findEditableLayer() {
+    for (layer_id in core.config.layers) {
+        if (core.config.layers[layer_id].editable && core.config.layers[layer_id].editable==true) {
+            return layer_id;
+        }
+    }
+    return false;
 }

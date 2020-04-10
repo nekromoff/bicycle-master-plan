@@ -20,9 +20,11 @@ class MasterplanController extends Controller
 
     public function map(FormBuilder $formBuilder, Request $request)
     {
+        $this->initialize();
         $form = $formBuilder->create('App\Forms\AddMarkerForm', [
-            'url'    => route('data.save'),
-            'method' => 'POST',
+            'url'               => route('data.save'),
+            'method'            => 'POST',
+            'editable_layer_id' => $this->editable_layer_id,
         ]);
         return view('masterplan', compact('form'));
     }
@@ -68,9 +70,9 @@ class MasterplanController extends Controller
     public function saveData(Request $request)
     {
         $this->initialize();
-        $file = $request->file('file');
         $content['success'] = 0;
         if ($this->editable_layer_id) {
+            $file = $request->file('file');
             $filename = '';
             if ($file) {
                 if ($file->getClientMimeType() == 'image/jpg' or $file->getClientMimeType() == 'image/jpeg' or $file->getClientMimeType() == 'image/png') {
@@ -80,7 +82,10 @@ class MasterplanController extends Controller
             }
             $marker = new Marker;
             $marker->layer_id = $this->editable_layer_id;
-            $marker->type = 2;
+            $marker->type = 0;
+            if (isset($request->type)) {
+                $marker->type = $request->type;
+            }
             $marker->lat = $request->lat;
             $marker->lon = $request->lon;
             $marker->name = $request->name;
