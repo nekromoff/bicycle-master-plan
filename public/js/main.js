@@ -106,6 +106,7 @@ function rewriteFragment() {
     core.layers_enabled=[];
     for (layer_id in core.layers_parsed) {
         layer_key='layer'+layer_id;
+        layer_id=layer_id.toString();
         if (layer_id.indexOf('/')!=-1) {
             parts=layer_id.split('/');
             layer_key='layer'+parts[0]+'_type'+parts[1];
@@ -132,6 +133,7 @@ function getLayerId(layer) {
 
 function fetchLayer(layer_id, type) {
     // if layer_id is entered as layer_id/type combo, separate them
+    layer_id=layer_id.toString();
     if (layer_id.indexOf('/')!=-1) {
         parts=layer_id.split('/');
         layer_id=parts[0];
