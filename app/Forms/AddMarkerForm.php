@@ -14,7 +14,7 @@ class AddMarkerForm extends Form
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
             ]])
-            ->add('file', 'file', ['label' => 'Photo:', 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
+            ->add('file', 'file', ['label' => 'Photo:', 'attr' => ['accept' => '.png,.PNG,.jpg,.jpeg,.JPG,.JPEG', 'capture'], 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
                 'text' => 'Photo or image - JPG or PNG allowed.',
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
