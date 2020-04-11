@@ -181,7 +181,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     position:relative;
 }
 .user-created.warning::before {
-    content: "!";
+    content: " ";
     position: absolute;
     top: 3px;
     left: -10px;
@@ -191,11 +191,19 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     border-right: 10px solid transparent;
     border-bottom: 19px solid white;
 }
+.user-created.warning::after {
+    content: "!";
+    font-size: 120%;
+    font-weight: bold;
+    position: absolute;
+    top: 1px;
+    left: -2.5px;
+}
 .user-created.info::before {
     content: "i";
     color: #fff;
-    background: navy;
-    border: 1px solid navy;
+    background: #1f2eb4;
+    border: 1px solid #1f2eb4;
     display: block;
     text-align: center;
 }
@@ -256,7 +264,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     stroke: transparent !important;
     fill: none;
 }
-.access-private, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no {
+.access-private, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no, .highway-construction {
     stroke: transparent !important;
 }
 .access-private.lcn-yes {
