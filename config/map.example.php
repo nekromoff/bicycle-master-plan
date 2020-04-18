@@ -4,6 +4,8 @@ return [
 
     // Website/map name
     'name'           => 'Your city bicycle master plan map',
+    // Favicon + social network image for sharing (min. 200x200 px recommended)
+    'image'          => 'image.png',
     // intro informational popup
     'intro'          => '<h1>Your city bicycle map</h1><p>You can use this map to find your way around by bicycle. And more info can be put here.</p>',
     // Bounding box for fetching data from Overpass API
