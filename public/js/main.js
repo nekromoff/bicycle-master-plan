@@ -49,19 +49,24 @@ $(document).ready(function() {
 
 function forceOptions() {
     if (window.location.hash) {
-        parts=decodeURIComponent(window.location.hash.replace('#','')).split('|')
+        if (window.location.hash.trim().indexOf('|')!=-1) {
+            parts=window.location.hash.trim().replace('#','').split('|');
+        } else { // try encoded |
+            parts=window.location.hash.trim().replace('#','').split('%7C');
+        }
         parts.forEach(function(part) {
             if (part.indexOf('l')!=-1) {
-                core.options.layers_found=part.replace('l','').split(',');
+                core.options.layers_found=part.trim().replace('l','').split(',');
             }
             if (part.indexOf('z')!=-1) {
-                core.options.zoom=part.replace('z','');
+                core.options.zoom=part.trim().replace('z','');
             }
             if (part.indexOf('c')!=-1) {
-                center=part.replace('c','');
+                center=part.trim().replace('c','');
                 core.options.center=center.split(',');
             }
         });
+        console.log(parts);
     }
 }
 
