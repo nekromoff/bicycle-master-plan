@@ -60,9 +60,6 @@ function forceOptions() {
             }
             if (part.indexOf('z')!=-1) {
                 core.options.zoom=part.trim().replace('z','');
-                if (core.options.zoom*1==NaN) {
-                    core.options.zoom=15; // failsafe
-                }
             }
             if (part.indexOf('c')!=-1) {
                 center=part.trim().replace('c','');
@@ -73,18 +70,22 @@ function forceOptions() {
 }
 
 function setupMap() {
-    parts=window.location.hash.replace('#','').split('|')
+    if (window.location.hash.trim().indexOf('|')!=-1) {
+        parts=window.location.hash.trim().replace('#','').split('|');
+    } else { // try encoded |
+        parts=decodeURIComponent(window.location.hash).trim().replace('#','').split('|');
+    }
     parts.forEach(function(part) {
         if (part.indexOf('l')!=-1) {
-            core.options.layers_found=part.replace('l','').split(',');
+            core.options.layers_found=part.trim().replace('l','').split(',');
             toggleLayers(core.options.layers_found);
         }
         if (part.indexOf('z')!=-1) {
-            core.options.zoom=part.replace('z','');
+            core.options.zoom=part.trim().replace('z','');
             map.setZoom(core.options.zoom);
         }
         if (part.indexOf('c')!=-1) {
-            center=part.replace('c','');
+            center=part.trim().replace('c','');
             core.options.center=center.split(',');
             core.options.center['lat']=core.options.center[0];
             core.options.center['lng']=core.options.center[1];
