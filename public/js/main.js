@@ -13,9 +13,9 @@ core.editable_marker=false;
 
 $(document).ready(function() {
     // do form translations
-    $('#form form label').each(function () { $(this).text(i18n($(this).text())) });
-    $('#form form small').each(function () { $(this).text(i18n($(this).text())) });
-    $('#form form button').each(function () { $(this).text(i18n($(this).text())) });
+    $('#form form label').each(function () { $(this).text(i18n($(this).text().trim())) });
+    $('#form form small').each(function () { $(this).text(i18n($(this).text().trim())) });
+    $('#form form button').each(function () { $(this).text(i18n($(this).text().trim())) });
     $('#intro_off').on('click', function() {
         setCookie('intro_off', 1, 180);
         map.closePopup();
