@@ -4,6 +4,8 @@ return [
 
     // Website/map name
     'name'           => 'Your city bicycle master plan map',
+    // Map language (two letter ISO code) - matches JSON file in public/translations/ directory
+    'language'       => 'en',
     // Favicon + social network image for sharing (min. 200x200 px recommended)
     'image'          => 'image.png',
     // intro informational popup

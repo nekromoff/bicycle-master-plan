@@ -80,20 +80,22 @@ class MasterplanController extends Controller
                     $filename = basename($path);
                 }
             }
-            $marker = new Marker;
-            $marker->layer_id = $this->editable_layer_id;
-            $marker->type = 0;
-            if (isset($request->type)) {
-                $marker->type = $request->type;
+            if (isset($request->name) and $request->name) {
+                $marker = new Marker;
+                $marker->layer_id = $this->editable_layer_id;
+                $marker->type = 0;
+                if (isset($request->type)) {
+                    $marker->type = $request->type;
+                }
+                $marker->lat = $request->lat;
+                $marker->lon = $request->lon;
+                $marker->name = $request->name;
+                $marker->description = $request->description ? $request->description : '';
+                $marker->filename = $filename;
+                $marker->approved = 0;
+                $marker->save();
+                $content['success'] = 1;
             }
-            $marker->lat = $request->lat;
-            $marker->lon = $request->lon;
-            $marker->name = $request->name;
-            $marker->description = $request->description;
-            $marker->filename = $filename;
-            $marker->approved = 0;
-            $marker->save();
-            $content['success'] = 1;
         }
         return response()->json($content);
     }

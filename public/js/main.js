@@ -12,6 +12,10 @@ if (core.options.popup_width<200) {
 core.editable_marker=false;
 
 $(document).ready(function() {
+    // do form translations
+    $('#form form label').each(function () { $(this).text(i18n($(this).text())) });
+    $('#form form small').each(function () { $(this).text(i18n($(this).text())) });
+    $('#form form button').each(function () { $(this).text(i18n($(this).text())) });
     $('#intro_off').on('click', function() {
         setCookie('intro_off', 1, 180);
         map.closePopup();
@@ -183,11 +187,11 @@ function parsePaths(data, layer_id, type) {
                 popup_content=popup_content+'<strong>'+path.info.name+'</strong>';
             }
             if (path.info.ref!=undefined && path.info.ref) {
-                popup_content=popup_content+'<br>Path number: '+path.info.ref;
+                popup_content=popup_content+'<br>'+i18n('Path number')+': '+path.info.ref;
                 core.paths[path_id].setText(path.info.ref);
             }
             if (path.info.operator!=undefined && path.info.operator) {
-                popup_content=popup_content+'<br>Operator: '+path.info.operator;
+                popup_content=popup_content+'<br>'+i18n('Operator')+': '+path.info.operator;
             }
             for (detail_key in path.info) {
                 popup_content=popup_content+'<br>'+detail_key+'='+path.info[detail_key];
@@ -253,24 +257,24 @@ function parseMarkers(data, layer_id, type) {
             popup_content=popup_content+'<br>'+marker.info.description;
         }
         if (marker.info!=undefined && marker.info.bicycle_parking!=undefined) {
-            popup_content=popup_content+'<br>Bicycle stand: ';
+            popup_content=popup_content+'<br>'+i18n('Bicycle stand')+': ';
             if (marker.info.bicycle_parking=='stands' || marker.info.bicycle_parking=='wide_stands') {
-                popup_content=popup_content+'U type (safe)';
+                popup_content=popup_content+i18n('U type (safe)');
             } else if (marker.info.bicycle_parking=='rack' || marker.info.bicycle_parking=='racks') {
-                popup_content=popup_content+'A type (safe)';
+                popup_content=popup_content+i18n('A type (safe)');
             } else if (marker.info.bicycle_parking=='shed') {
-                popup_content=popup_content+'covered (safe)';
+                popup_content=popup_content+i18n('covered (safe)');
             } else if (marker.info.bicycle_parking=='informal') {
-                popup_content=popup_content+'informal (railing etc.)';
+                popup_content=popup_content+i18n('informal (railing etc.)');
             } else {
-                popup_content=popup_content+'not suitable';
+                popup_content=popup_content+i18n('not suitable');
             }
         }
         if (marker.filename!=undefined && marker.filename) {
             popup_content=popup_content+'<br><a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '"></a>';
         }
         if (marker.relations!=undefined && marker.relations.length) {
-            popup_content=popup_content+'<br>Path number: ';
+            popup_content=popup_content+'<br>'+i18n('Path number')+': ';
             for (key in marker.relations) {
                 popup_content=popup_content+data.cycleways[marker.relations[key].cycleway_id].sign;
                 if (marker.relations.length>key+1) {
@@ -334,7 +338,7 @@ function createMarker(e) {
     $('.leaflet-popup-content form input[name=lon]').val(e.latlng.lng);
     $('.leaflet-popup-content form').on('submit', function(e) {
         action=$('.leaflet-popup-content form').clone().attr('action');
-        core.editable_marker.setPopupContent('Creating... Please wait.');
+        core.editable_marker.setPopupContent(i18n('Creating... Please wait.'));
         $.ajax({
             type: 'POST',
             url: action,
@@ -345,9 +349,9 @@ function createMarker(e) {
             processData:false,
             success: function(data) {
                 if (data.success) {
-                    message='Thank you for making our map better. Your marker will be displayed after we review and accept your submission.';
+                    message=i18n('Thank you for making our map better. Your marker will be displayed after we review and accept your submission.');
                 } else {
-                    message='Something failed. Please try again.';
+                    message=i18n('Something failed. Please try again.');
                 }
                 core.editable_marker.setPopupContent(message);
             }
