@@ -60,13 +60,15 @@ function forceOptions() {
             }
             if (part.indexOf('z')!=-1) {
                 core.options.zoom=part.trim().replace('z','');
+                if (core.options.zoom*1==NaN) {
+                    core.options.zoom=15; // failsafe
+                }
             }
             if (part.indexOf('c')!=-1) {
                 center=part.trim().replace('c','');
                 core.options.center=center.split(',');
             }
         });
-        console.log(parts);
     }
 }
 
