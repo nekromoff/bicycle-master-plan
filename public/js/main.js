@@ -49,7 +49,7 @@ $(document).ready(function() {
 
 function forceOptions() {
     if (window.location.hash) {
-        parts=window.location.hash.replace('#','').split('|')
+        parts=decodeURIComponent(window.location.hash.replace('#','')).split('|')
         parts.forEach(function(part) {
             if (part.indexOf('l')!=-1) {
                 core.options.layers_found=part.replace('l','').split(',');
