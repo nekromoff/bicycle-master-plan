@@ -217,7 +217,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     text-align: center;
 }
 
-.state-proposed, .network-lcn.type-route:not(.state-proposed):not(.state-completed) {
+.state-proposed {
     color: #f00;
     stroke: #f00;
     stroke-width: 3;
