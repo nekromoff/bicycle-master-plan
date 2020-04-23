@@ -52,7 +52,7 @@ function forceOptions() {
         if (window.location.hash.trim().indexOf('|')!=-1) {
             parts=window.location.hash.trim().replace('#','').split('|');
         } else { // try encoded |
-            parts=window.location.hash.trim().replace('#','').split('%7C');
+            parts=decodeURIComponent(window.location.hash).trim().replace('#','').split('|');
         }
         parts.forEach(function(part) {
             if (part.indexOf('l')!=-1) {
