@@ -274,7 +274,14 @@ class MasterplanController extends Controller
                 } elseif ($item->type == 'relation') {
                     $this->relations[$item->id] = $item->tags;
                     foreach ($item->members as $member) {
-                        $this->parents[$member->ref] = $item->id;
+                        if (!isset($this->parents[$member->ref])) {
+                            $this->parents[$member->ref] = $item->id;
+                        } elseif (isset($this->parents[$member->ref]) and isset($this->relations[$this->parents[$member->ref]]->state) and $this->relations[$this->parents[$member->ref]]->state == 'proposed') {
+                            // overwrite proposed with completed in case of multiple relations
+                            $this->parents[$member->ref] = $item->id;
+                        } elseif (isset($this->parents[$member->ref]) and isset($this->relations[$this->parents[$member->ref]]->state) and $this->relations[$this->parents[$member->ref]]->state == 'completed') {
+                            // do nothing (we don't want to overwrite completed with proposed in case of multiple relations)
+                        }
                     }
                 }
             }
