@@ -43,8 +43,11 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/leaflet.markercluster.js" integrity="sha256-WL6HHfYfbFEkZOFdsJQeY7lJG/E5airjvqbznghUzRw=" crossorigin="anonymous"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
+        <script src="{{asset('js/i18n.min.js')}}"></script>
+        <script src="{{asset('translations/'.config('map.language').'.json')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
         <script>
+        i18n.translator.add(translation);
         core.config={!! json_encode(config('map')) !!};
         core.editable_layer_id=findEditableLayer();
         core.storage_path='{{asset('...')}}'.replace('...','');
