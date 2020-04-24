@@ -20,7 +20,11 @@ class AddMarkerForm extends Form
                 'attr' => ['class' => 'form-text text-muted'],
             ]]);
         if ($this->formOptions['editable_layer_id'] and isset(config('map.layers')[$this->formOptions['editable_layer_id']]['editable_types'])) {
-            $this->add('type', 'choice', ['label' => 'Type:', 'choices' => collect(config('map.layers')[$this->formOptions['editable_layer_id']]['editable_types'])->pluck('name')->toArray(), 'wrapper' => ['class' => 'form-group input-group-sm']]);
+            $types = [];
+            foreach (config('map.layers')[$this->formOptions['editable_layer_id']]['editable_types'] as $key => $type) {
+                $types[$key] = $type['name'];
+            }
+            $this->add('type', 'choice', ['label' => 'Type:', 'choices' => $types, 'wrapper' => ['class' => 'form-group input-group-sm']]);
         }
         $this->add('lat', 'hidden')
             ->add('lon', 'hidden')
