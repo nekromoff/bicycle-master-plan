@@ -44,12 +44,12 @@
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script src="{{asset('js/i18n.min.js')}}"></script>
-        <script src="{{asset('translations/'.config('map.language').'.json')}}"></script>
+        <script src="{{asset('translations/'.config('map.language').'.js')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
         <script>
         i18n.translator.add(translation);
         core.config={!! json_encode(config('map')) !!};
-        core.editable_layer_id=findEditableLayer();
+        core.editable_layer_id=getEditableLayerId();
         core.storage_path='{{asset('...')}}'.replace('...','');
         @foreach (config('map.layers') as $layer_id=>$layer)
             @if ($layer['type']=='base')

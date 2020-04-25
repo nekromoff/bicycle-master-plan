@@ -11,6 +11,7 @@ translation={
     "Thank you for making our map better. Your marker will be displayed after we review and accept your submission.": "Thank you for making our map better. Your marker will be displayed after we review and accept your submission.",
     "Something failed. Please try again.": "Something failed. Please try again.",
     "Operator": "Operator",
+    "Reported on": "Reported on",
     "Title:": "Title:",
     "Description:": "Description:",
     "Photo:": "Photo:",

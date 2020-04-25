@@ -264,6 +264,10 @@ function parseMarkers(data, layer_id, type) {
         } else if (marker.info!=undefined && marker.info.description) {
             popup_content=popup_content+'<br>'+marker.info.description;
         }
+        if (layer_id==core.editable_layer_id && marker.date_reported!=undefined) {
+            formatter=new Intl.DateTimeFormat(core.config.language, { year: 'numeric', month: 'short', day: '2-digit' });
+            popup_content=popup_content+'<br><strong>'+i18n('Reported on')+':</strong> '+formatter.format(new Date(marker.date_reported));
+        }
         if (marker.info!=undefined && marker.info.bicycle_parking!=undefined) {
             popup_content=popup_content+'<br>'+i18n('Bicycle stand')+': ';
             if (marker.info.bicycle_parking=='stands' || marker.info.bicycle_parking=='wide_stands') {
@@ -398,7 +402,7 @@ function pushEvent(datalayer_event) {
     }
 }
 
-function findEditableLayer() {
+function getEditableLayerId() {
     for (layer_id in core.config.layers) {
         if (core.config.layers[layer_id].editable && core.config.layers[layer_id].editable==true) {
             return layer_id;

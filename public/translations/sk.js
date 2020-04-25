@@ -11,6 +11,7 @@ translation={
     "Thank you for making our map better. Your marker will be displayed after we review and accept your submission.": "Ďakujeme, že nám pomáhate zlepšovať našu mapu. Váš bod bude zobrazený po kontrole administrátorom.",
     "Something failed. Please try again.": "Niečo sa nepodarilo. Prosím, skúste to ešte raz.",
     "Operator": "Správca",
+    "Reported on": "Dátum nahlásenia",
     "Title:": "Názov:",
     "Description:": "Popis:",
     "Photo:": "Fotka:",

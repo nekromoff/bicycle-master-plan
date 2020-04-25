@@ -11,6 +11,7 @@ use App\Relation;
 use Google_Client;
 use Google_Service_Sheets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Kris\LaravelFormBuilder\FormBuilder;
 use Revolution\Google\Sheets\Sheets;
 use Storage;
@@ -35,16 +36,19 @@ class MasterplanController extends Controller
         $this->paths = [];
         $this->relations = [];
         $this->parents = [];
-        $this->editable_layer_id = $this->findEditableLayer();
+        $this->editable_layer_id = $this->getEditableLayerId();
         $bounding_box = config('map.bounding_box');
     }
 
     public function pushData(Request $request)
     {
         $this->initialize();
-        $this->markers = Marker::with('relations')->where('approved', 1)->where('layer_id', $request->id);
+        $this->markers = Marker::with('relations')->select()->where('approved', 1)->where('layer_id', $request->id);
         if (isset($request->type)) {
             $this->markers = $this->markers->where('type', $request->type);
+        }
+        if ($request->id == $this->editable_layer_id) {
+            $this->markers->addSelect(DB::raw('DATE(created_at) as date_reported'));
         }
         $this->markers = $this->markers->get();
         $this->paths_db = Path::where('layer_id', $request->id);
@@ -100,7 +104,7 @@ class MasterplanController extends Controller
         return response()->json($content);
     }
 
-    private function findEditableLayer()
+    private function getEditableLayerId()
     {
         foreach (config('map.layers') as $layer_id => $layer) {
             if (isset($layer['editable']) and $layer['editable']) {
