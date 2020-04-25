@@ -1,17 +1,32 @@
 translation={
   "values":{
+    // bicycle stands
     "Bicycle stand": "Bicycle stand",
     "U type (safe)": "U type (safe)",
     "A type (safe)": "A type (safe)",
     "covered (safe)": "covered (safe)",
     "informal (railing etc.)": "informal (railing etc.)",
     "not suitable": "not suitable",
+    // general
+    "Operator": "Operator",
+    "Marking": "Marking",
+    "Left side": "Left side",
+    "Right side": "Right side",
+    // paths / ways
     "Path number": "Path number",
+    "Sharrows": "Sharrows",
+    "Bus & bike lane": "Bus & bike lane",
+    "Tram & bicycle access": "Tram & bicycle access",
+    "Bike lane": "Bike lane",
+    "Contraflow": "Contraflow",
+    "Segregated bike lane": "Segregated bike lane",
+    "Crossing": "Crossing",
+    // markers
+    "Reported on": "Reported on",
+    // submit marker form
     "Creating... Please wait.": "Creating... Please wait.",
     "Thank you for making our map better. Your marker will be displayed after we review and accept your submission.": "Thank you for making our map better. Your marker will be displayed after we review and accept your submission.",
     "Something failed. Please try again.": "Something failed. Please try again.",
-    "Operator": "Operator",
-    "Reported on": "Reported on",
     "Title:": "Title:",
     "Description:": "Description:",
     "Photo:": "Photo:",

@@ -194,6 +194,31 @@ function parsePaths(data, layer_id, type) {
             if (path.info.name!=undefined && path.info.name) {
                 popup_content=popup_content+'<strong>'+path.info.name+'</strong>';
             }
+            if (path.info.highway!=undefined && path.info.highway=='cycleway') {
+                popup_content=popup_content+'<br>'+i18n('Marking')+': '+i18n('Segregated bike lane');
+            }
+            if (path.info.railway!=undefined && path.info.railway=='tram' && path.info.bicycle!=undefined && path.info.bicycle) {
+                popup_content=popup_content+'<br>'+i18n('Marking')+': '+i18n('Tram & bicycle access');
+            }
+            if (path.info.highway!=undefined && (path.info.highway=='pedestrian' || path.info.highway=='footway' || path.info.highway=='path') && path.info.bicycle!=undefined && path.info.bicycle) {
+                if (path.info.bicycle=='yes' || path.info.bicycle=='designated') {
+                    popup_content=popup_content+'<br>'+i18n('Marking')+': '+i18n('Zmiešaný pohyb chodcov a cyklistov');
+                }
+            }
+            if (path.info.cycleway!=undefined && path.info.cycleway) {
+                popup_content=popup_content+'<br>'+i18n('Marking')+': ';
+                popup_content=popup_content+describeBicycleInfrastructure(path.info.cycleway);
+            }
+            if (path.info['cycleway:left']!=undefined && path.info['cycleway:left']) {
+                popup_content=popup_content+'<br>'+i18n('Marking')+': ';
+                popup_content=popup_content+describeBicycleInfrastructure(path.info['cycleway:left']);
+                popup_content=popup_content+' ('+i18n('Left side')+') ';
+            }
+            if (path.info['cycleway:right']!=undefined && path.info['cycleway:right']) {
+                popup_content=popup_content+'<br>'+i18n('Marking')+': ';
+                popup_content=popup_content+describeBicycleInfrastructure(path.info['cycleway:right']);
+                popup_content=popup_content+' ('+i18n('Right side')+') ';
+            }
             if (path.info.ref!=undefined && path.info.ref) {
                 popup_content=popup_content+'<br>'+i18n('Path number')+': '+path.info.ref;
                 core.paths[path_id].setText(path.info.ref);
@@ -371,6 +396,21 @@ function createMarker(e) {
         pushEvent('markersubmit');
         return false;
     });
+}
+
+function describeBicycleInfrastructure(infrastructure_type) {
+    if (infrastructure_type=='shared_lane') {
+        return i18n('Sharrows');
+    } else if (infrastructure_type=='shared_busway') {
+        return i18n('BUS+cyklo pruh');
+    } else if (infrastructure_type=='lane') {
+        return i18n('Bike lane');
+    } else if (infrastructure_type=='opposite' || infrastructure_type=='opposite_lane') {
+        return i18n('Contraflow');
+    } else if (infrastructure_type=='crossing') {
+        return i18n('Crossing');
+    }
+    return '';
 }
 
 function setCookie(cname, cvalue, exdays) {
