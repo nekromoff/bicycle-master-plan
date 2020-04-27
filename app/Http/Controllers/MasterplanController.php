@@ -43,7 +43,7 @@ class MasterplanController extends Controller
     public function pushData(Request $request)
     {
         $this->initialize();
-        $this->markers = Marker::with('relations')->select()->where('approved', 1)->where('layer_id', $request->id);
+        $this->markers = Marker::with('relations')->select()->where(['approved' => 1, 'deleted' => 0, 'layer_id' => $request->id]);
         if (isset($request->type)) {
             $this->markers = $this->markers->where('type', $request->type);
         }
@@ -97,6 +97,7 @@ class MasterplanController extends Controller
                 $marker->description = $request->description ? $request->description : '';
                 $marker->filename = $filename;
                 $marker->approved = 0;
+                $marker->deleted = 0;
                 $marker->save();
                 $content['success'] = 1;
             }

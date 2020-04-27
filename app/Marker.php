@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Marker extends Model
 {
     protected $fillable = ['layer_id', 'type', 'lat', 'lon', 'name', 'description', 'filename'];
-    protected $hidden = ['approved', 'created_at', 'updated_at'];
+    protected $hidden = ['approved', 'deleted', 'created_at', 'updated_at'];
 
     public function relations()
     {
