@@ -29,7 +29,7 @@ class AddMarkerForm extends Form
         $this->add('lat', 'hidden')
             ->add('lon', 'hidden')
             ->add('submit', 'submit', ['label' => 'Create marker', 'attr' => ['class' => 'btn btn-primary btn-block'], 'help_block' => [
-                'text' => 'Submitted markers are first to be approved by an administrator.',
+                'text' => 'Submitted markers are to be verified pending approval by an administrator.',
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
             ]]);
