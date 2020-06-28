@@ -21,6 +21,7 @@ translation = {
         "Contraflow": "Cykloobojsmerka",
         "Segregated bike lane": "Cestička pre cyklistov",
         "Crossing": "Cyklopriechod",
+        "Shared-use path": "Cestička pre chodcov a cyklistov",
         // markers
         "Reported on": "Dátum nahlásenia",
         // submit marker form

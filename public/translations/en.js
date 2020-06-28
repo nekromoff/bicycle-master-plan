@@ -21,6 +21,7 @@ translation = {
         "Contraflow": "Contraflow",
         "Segregated bike lane": "Segregated bike lane",
         "Crossing": "Crossing",
+        "Shared-use path": "Shared-use path",
         // markers
         "Reported on": "Reported on",
         // submit marker form

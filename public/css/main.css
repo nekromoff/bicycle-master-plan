@@ -235,7 +235,7 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     stroke: #33a02c;
     stroke-width: 3;
 }
-.bicycle-oneway-yes, .bicycle-designated, .bicycle-lanes-forward-yes-designated, .bicycle-lanes-backward-yes-designated, .bicycle-official, .complete-yes, .cycleway-crossing {
+.bicycle-oneway-yes, .bicycle-designated, .bicycle-lanes-forward-yes-designated, .bicycle-lanes-backward-yes-designated, .bicycle-official, .complete-yes, .cycleway-crossing, highway-crossing.bicycle-yes {
     stroke: #1f78b4;
     stroke-width: 3;
 }
