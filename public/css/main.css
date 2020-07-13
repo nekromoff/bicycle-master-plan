@@ -11,6 +11,18 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     font-size: 0.9em;
 }
 
+.leaflet-popup-content a {
+    cursor: pointer;
+}
+a.notuptodate:link, a.notuptodate:hover {
+    background: #ffff7f;
+    color: #000;
+}
+a.toconfirm:link, a.toconfirm:hover {
+    background: #000;
+    color: #fff;
+}
+
 .highlight {
     background: rgba(255,255,127,0.6);
 }

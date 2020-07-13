@@ -51,6 +51,7 @@ $(document).ready(function() {
     if (core.editable_layer_id) {
         map.on('contextmenu', createMarker);
     }
+    map.on('popupopen', toggleMarkerCheck);
 });
 
 function forceOptions() {
@@ -289,27 +290,32 @@ function parseMarkers(data, layer_id, type)  {
             icon: new L.DivIcon({
                 html: marker_content
             }),
-            orig_id:  marker.id,
+            orig_id: marker.id,
             orig_type: marker.type
         });
         popup_content = '';
-        if (marker.name != undefined &&  marker.name) {
+        if (marker.name != undefined && marker.name) {
             popup_content = popup_content + '<strong>' + marker.name + '</strong>';
-        } else if (marker.info != undefined &&  marker.info.name) {
+        } else if (marker.info != undefined && marker.info.name) {
             popup_content = popup_content + '<strong>' + marker.info.name + '</strong>';
         }
-        if (marker.description != undefined &&  marker.description) {
+        if (marker.description != undefined && marker.description) {
             popup_content = popup_content + '<br>' + marker.description;
-        } else if (marker.info != undefined &&  marker.info.description) {
+        } else if (marker.info != undefined && marker.info.description) {
             popup_content = popup_content + '<br>' + marker.info.description;
         }
-        if (layer_id == core.editable_layer_id &&  marker.date_reported != undefined) {
+        if (layer_id == core.editable_layer_id && marker.date_reported != undefined) {
             formatter = new Intl.DateTimeFormat(core.config.language, {
                 year: 'numeric',
                 month: 'short',
                 day: '2-digit'
             });
             popup_content = popup_content + '<br><strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported));
+            if (marker.outdated==0) {
+                popup_content = popup_content + '<br>(<a class="notuptodate">' + i18n('Not up-to-date') + '</a>)';
+            } else {
+                popup_content = popup_content + '<br>(' + i18n('Reported not up-to-date') + ')';
+            }
         }
         if (marker.info != undefined &&  marker.info.bicycle_parking != undefined) {
             popup_content = popup_content + '<br>' + i18n('Bicycle stand') + ': ';
@@ -418,6 +424,43 @@ function createMarker(e) {
         });
         pushEvent('markersubmit');
         return false;
+    });
+}
+
+function toggleMarkerCheck(e)  {
+    var marker_id = e.popup._source.options.orig_id;
+    $('.notuptodate').off();
+    $('.notuptodate').on('click', function() {
+        var parent = this;
+        if (!$(this).hasClass('toconfirm')) {
+            $(this).addClass('toconfirm');
+            $(this).text(i18n('Click again to confirm.'));
+        } else {
+            var form_data = new FormData();
+            form_data.append('id', marker_id);
+            $.ajax({
+                type: 'POST',
+                url: 'data/edit',
+                headers: {
+                    'X-CSRF-TOKEN': $('input[name="_token"]').val()
+                },
+                data: form_data,
+                dataType: 'json',
+                contentType: false,
+                cache: false,
+                processData: false,
+                success: function(data) {
+                    if (data.success) {
+                        message = i18n('Thank you for your notification. Administrator will verify your information and remove the marker.');
+                    } else {
+                        message = i18n('Something failed. Please try again.');
+                    }
+                    $(parent).replaceWith('<span class="confirmedoutdated">' + message + '</span>')
+                }
+            });
+            pushEvent('markeredit');
+            return false;
+        }
     });
 }
 

@@ -33,8 +33,12 @@ translation = {
         "Photo:": "Fotka:",
         "Type:": "Typ:",
         "Description or URL": "Popis alebo URL adresa",
-        "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.":   "Fotka alebo obrázok - JPG alebo PNG. Body bez fotiek zvyčajne nebudú schválené.",
+        "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.": "Fotka alebo obrázok - JPG alebo PNG. Body bez fotiek zvyčajne nebudú schválené.",
         "Create marker": "Vytvoriť bod",
-        "Submitted markers are to be verified pending approval by an administrator.": "Odoslané body budú overené a prejdú schvaľovaním administrátorom."
+        "Submitted markers are to be verified pending approval by an administrator.": "Odoslané body budú overené a prejdú schvaľovaním administrátorom.",
+        "Not up-to-date": "Už neaktuálne? Kliknite.",
+        "Click again to confirm.": "Potvrďte opätovným kliknutím, ak je bod neaktuálny.",
+        "Thank you for your notification. Administrator will verify your information and remove the marker.": "Ďakujeme za nahlásenie. Administrátor overí vašu informáciu a odstráni tento bod.",
+        "Reported not up-to-date": "Tento bod bol nahlásený ako neaktuálny a bude skontrolovaný administrátorom."
     }
 }

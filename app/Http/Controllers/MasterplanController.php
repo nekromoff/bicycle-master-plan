@@ -97,10 +97,24 @@ class MasterplanController extends Controller
                 $marker->description = $request->description ? $request->description : '';
                 $marker->filename = $filename;
                 $marker->approved = 0;
+                $marker->outdated = 0;
                 $marker->deleted = 0;
                 $marker->save();
                 $content['success'] = 1;
             }
+        }
+        return response()->json($content);
+    }
+
+    public function editData(Request $request)
+    {
+        $this->initialize();
+        $content['success'] = 0;
+        if (isset($request->id) and $request->id) {
+            $marker = Marker::find($request->id);
+            $marker->outdated = 1;
+            $marker->save();
+            $content['success'] = 1;
         }
         return response()->json($content);
     }

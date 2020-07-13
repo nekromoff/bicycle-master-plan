@@ -35,6 +35,10 @@ translation = {
         "Description or URL": "Description or URL",
         "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.": "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.",
         "Create marker": "Create marker",
-        "Submitted markers are to be verified pending approval by an administrator.": "Submitted markers are to be verified pending approval by an administrator."
+        "Submitted markers are to be verified pending approval by an administrator.": "Submitted markers are to be verified pending approval by an administrator.",
+        "Not up-to-date": "Not up-to-date anymore? Click.",
+        "Click again to confirm.": "Click again to confirm, if the marker is outdated.",
+        "Thank you for your notification. Administrator will verify your information and remove the marker.": "Thank you for your notification. Administrator will verify your information and remove the marker.",
+        "Reported not up-to-date": "This marker has been reported as outdated and is to be checked by an administrator."
     }
 }
