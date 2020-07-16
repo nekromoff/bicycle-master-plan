@@ -96,6 +96,7 @@ class MasterplanController extends Controller
                 $marker->name = $request->name;
                 $marker->description = $request->description ? $request->description : '';
                 $marker->filename = $filename;
+                $marker->email = $request->email ? $request->email : '';
                 $marker->approved = 0;
                 $marker->outdated = 0;
                 $marker->deleted = 0;

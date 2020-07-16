@@ -26,7 +26,13 @@ class AddMarkerForm extends Form
             }
             $this->add('type', 'choice', ['label' => 'Type:', 'choices' => $types, 'wrapper' => ['class' => 'form-group input-group-sm']]);
         }
-        $this->add('lat', 'hidden')
+        $this
+            ->add('email', 'email', ['label' => 'Email:', 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
+                'text' => 'Optional - if you want us to be able to contact you to send you thanks',
+                'tag'  => 'small',
+                'attr' => ['class' => 'form-text text-muted'],
+            ]])
+            ->add('lat', 'hidden')
             ->add('lon', 'hidden')
             ->add('submit', 'submit', ['label' => 'Create marker', 'attr' => ['class' => 'btn btn-primary btn-block'], 'help_block' => [
                 'text' => 'Submitted markers are to be verified pending approval by an administrator.',
