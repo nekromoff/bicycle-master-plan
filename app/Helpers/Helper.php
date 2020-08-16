@@ -6,16 +6,39 @@ use Auth;
 
 class Helper
 {
-    public static function getFilename($filename, $thumb = true)
+    public static function getEditableLayerId()
+    {
+        foreach (config('map.layers') as $layer_id => $layer) {
+            if (isset($layer['editable']) and $layer['editable']) {
+                return $layer_id;
+            }
+        }
+        return false;
+    }
+
+    public static function getEditableLayerTypes()
+    {
+        if (self::getEditableLayerId()) {
+            return config('map.layers')[self::getEditableLayerId()]['editable_types'];
+        }
+        return false;
+    }
+
+    public static function getFilename($layer_id, $filename, $thumb = true)
     {
         // URL
         if (stripos($filename, 'http://') !== false or stripos($filename, 'https://') !== false) {
             $url = $filename;
         } else {
-            // file in storage
-            $path = 'storage/photos/thumbs/';
-            if (!$thumb) {
-                $path = 'storage/photos/';
+            // default path to file in storage
+            $path = 'storage/';
+            if ($layer_id == self::getEditableLayerId()) {
+                $path = $path . 'uploads/';
+            } else {
+                $path = $path . 'photos/';
+                if ($thumb) {
+                    $path = $path . 'thumbs/';
+                }
             }
             $url = asset($path . $filename);
         }

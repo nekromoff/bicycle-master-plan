@@ -30,13 +30,21 @@ class MasterplanController extends Controller
         return view('masterplan', compact('form'));
     }
 
+    public function issues(Request $request)
+    {
+        $this->initialize();
+        $markers = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 1, 'deleted' => 0])->orderBy('type')->get();
+        return view('issues', ['markers' => $markers, 'editable_layer_id' => $this->editable_layer_id, 'editable_types' => $this->editable_types]);
+    }
+
     private function initialize()
     {
         $this->nodes = [];
         $this->paths = [];
         $this->relations = [];
         $this->parents = [];
-        $this->editable_layer_id = $this->getEditableLayerId();
+        $this->editable_layer_id = Helper::getEditableLayerId();
+        $this->editable_types = Helper::getEditableLayerTypes();
         $bounding_box = config('map.bounding_box');
     }
 
@@ -118,16 +126,6 @@ class MasterplanController extends Controller
             $content['success'] = 1;
         }
         return response()->json($content);
-    }
-
-    private function getEditableLayerId()
-    {
-        foreach (config('map.layers') as $layer_id => $layer) {
-            if (isset($layer['editable']) and $layer['editable']) {
-                return $layer_id;
-            }
-        }
-        return false;
     }
 
     public function refreshOSMData(Request $request)

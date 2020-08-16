@@ -12,6 +12,7 @@
  */
 
 Route::get('/', ['uses' => 'MasterplanController@map', 'as' => 'map']);
+Route::get('/issues', ['uses' => 'MasterplanController@issues', 'as' => 'issues']);
 
 Route::prefix('data')->middleware('cache.headers:public;max_age=86400;immutable;etag')->group(function () {
     Route::get('layer/{id}/{type?}', ['uses' => 'MasterplanController@pushData', 'as' => 'data.layer']);
