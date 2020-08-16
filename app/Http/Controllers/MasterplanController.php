@@ -33,7 +33,7 @@ class MasterplanController extends Controller
     public function issues(Request $request)
     {
         $this->initialize();
-        $markers = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 1, 'deleted' => 0])->orderBy('type')->get();
+        $markers = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 1, 'deleted' => 0])->orderBy('type')->orderBy('created_at')->get();
         return view('issues', ['markers' => $markers, 'editable_layer_id' => $this->editable_layer_id, 'editable_types' => $this->editable_types]);
     }
 

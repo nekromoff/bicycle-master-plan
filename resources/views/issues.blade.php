@@ -41,6 +41,7 @@
                         <thead>
                             <tr>
                                 <th scope="col">Type</th>
+                                <th scope="col">Reporting date</th>
                                 <th scope="col">Name</th>
                                 <th scope="col">Description</th>
                             </tr>
@@ -49,6 +50,7 @@
                             @foreach($markers as $marker)
                                 <tr>
                                     <td>{{$editable_types[$marker->type]['name']}}</td>
+                                    <td>{{$marker->created_at->format('Y-m-d')}}</td>
                                     <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon}}">{{$marker->name}}</a></td>
                                     <td>{{$marker->description}}<br>
                                         <img src="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" width="200px" alt="{{$marker->name}}">
