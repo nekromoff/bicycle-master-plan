@@ -242,7 +242,7 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke: #a6cee3;
     stroke-width: 2;
 }
-.cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .cycleway-asl, .network-lcn:not(.state-proposed):not(.highway-cycleway), .complete-yes, .lcn-yes, .lcn-proposed, .lcn-provisional, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane {
+.cycleway-lane-advisory, .cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .cycleway-asl, .network-lcn:not(.state-proposed):not(.highway-cycleway), .complete-yes, .lcn-yes, .lcn-proposed, .lcn-provisional, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane {
     color: #33a02c;
     stroke: #33a02c;
     stroke-width: 3;
@@ -251,7 +251,7 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.cycleway-lane, .cycleway-shared_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
+.cycleway-lane:not(.cycleway-lane-advisory), .cycleway-shared_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
     color: #1f78b4;
     stroke: #1f78b4;
     stroke-width: 3;
