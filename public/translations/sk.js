@@ -14,8 +14,9 @@ translation = {
         "Right side": "Napravo",
         // paths / ways
         "Path number": "Číslo trasy",
+        "Advisory": "Ochranný cyklopruh",
         "Sharrows": "Piktokoridor",
-        "Bus & bike lane": "BUS a cyklo pruh",
+        "Bus & bike lane": "BUS a cyklo pruh",
         "Tram & bicycle access": "Jazda popri električkových koľajách",
         "Bike lane": "Cyklopruh",
         "Contraflow": "Cykloobojsmerka",

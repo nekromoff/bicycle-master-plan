@@ -214,7 +214,10 @@ function parsePaths(data, layer_id, type) {
                     popup_content = popup_content + '<br>' + i18n('Marking') + ': ' + i18n('Shared-use path');
                 }
             }
-            if (path.info.cycleway != undefined && path.info.cycleway) {
+            if (path.info['cycleway:lane'] != undefined &&  path.info['cycleway:lane']) {
+                popup_content = popup_content + '<br>' + i18n('Marking') + ': ';
+                popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:lane']);
+            } else if (path.info.cycleway != undefined && path.info.cycleway) {
                 popup_content = popup_content + '<br>' + i18n('Marking') + ': ';
                 popup_content = popup_content + describeBicycleInfrastructure(path.info.cycleway);
             }
@@ -311,7 +314,7 @@ function parseMarkers(data, layer_id, type)  {
                 day: '2-digit'
             });
             popup_content = popup_content + '<br><strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported));
-            if (marker.outdated==0) {
+            if (marker.outdated == 0) {
                 popup_content = popup_content + '<br>(<a class="notuptodate">' + i18n('Not up-to-date') + '</a>)';
             } else {
                 popup_content = popup_content + '<br>(' + i18n('Reported not up-to-date') + ')';
@@ -465,7 +468,9 @@ function toggleMarkerCheck(e)  {
 }
 
 function describeBicycleInfrastructure(infrastructure_type) {
-    if (infrastructure_type == 'shared_lane') {
+    if (infrastructure_type == 'advisory') {
+        return i18n('Advisory');
+    } else if (infrastructure_type == 'shared_lane') {
         return i18n('Sharrows');
     } else if (infrastructure_type == 'shared_busway') {
         return i18n('Bus & bike lane');

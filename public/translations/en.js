@@ -14,8 +14,9 @@ translation = {
         "Right side": "Right side",
         // paths / ways
         "Path number": "Path number",
+        "Advisory": "Advisory bike lane",
         "Sharrows": "Sharrows",
-        "Bus & bike lane": "Bus & bike lane",
+        "Bus & bike lane": "Bus & bike lane",
         "Tram & bicycle access": "Tram & bicycle access",
         "Bike lane": "Bike lane",
         "Contraflow": "Contraflow",
