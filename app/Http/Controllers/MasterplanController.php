@@ -170,7 +170,7 @@ class MasterplanController extends Controller
                 }
                 $filename = trim($stand[$bikeshare['filename']]);
                 // not used $bikeshare['bicycle_count']
-                $marker = Marker::updateOrCreate(['layer_id' => 3, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'approved' => 1]);
+                $marker = Marker::updateOrCreate(['layer_id' => 3, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'email' => ' ', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
             }
         }
     }
@@ -207,7 +207,7 @@ class MasterplanController extends Controller
                     $description = trim($rows[$i][$structure['description']]);
                 }
                 $cycleways = explode(',', trim($rows[$i][$structure['cycleways']]));
-                $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '', 'approved' => 1]);
+                $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '', 'email' => ' ', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
                 foreach ($cycleways as $cycleway) {
                     $cycleway = trim($cycleway);
                     // skip records with cycleways not filled (#N/A in Google sheets)
@@ -242,7 +242,7 @@ class MasterplanController extends Controller
                         $lat = trim($coords[0]);
                         $lon = trim($coords[1]);
                     }
-                    $marker = Marker::updateOrCreate(['layer_id' => $layer_id, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'approved' => 1]);
+                    $marker = Marker::updateOrCreate(['layer_id' => $layer_id, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'email' => ' ', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
                     if (isset($row[$feed['cycleways']])) {
                         $cycleways = explode(',', trim($row[$feed['cycleways']]));
                         foreach ($cycleways as $cycleway) {
