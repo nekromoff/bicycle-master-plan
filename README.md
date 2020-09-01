@@ -7,7 +7,7 @@ It supports the following sources of data:
 - custom data (rows in Google Sheets; markers only)
 - GPS EXIF-tagged photos (automatic using default seeder)
 
-Builth with:
+Built with:
 - Laravel (PHP)
 - Leaflet (JS)
 
