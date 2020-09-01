@@ -2,9 +2,10 @@
 Bicycle Master Plan is a tool / app for displaying various bicycle infrastructure related data on a map. Actually, you can pull any OSM/custom data on a map, not just bicycle-related data.
 
 It supports the following sources of data:
-- database data (seed your database, markers only)
-- OSM data (JSON format, layers/markers)
-- Custom data (from Google Sheets, markers only)
+- database data (seed your database; markers only)
+- OSM data (JSON format; tiles, paths/ways and markers)
+- custom data (rows in Google Sheets; markers only)
+- GPS EXIF-tagged photos (automatic using default seeder)
 
 Builth with:
 - Laravel (PHP)
