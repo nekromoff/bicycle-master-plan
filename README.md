@@ -31,7 +31,7 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
         - a base layer (usually a background map tile layer) is always `0` in config file
         - `type` = `path`, `marker`, `combined`
         - `name` = name of a layer (can contain HTML tags)
-        - `class` = CSS class to be used to mark up a layer items (markers / paths)
+        - `class` = CSS class to be used to mark up layer items (markers / paths)
         - `icon` = layer item icon (markers only) will be created from either `name` or `filename` in database
         - *optional* `file` = OSM JSON file containing layer content (markers or paths/ways downloaded from OSM)
         - *optional* `cluster` = `true` for layers to group/cluster items/markers
