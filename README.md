@@ -6,6 +6,10 @@ It supports the following sources of data:
 - OSM data (JSON format, layers/markers)
 - Custom data (from Google Sheets, markers only)
 
+Builth with:
+- Laravel (PHP)
+- Leaflet (JS)
+
 ## Demo / working version for the city of Bratislava:
 https://mapa.cyklokoalicia.sk/bratislava/public/
 
@@ -41,6 +45,9 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
 3. *optional* If you want bikeshare data on your map, see file `config/bikeshare.example.php` for details on how to enable data download (public bikeshare API endpoint required)
 4. *optional* If you want additional custom data/markers on your map from **Google Sheets**, see `config/google.example.php` file on how to configure it (you will need to create a project with service access with `client_id` and JSON `keyfile` at https://console.developers.google.com)
 
+## Customization
+Open `public/css/main.css` to customize layer markers or styles of paths etc. SVG properties (`fill`, `stroke` etc.) need to be used for styling paths/OSM ways, see https://css-tricks.com/svg-properties-and-css/.
+
 ## Examples
 
 ### Markers created from photos automatically
@@ -61,7 +68,3 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
 ],
 ```
 5. Refresh your map to see your photos
-
-###Built with:
-- Laravel
-- Leaflet
