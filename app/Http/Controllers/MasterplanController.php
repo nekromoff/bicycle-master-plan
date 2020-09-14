@@ -91,6 +91,7 @@ class MasterplanController extends Controller
     public function saveData(Request $request)
     {
         $this->initialize();
+        $user = Auth::user();
         $content['success'] = 0;
         if ($this->editable_layer_id) {
             $file = $request->file('file');
@@ -113,7 +114,12 @@ class MasterplanController extends Controller
                 $marker->name = $request->name;
                 $marker->description = $request->description ? $request->description : '';
                 $marker->filename = $filename;
+                $marker->url = '';
                 $marker->email = $request->email ? $request->email : '';
+                // force user email for authenticated users
+                if ($user) {
+                    $marker->email = $user->email;
+                }
                 $marker->approved = 0;
                 $marker->outdated = 0;
                 $marker->deleted = 0;
@@ -243,6 +249,7 @@ class MasterplanController extends Controller
                     $name = $row[$feed['name']];
                     $description = trim($row[$feed['description']]);
                     $filename = trim($row[$feed['filename']]);
+                    $link = trim($row[$feed['link']]);
                     if (is_array($feed['coords'])) {
                         $lat = trim($row[$feed['coords'][0]]);
                         $lon = trim($row[$feed['coords'][1]]);
@@ -251,7 +258,7 @@ class MasterplanController extends Controller
                         $lat = trim($coords[0]);
                         $lon = trim($coords[1]);
                     }
-                    $marker = Marker::updateOrCreate(['layer_id' => $layer_id, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
+                    $marker = Marker::updateOrCreate(['layer_id' => $layer_id, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'url' => $link, 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
                     if (isset($row[$feed['cycleways']])) {
                         $cycleways = explode(',', trim($row[$feed['cycleways']]));
                         foreach ($cycleways as $cycleway) {
@@ -368,6 +375,18 @@ class MasterplanController extends Controller
                 $i++;
             }
         }
+    }
+
+    public function admin(Request $request)
+    {
+        $this->initialize();
+        $user = Auth::user();
+        if ($user and in_array($user->email, config('map.admins')) === true) {
+            $markers['submitted'] = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 0, 'deleted' => 0])->orderBy('type')->orderBy('created_at')->get();
+            $markers['outdated'] = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 1, 'outdated' => 1, 'deleted' => 0])->orderBy('type')->orderBy('created_at')->get();
+            return view('admin', ['markers' => $markers, 'editable_layer_id' => $this->editable_layer_id, 'editable_types' => $this->editable_types]);
+        }
+        return redirect()->route('login', ['provider' => 'google']);
     }
 
 }

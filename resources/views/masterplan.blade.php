@@ -16,6 +16,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.css" integrity="sha256-SHMGCYmST46SoyGgo4YR/9AlK1vf3ff84Aq9yK4hdqM=" crossorigin="anonymous" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.Default.css" integrity="sha256-LWhzWaQGZRsWFrrJxg+6Zn8TT84k0/trtiHBc6qcGpY=" crossorigin="anonymous" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.Default.css" integrity="sha256-LWhzWaQGZRsWFrrJxg+6Zn8TT84k0/trtiHBc6qcGpY=" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
         <link rel="stylesheet" href="{{ asset('css/main.css') }}">
         <link rel="canonical" href="{{secure_url('/')}}" />
         <meta name="description" content="{{substr(strip_tags(config('map.intro')),0,300)}}">
@@ -41,6 +42,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.0/js/bootstrap.min.js" integrity="sha256-oKpAiD7qu3bXrWRVxnXLV1h7FlNV+p5YJBIr8LOCFYw=" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.js" integrity="sha256-fNoRrwkP2GuYPbNSJmMJOCyfRB2DhPQe0rGTgzRsyso=" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/leaflet.markercluster.js" integrity="sha256-WL6HHfYfbFEkZOFdsJQeY7lJG/E5airjvqbznghUzRw=" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script src="{{asset('js/i18n.min.js')}}"></script>
@@ -114,6 +116,7 @@
             core.options.intro = L.popup({ closeButton: true, autoClose: true, minWidth: core.options.popup_width}).setLatLng(map.getBounds().getCenter()).setContent('{!! addslashes(config('map.intro')) !!}').openOn(map);
         }
         {!!Helper::jsSetupClusters()!!}
+        {!!Helper::jsSetupAdmin()!!}
     </script>
     <div id="form" class="d-none">
         {!! form($form) !!}

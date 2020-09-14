@@ -76,5 +76,7 @@ return [
             'class' => 'bikeshare',
         ],
     ],
+    // map administrators - array of emails (login via oauth2 / google)
+    'admins'         => ['somebody@example.com'],
 
 ];

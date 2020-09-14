@@ -28,6 +28,10 @@ Route::prefix('refresh')->group(function () {
 });
 
 Route::prefix('login')->group(function () {
-    Route::get('{provider}', ['uses' => 'LoginController@redirectToProvider', 'as' => 'login.redirect']);
+    Route::get('{provider}', ['uses' => 'LoginController@redirectToProvider', 'as' => 'login']);
     Route::get('{provider}/callback', ['uses' => 'LoginController@handleProviderCallback', 'as' => 'login.callback']);
+});
+
+Route::prefix('admin')->group(function () {
+    Route::get('/', ['uses' => 'MasterplanController@admin', 'as' => 'admin']);
 });

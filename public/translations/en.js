@@ -8,6 +8,7 @@ translation = {
         "informal (railing etc.)": "informal (railing etc.)",
         "not suitable": "not suitable",
         // general
+        "Link": "Link",
         "Operator": "Operator",
         "Marking": "Marking",
         "Left side": "Left side",
@@ -23,6 +24,7 @@ translation = {
         "Segregated bike lane": "Segregated bike lane",
         "Crossing": "Crossing",
         "Shared-use path": "Shared-use path",
+        "No motor vehicles": "Street excluding motor vehicles",
         // markers
         "Reported on": "Reported on",
         // submit marker form
@@ -42,6 +44,9 @@ translation = {
         "Not up-to-date": "Not up-to-date anymore? Click.",
         "Click again to confirm.": "Click again to confirm, if the marker is outdated.",
         "Thank you for your notification. Administrator will verify your information and remove the marker.": "Thank you for your notification. Administrator will verify your information and remove the marker.",
-        "Reported not up-to-date": "This marker has been reported as outdated and is to be checked by an administrator."
+        "Reported not up-to-date": "This marker has been reported as outdated and is to be checked by an administrator.",
+        // administration
+        "Login":   "Login",
+        "Administration":   "Administration",
     }
 }

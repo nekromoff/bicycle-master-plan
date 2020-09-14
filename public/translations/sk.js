@@ -8,6 +8,7 @@ translation = {
         "informal (railing etc.)": "neformálny (zábradlie a pod.)",
         "not suitable": "nevhodný",
         // general
+        "Link": "Odkaz",
         "Operator": "Správca",
         "Marking": "Značenie",
         "Left side": "Naľavo",
@@ -23,6 +24,7 @@ translation = {
         "Segregated bike lane": "Cestička pre cyklistov",
         "Crossing": "Cyklopriechod",
         "Shared-use path": "Cestička pre chodcov a cyklistov",
+        "No motor vehicles": "Ulica s vylúčením motorových vozidiel",
         // markers
         "Reported on": "Dátum nahlásenia",
         // submit marker form
@@ -42,6 +44,9 @@ translation = {
         "Not up-to-date": "Už neaktuálne? Kliknite.",
         "Click again to confirm.": "Potvrďte opätovným kliknutím, ak je bod neaktuálny.",
         "Thank you for your notification. Administrator will verify your information and remove the marker.": "Ďakujeme za nahlásenie. Administrátor overí vašu informáciu a odstráni tento bod.",
-        "Reported not up-to-date": "Tento bod bol nahlásený ako neaktuálny a bude skontrolovaný administrátorom."
+        "Reported not up-to-date": "Tento bod bol nahlásený ako neaktuálny a bude skontrolovaný administrátorom.",
+        // administration
+        "Login":   "Prihlásenie / login",
+        "Administration":   "Administrácia",
     }
 }

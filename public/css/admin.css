@@ -1,0 +1,16 @@
+/*
+workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
+*/
+.leaflet-fade-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-zoom-animated {
+    will-change:auto !important;
+}
+
+#map {
+    width: 100%;
+    height: 100vh;
+    font-size: 0.9em;
+}
+
+table img {
+    width: 100px;
+}
