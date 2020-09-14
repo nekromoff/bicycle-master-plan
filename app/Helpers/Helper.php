@@ -239,13 +239,15 @@ class Helper
 
     public static function jsSetupAdmin()
     {
-        $user = Auth::user();
-        $code = '';
-        if (!$user) {
-            $code = 'L.easyButton("<span title=\""+ i18n("Login")+"\">🔑</span>", function() { window.location.assign("' . route('login', ['provider' => 'google']) . '") }).addTo(map);';
-        } elseif ($user and in_array($user->email, config('map.admins')) === true) {
-            $code = 'L.easyButton("<span title=\""+ i18n("Administration")+"\">🖉</span>", function() { window.location.assign("' . route('admin') . '") }).addTo(map);';
+        if (config('map.admins')) {
+            $user = Auth::user();
+            $code = '';
+            if (!$user) {
+                $code = 'L.easyButton("<span title=\""+ i18n("Login")+"\">🔑</span>", function() { window.location.assign("' . route('login', ['provider' => 'google']) . '") }).addTo(map);';
+            } elseif ($user and in_array($user->email, config('map.admins')) === true) {
+                $code = 'L.easyButton("<span title=\""+ i18n("Administration")+"\">🖉</span>", function() { window.location.assign("' . route('admin') . '") }).addTo(map);';
+            }
+            echo $code;
         }
-        echo $code;
     }
 }
