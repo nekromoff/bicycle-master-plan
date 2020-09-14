@@ -26,3 +26,8 @@ Route::prefix('refresh')->group(function () {
     Route::get('bikeshare/{force?}', ['uses' => 'MasterplanController@refreshBikeshareData', 'as' => 'refresh.bikeshare']);
     Route::get('feed/{force?}', ['uses' => 'MasterplanController@refreshFeedData', 'as' => 'refresh.feed']);
 });
+
+Route::prefix('login')->group(function () {
+    Route::get('{provider}', ['uses' => 'LoginController@redirectToProvider', 'as' => 'login.redirect']);
+    Route::get('{provider}/callback', ['uses' => 'LoginController@handleProviderCallback', 'as' => 'login.callback']);
+});

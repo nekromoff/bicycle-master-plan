@@ -7,6 +7,11 @@ class AddMarkerForm extends Form
 {
     public function buildForm()
     {
+        $email = '';
+        if ($this->getData('email')) {
+            $email = $this->getData('email');
+        }
+
         $this
             ->add('name', 'text', ['label' => 'Title:', 'wrapper' => ['class' => 'form-group input-group-sm']])
             ->add('description', 'textarea', ['label' => 'Description:', 'attr' => ['rows' => 3], 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
@@ -19,15 +24,15 @@ class AddMarkerForm extends Form
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
             ]]);
-        if ($this->formOptions['editable_layer_id'] and isset(config('map.layers')[$this->formOptions['editable_layer_id']]['editable_types'])) {
+        if ($this->getData('editable_layer_id') and isset(config('map.layers')[$this->getData('editable_layer_id')]['editable_types'])) {
             $types = [];
-            foreach (config('map.layers')[$this->formOptions['editable_layer_id']]['editable_types'] as $key => $type) {
+            foreach (config('map.layers')[$this->getData('editable_layer_id')]['editable_types'] as $key => $type) {
                 $types[$key] = $type['name'];
             }
             $this->add('type', 'choice', ['label' => 'Type:', 'choices' => $types, 'wrapper' => ['class' => 'form-group input-group-sm']]);
         }
         $this
-            ->add('email', 'email', ['label' => 'Email:', 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
+            ->add('email', 'email', ['label' => 'Email:', 'value' => $email, 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
                 'text' => 'Optional - if you want us to be able to contact you to send you thanks',
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],

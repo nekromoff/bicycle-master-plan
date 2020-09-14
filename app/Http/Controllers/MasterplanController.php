@@ -11,6 +11,7 @@ use App\Relation;
 use Google_Client;
 use Google_Service_Sheets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Kris\LaravelFormBuilder\FormBuilder;
 use Revolution\Google\Sheets\Sheets;
@@ -21,11 +22,19 @@ class MasterplanController extends Controller
 
     public function map(FormBuilder $formBuilder, Request $request)
     {
+        $email = '';
+        $user = Auth::user();
+        if ($user) {
+            $email = $user->email;
+        }
         $this->initialize();
         $form = $formBuilder->create('App\Forms\AddMarkerForm', [
-            'url'               => route('data.save'),
-            'method'            => 'POST',
-            'editable_layer_id' => $this->editable_layer_id,
+            'url'    => route('data.save'),
+            'method' => 'POST',
+            'data'   => [
+                'editable_layer_id' => $this->editable_layer_id,
+                'email'             => $email,
+            ],
         ]);
         return view('masterplan', compact('form'));
     }
