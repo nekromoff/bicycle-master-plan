@@ -1,5 +1,7 @@
 <?php
 
+namespace Database\Seeders;
+
 use App\Cycleway;
 use App\Marker;
 use App\Relation;

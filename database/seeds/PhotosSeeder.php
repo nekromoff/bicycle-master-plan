@@ -1,5 +1,7 @@
 <?php
 
+namespace Database\Seeders;
+
 use App\Marker;
 use Illuminate\Database\Seeder;
 
