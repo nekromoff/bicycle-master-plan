@@ -42,9 +42,19 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
         - `osm_data` = *array* of map layers with `file` parameter:
             - `file` = filename to save the file
             - `data` = overpass query to download OSM data, e.g. `[out:json]; (relation[network=lcn]({{bbox}}); ); out body; >; out skel qt;`, see https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_API_by_Example
+    - *optional* Configure admin emails (see below on how to enable admin functionality):
+        - `admins` = *array* of admin emails, e.g. ['someone@example.com', 'other@example.com']
 2. *optional* If you enable an editable layer, user submitted items require admin approval to be displayed. Set `approved` column to `1` in database. If user marked an item as `outdated` (`1` in database), set `deleted` to `1` in database to hide it from a map.
-3. *optional* If you want bikeshare data on your map, see file `config/bikeshare.example.php` for details on how to enable data download (public bikeshare API endpoint required)
-4. *optional* If you want additional custom data/markers on your map from **Google Sheets**, see `config/google.example.php` file on how to configure it (you will need to create a project with service access with `client_id` and JSON `keyfile` at https://console.developers.google.com)
+3. *optional* If you want to display bikeshare data on your map, see file `config/bikeshare.example.php` for details on how to enable data download (public bikeshare API endpoint required)
+4. *optional* If you want to display additional custom data/markers on your map from **Google Sheets**, see `config/google.example.php` file on how to configure it (you will need to create a project with service access with `client_id` and JSON `keyfile` at https://console.developers.google.com)
+5. *optional* If you require admin functionality, you will need to obtain client ID + client secret from OAuth2 credentials at https://console.developers.google.com. Once you have these, edit `config/services.php` and add the following lines:
+```
+'google'    => [
+        'client_id'     => 'your_client_id',
+        'client_secret' => 'your_client_secret',
+        'redirect'      => 'callback URL', // callback URL for OAuth authentication, e.g. http://example.com/login/google/callback
+    ],
+```
 
 ## Customization
 Open `public/css/main.css` to customize layer markers or styles of paths etc. SVG properties (`fill`, `stroke` etc.) need to be used for styling paths/OSM ways, see https://css-tricks.com/svg-properties-and-css/.
