@@ -51,7 +51,8 @@ $(document).ready(function() {
     if (core.editable_layer_id) {
         map.on('contextmenu', createMarker);
     }
-    map.on('popupopen', toggleMarkerCheck);
+    map.on('popupopen', togglePopupCheck);
+    map.on('popupclose', removeObjectFragment);
 });
 
 function forceOptions() {
@@ -100,17 +101,14 @@ function setupMap() {
             core.options.center[1] = undefined;
             map.setView([core.options.center['lat'], core.options.center['lng']], core.options.zoom);
         }
-        // open marker on load
-        // if (part.indexOf('m')!=-1) {
-        //     orig_marker_id=part.replace('m','');
-        //     for (marker_id in core.markers) {
-        //         if (core.markers[marker_id].options.orig_id==orig_marker_id) {
-        //             core.markers[marker_id].openPopup();
-        //         }
-        //     marker_bounds = core.markers[marker_id].getLatLng();
-        //     map.fitBounds(marker_bounds);
-        //     }f
-        // }
+        // set marker, if linked
+        if (part.indexOf('m') != -1 && part.indexOf('p') == -1) {
+            core.options.marker_id = part.replace('m', '');
+        }
+        // set path, if linked
+        if (part.indexOf('p') != -1) {
+            core.options.path_id = part.replace('p', '');
+        }
     });
 }
 
@@ -138,7 +136,19 @@ function rewriteFragment() {
     fragment = fragment + '|z' + map.getZoom();
     core.options.center = map.getCenter();
     fragment = fragment + '|c' + core.options.center['lat'].toFixed(5) + ',' + core.options.center['lng'].toFixed(5);
+    if (core.options.path_id) {
+        fragment = fragment + '|p' + core.options.path_id;
+    }
+    if (core.options.marker_id) {
+        fragment = fragment + '|m' + core.options.marker_id;
+    }
     window.location.hash = fragment;
+}
+
+function removeObjectFragment() {
+    core.options.marker_id = undefined;
+    core.options.path_id = undefined;
+    rewriteFragment();
 }
 
 function getLayerId(layer) {
@@ -183,6 +193,14 @@ function parseLayer(data, layer_id, type) {
         map.addLayer(core.layers['layer' + layer_id]);
     }
     rewriteFragment();
+    if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
+        core.markers[core.options.marker_id].openPopup();
+        map.panTo(core.markers[core.options.marker_id].getLatLng());
+    }
+    if (core.options.path_id != undefined && core.paths[core.options.path_id] != undefined) {
+        core.paths[core.options.path_id].openPopup();
+        map.fitBounds(core.paths[core.options.path_id].getBounds());
+    }
 }
 
 function parsePaths(data, layer_id, type) {
@@ -194,9 +212,10 @@ function parsePaths(data, layer_id, type) {
                 classes = classes + ' ' + normalize(detail_key) + '-' + normalize(path.info[detail_key])
             }
         }
-        path_id = core.paths.length;
-        core.paths[path_id] = L.polyline([path.nodes], {
-            className: classes
+        core.paths[path.id] = L.polyline([path.nodes], {
+            className: classes,
+            orig_id: path.id,
+            orig_type: 'path'
         });
         popup_content = '';
         if (path.info != undefined) {
@@ -235,7 +254,7 @@ function parsePaths(data, layer_id, type) {
             }
             if (path.info.ref != undefined && path.info.ref) {
                 popup_content = popup_content + '<br>' + i18n('Path number') + ': ' + path.info.ref;
-                core.paths[path_id].setText(path.info.ref);
+                core.paths[path.id].setText(path.info.ref);
             }
             if (path.info.operator != undefined && path.info.operator) {
                 popup_content = popup_content + '<br>' + i18n('Operator') + ': ' + path.info.operator;
@@ -246,13 +265,13 @@ function parsePaths(data, layer_id, type) {
         }
         // add popup
         if (popup_content) {
-            core.paths[path_id].bindPopup(popup_content);
+            core.paths[path.id].bindPopup(popup_content);
         }
         // add to layer
         if (core.config.layers[layer_id].types != undefined && type) {
-            core.paths[path_id].addTo(core.layers['layer' + layer_id + '_type' + type]);
+            core.paths[path.id].addTo(core.layers['layer' + layer_id + '_type' + type]);
         } else {
-            core.paths[path_id].addTo(core.layers['layer' + layer_id]);
+            core.paths[path.id].addTo(core.layers['layer' + layer_id]);
         }
     }
 }
@@ -289,13 +308,12 @@ function parseMarkers(data, layer_id, type)  {
         }
 
         marker_content = marker_content + '</div>';
-        marker_id = core.markers.length;
-        core.markers[marker_id] = L.marker([marker.lat, marker.lon], {
+        core.markers[marker.id] = L.marker([marker.lat, marker.lon], {
             icon: new L.DivIcon({
                 html: marker_content
             }),
             orig_id: marker.id,
-            orig_type: marker.type
+            orig_type: 'marker'
         });
         popup_content = '';
         if (marker.name != undefined && marker.name) {
@@ -357,13 +375,13 @@ function parseMarkers(data, layer_id, type)  {
         }
         // add popup
         if (popup_content)  {
-            core.markers[marker_id].bindPopup(popup_content);
+            core.markers[marker.id].bindPopup(popup_content);
         }
         // add to layer
         if (core.config.layers[layer_id].types != undefined && type) {
-            core.markers[marker_id].addTo(core.layers['layer' + layer_id + '_type' + type]);
+            core.markers[marker.id].addTo(core.layers['layer' + layer_id + '_type' + type]);
         } else {
-            core.markers[marker_id].addTo(core.layers['layer' + layer_id]);
+            core.markers[marker.id].addTo(core.layers['layer' + layer_id]);
         }
     }
 }
@@ -434,8 +452,18 @@ function createMarker(e) {
     });
 }
 
-function toggleMarkerCheck(e)  {
-    var marker_id = e.popup._source.options.orig_id;
+function togglePopupCheck(e)  {
+    var object_id = e.popup._source.options.orig_id;
+    var object_type = e.popup._source.options.orig_type;
+    if (object_id) {
+        if (object_type == 'marker') {
+            core.options.marker_id = object_id;
+            rewriteFragment();
+        } else if (object_type == 'path') {
+            core.options.path_id = object_id;
+            rewriteFragment();
+        }
+    }
     $('.notuptodate').off();
     $('.notuptodate').on('click', function() {
         var parent = this;

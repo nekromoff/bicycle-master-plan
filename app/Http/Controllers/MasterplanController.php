@@ -57,7 +57,7 @@ class MasterplanController extends Controller
         $bounding_box = config('map.bounding_box');
     }
 
-    public function pushData(Request $request)
+    public function getLayer(Request $request)
     {
         $this->initialize();
         $this->markers = Marker::with('relations')->select()->where(['approved' => 1, 'deleted' => 0, 'layer_id' => $request->id]);
@@ -76,7 +76,7 @@ class MasterplanController extends Controller
         $this->cycleways = Cycleway::get()->keyBy('id');
 
         $layer = config('map.layers')[$request->id];
-        $this->processMapfeatures($layer, $request->id);
+        $this->processMapFeatures($layer, $request->id);
         if (isset($this->markers_new)) {
             $this->markers = $this->markers->union(collect($this->markers_new));
         }
@@ -293,7 +293,7 @@ class MasterplanController extends Controller
         return $sheets;
     }
 
-    private function processMapfeatures($layer, $layer_id)
+    private function processMapFeatures($layer, $layer_id)
     {
         $i = count($this->paths);
         if ($layer['type'] == 'path' and isset($layer['file'])) {
@@ -321,7 +321,7 @@ class MasterplanController extends Controller
             }
             foreach ($data as $item) {
                 if ($item->type == 'way') {
-                    foreach ($item->nodes as $node) {
+                    foreach ($item->nodes as $key => $node) {
                         if (isset($this->parents[$item->id])) {
                             $relation_id = $this->parents[$item->id];
                             $this->paths[$i]['info'] = (array) $this->relations[$relation_id];
@@ -332,6 +332,7 @@ class MasterplanController extends Controller
                         $this->paths[$i]['info'] = (array) $item->tags;
                     }
                     $this->paths[$i]['layer_id'] = $layer_id;
+                    $this->paths[$i]['id'] = $layer_id . '-' . $item->id;
                     $i++;
                 }
             }
@@ -339,6 +340,7 @@ class MasterplanController extends Controller
             $temp_paths = $this->paths_db;
             $temp_paths = $temp_paths->where('layer_id', $layer_id);
             foreach ($temp_paths as $path) {
+                $this->paths[$i]['id'] = $layer_id . '-' . $path->id;
                 $this->paths[$i]['layer_id'] = $path->layer_id;
                 $this->paths[$i]['info']['name'] = $path->name;
                 $this->paths[$i]['info']['description'] = $path->description;
@@ -354,8 +356,8 @@ class MasterplanController extends Controller
             $data = $result->elements;
             foreach ($data as $item) {
                 if ($item->type == 'node') {
-                    $marker_new_id = 'l' . $layer_id . '-' . $item->id;
-                    $this->markers_new[$marker_new_id] = ['lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
+                    $marker_new_id = $layer_id . '-' . $item->id;
+                    $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
                     if (isset($item->tags)) {
                         $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
                     }
@@ -366,6 +368,7 @@ class MasterplanController extends Controller
             $temp_paths = $this->paths_db;
             $temp_paths = $temp_paths->where('layer_id', $layer_id);
             foreach ($temp_paths as $path) {
+                $this->paths[$i]['id'] = $layer_id . '-' . $path->id;
                 $this->paths[$i]['layer_id'] = $path->layer_id;
                 $this->paths[$i]['info']['name'] = $path->name;
                 $this->paths[$i]['info']['description'] = $path->description;
