@@ -251,7 +251,7 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.cycleway-lane:not(.cycleway-lane-advisory), .cycleway-shared_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
+.cycleway-lane:not(.cycleway-lane-advisory), .cycleway-share_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
     color: #1f78b4;
     stroke: #1f78b4;
     stroke-width: 3;
@@ -312,6 +312,20 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke-width: 5;
 }
 
+.share:link, .share:hover, .share:visited {
+    text-decoration: none;
+}
+.clipboard {
+    animation: highlight 1000ms ease-out;
+}
+@keyframes highlight {
+    from {
+        background-color: #28a745;
+    }
+    to {
+        background-color: #fff;
+    }
+}
 .hidden {
     display: none;
 }

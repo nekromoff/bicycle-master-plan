@@ -9,6 +9,7 @@ translation = {
         "not suitable": "not suitable",
         // general
         "Link": "Link",
+        "Copy link to clipboard": "Copy link to clipboard",
         "Operator": "Operator",
         "Marking": "Marking",
         "Left side": "Left side",

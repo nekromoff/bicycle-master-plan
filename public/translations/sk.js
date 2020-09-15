@@ -9,6 +9,7 @@ translation = {
         "not suitable": "nevhodný",
         // general
         "Link": "Odkaz",
+        "Copy link to clipboard": "Skopírovať odkaz do schránky",
         "Operator": "Správca",
         "Marking": "Značenie",
         "Left side": "Naľavo",

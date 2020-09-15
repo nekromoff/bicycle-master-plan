@@ -196,10 +196,14 @@ function parseLayer(data, layer_id, type) {
     if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
         core.markers[core.options.marker_id].openPopup();
         map.panTo(core.markers[core.options.marker_id].getLatLng());
+        $('.leaflet-popup-content a.share').attr('href', window.location);
+        $('.leaflet-popup-content a.share').on('click', copyLink);
     }
     if (core.options.path_id != undefined && core.paths[core.options.path_id] != undefined) {
         core.paths[core.options.path_id].openPopup();
         map.fitBounds(core.paths[core.options.path_id].getBounds());
+        $('.leaflet-popup-content a.share').attr('href', window.location);
+        $('.leaflet-popup-content a.share').on('click', copyLink);
     }
 }
 
@@ -222,6 +226,7 @@ function parsePaths(data, layer_id, type) {
             if (path.info.name != undefined && path.info.name) {
                 popup_content = popup_content + '<strong>' + path.info.name + '</strong>';
             }
+            popup_content = popup_content + '<a href="" class="float-right share" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
             if (path.info.highway != undefined && path.info.highway == 'cycleway') {
                 popup_content = popup_content + '<br>' + i18n('Marking') + ': ' + i18n('Segregated bike lane');
             }
@@ -321,6 +326,7 @@ function parseMarkers(data, layer_id, type)  {
         } else if (marker.info != undefined && marker.info.name) {
             popup_content = popup_content + '<strong>' + marker.info.name + '</strong>';
         }
+        popup_content = popup_content + '<a href="" class="float-right share" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
         if (marker.description != undefined && marker.description) {
             popup_content = popup_content + '<br>' + marker.description;
         } else if (marker.info != undefined && marker.info.description) {
@@ -464,7 +470,9 @@ function togglePopupCheck(e)  {
             rewriteFragment();
         }
     }
-    $('.notuptodate').off();
+    $('.leaflet-popup-content a.share').off();
+    $('.leaflet-popup-content a.share').attr('href', window.location);
+    $('.leaflet-popup-content a.share').on('click', copyLink);
     $('.notuptodate').on('click', function() {
         var parent = this;
         if (!$(this).hasClass('toconfirm')) {
@@ -554,4 +562,19 @@ function getEditableLayerId() {
         }
     }
     return false;
+}
+
+function copyLink() {
+    $(this).addClass('clipboard');
+    var link = $(this)[0];
+    var temp_text = document.createElement('input');
+    temp_text.value = link.href;
+    document.body.appendChild(temp_text);
+    temp_text.select();
+    document.execCommand('copy');
+    document.body.removeChild(temp_text);
+    console.log(temp_text, 'copied');
+    window.setTimeout(function() {
+        $(this).removeClass('clipboard');
+    }, 1000)
 }
