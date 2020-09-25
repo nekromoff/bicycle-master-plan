@@ -480,7 +480,7 @@ function togglePopupCheck(e)  {
             $(this).text(i18n('Click again to confirm.'));
         } else {
             var form_data = new FormData();
-            form_data.append('id', marker_id);
+            form_data.append('id', object_id);
             $.ajax({
                 type: 'POST',
                 url: 'data/edit',
