@@ -4,6 +4,7 @@ core.layers = [];
 core.clusters = [];
 core.markers = [];
 core.paths = [];
+core.relations = [];
 core.layers_parsed = [];
 core.options.popup_width = 35 * Math.max(document.documentElement.clientWidth, window.innerWidth || 0) / 100; //50% of viewport
 if (core.options.popup_width < 200) {
@@ -90,7 +91,6 @@ function setupMap() {
         }
         if (part.indexOf('z') != -1) {
             core.options.zoom = part.trim().replace('z', '');
-            map.setZoom(core.options.zoom);
         }
         if (part.indexOf('c') != -1) {
             center = part.trim().replace('c', '');
@@ -133,7 +133,8 @@ function rewriteFragment() {
         }
     }
     fragment = fragment + 'l' + core.layers_enabled.join(',');
-    fragment = fragment + '|z' + map.getZoom();
+    core.options.zoom = map.getZoom();
+    fragment = fragment + '|z' + core.options.zoom;
     core.options.center = map.getCenter();
     fragment = fragment + '|c' + core.options.center['lat'].toFixed(5) + ',' + core.options.center['lng'].toFixed(5);
     if (core.options.path_id) {
@@ -146,6 +147,7 @@ function rewriteFragment() {
 }
 
 function removeObjectFragment() {
+    $('.highlighted').removeClass('highlighted');
     core.options.marker_id = undefined;
     core.options.path_id = undefined;
     rewriteFragment();
@@ -200,8 +202,8 @@ function parseLayer(data, layer_id, type) {
         $('.leaflet-popup-content a.share').on('click', copyLink);
     }
     if (core.options.path_id != undefined && core.paths[core.options.path_id] != undefined) {
+        highlightPath();
         core.paths[core.options.path_id].openPopup();
-        map.fitBounds(core.paths[core.options.path_id].getBounds());
         $('.leaflet-popup-content a.share').attr('href', window.location);
         $('.leaflet-popup-content a.share').on('click', copyLink);
     }
@@ -211,16 +213,27 @@ function parsePaths(data, layer_id, type) {
     for (key in data.paths) {
         path = data.paths[key];
         classes = 'path';
-        if (path.info != undefined) {
-            for (detail_key in path.info) {
-                classes = classes + ' ' + normalize(detail_key) + '-' + normalize(path.info[detail_key])
-            }
-        }
-        core.paths[path.id] = L.polyline([path.nodes], {
-            className: classes,
+        var polyline_options = {
             orig_id: path.id,
             orig_type: 'path'
-        });
+        };
+        if (path.info != undefined) {
+            // define relation, if ref exists
+            if (path.info.ref != undefined) {
+                var relation = normalize(path.info.ref, /[^A-Za-z0-9_-]/g);
+                polyline_options.relation = relation;
+                createRelation(relation, path.id);
+            } else if (path.info.name != undefined && path.info.name) {
+                var relation = normalize(path.info.name, /[^A-Za-z0-9_-]/g);
+                polyline_options.relation = relation;
+                createRelation(relation, path.id);
+            }
+            for (detail_key in path.info) {
+                classes = classes + ' ' + normalize(detail_key) + '-' + normalize(path.info[detail_key], /[^A-Za-z0-9_-]/g)
+            }
+        }
+        polyline_options.className = classes;
+        core.paths[path.id] = L.polyline([path.nodes], polyline_options);
         popup_content = '';
         if (path.info != undefined) {
             if (path.info.name != undefined && path.info.name) {
@@ -290,7 +303,9 @@ function parseMarkers(data, layer_id, type)  {
         }
         if (marker.info != undefined) {
             for (key in marker.info) {
-                marker_content = marker_content + normalize(key) + '-' + normalize(marker.info[key]) + ' ';
+                // keep numbers for "ref" key content
+                marker_content = marker_content + normalize(key) + '-' + normalize(marker.info[key], /[^A-Za-z0-9_-]/g) + ' ';
+
             }
         }
         if (marker.description != undefined && marker.description) {
@@ -392,11 +407,41 @@ function parseMarkers(data, layer_id, type)  {
     }
 }
 
-function normalize(text) {
+/*
+    @relation string "ref" key content, if exists (OSM files)
+    @path_id string path/way id from DB or OSM files
+*/
+function createRelation(relation, path_id) {
+    if (core.relations[relation] === undefined) {
+        core.relations[relation] = [];
+    }
+    core.relations[relation].push(path.id);
+}
+
+// if relation exists, highlight all segments of the way/path
+function highlightPath() {
+    if (core.paths[core.options.path_id].options.relation != undefined) {
+        var relation = core.paths[core.options.path_id].options.relation;
+        // try ref class first
+        var relation_class = '.ref-' + relation;
+        $(relation_class).addClass('highlighted');
+        // try name class next
+        relation_class = '.name-' + relation;
+        $(relation_class).addClass('highlighted');
+    }
+}
+
+/*
+    @regex_rule string regex rule to apply instead of deafult one
+*/
+function normalize(text, regex_rule) {
+    if (regex_rule === undefined) {
+        regex_rule = /[^A-Za-z_-]/g;
+    }
     var combining = /[\u0300-\u036F]/g;
     text = text.normalize('NFKD').replace(combining, '').toLowerCase();
     text = text.replace(':', '-');
-    text = text.replace(/[^A-Za-z_-]/g, '');
+    text = text.replace(regex_rule, '');
     text = text.replace(/[\-]{2,}/g, '-');
     return text;
 }
@@ -467,6 +512,7 @@ function togglePopupCheck(e)  {
             rewriteFragment();
         } else if (object_type == 'path') {
             core.options.path_id = object_id;
+            highlightPath();
             rewriteFragment();
         }
     }

@@ -89,8 +89,8 @@
         var map = L.map('map', {
             center: core.options.center,
             zoom: core.options.zoom,
-            zoomSnap: 0.5,
-            zoomDelta: 0.5,
+            zoomSnap: 0.5,
+            zoomDelta: 0.5,
             layers: [
                 @foreach (config('map.default_layers') as $layer)
                     @if ($layer!='base')

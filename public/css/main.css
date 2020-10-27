@@ -284,9 +284,11 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke: #33a02c !important;
     stroke-width: 3;
 }
-
 .path.lcn-yes, .path.lcn-proposed, .path.lcn-provisional {
     stroke-dasharray: 2 8;
+}
+.highlighted {
+    stroke-width: 10 !important;
 }
 
 .distances {
