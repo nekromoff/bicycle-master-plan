@@ -54,11 +54,17 @@ return [
             ],
         ],
         2 => [
-            'type'           => 'marker',
-            'name'           => 'Developments',
-            'class'          => 'development',
-            'editable'       => true,
-            'editable_types' => [
+            'type'              => 'marker',
+            'name'              => 'Developments',
+            'class'             => 'development',
+            'editable'          => true,
+            'allowed_filetypes' => [ // allowed MIME filetypes for upload
+                'image/jpg'       => 'filename', // what db column is used for storing filename: filename (for images), url (for PDFs and such)
+                'image/jpeg'      => 'filename',
+                'image/png'       => 'filename',
+                'application/pdf' => 'url',
+            ],
+            'editable_types'    => [
                 1 => [
                     'name'  => 'Warning',
                     'class' => 'warning',

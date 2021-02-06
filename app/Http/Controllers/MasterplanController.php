@@ -54,6 +54,7 @@ class MasterplanController extends Controller
         $this->parents = [];
         $this->editable_layer_id = Helper::getEditableLayerId();
         $this->editable_types = Helper::getEditableLayerTypes();
+        $this->editable_allowed_filetypes = Helper::getEditableLayerAllowedUploadFiletypes();
         $bounding_box = config('map.bounding_box');
     }
 
@@ -96,10 +97,18 @@ class MasterplanController extends Controller
         if ($this->editable_layer_id) {
             $file = $request->file('file');
             $filename = '';
-            if ($file) {
-                if ($file->getClientMimeType() == 'image/jpg' or $file->getClientMimeType() == 'image/jpeg' or $file->getClientMimeType() == 'image/png') {
-                    $path = Storage::putFile('public/uploads', $file);
-                    $filename = basename($path);
+            $url = '';
+            if ($file and $this->editable_allowed_filetypes) {
+                foreach ($this->editable_allowed_filetypes as $filetype => $db_column) {
+                    if ($file->getClientMimeType() == trim($filetype)) {
+                        $path = Storage::putFile('public/uploads', $file);
+                        if ($db_column == 'filename') {
+                            $filename = basename($path);
+                        } else {
+                            $url = asset('storage/uploads/' . basename($path));
+                        }
+                        break;
+                    }
                 }
             }
             if (isset($request->name) and $request->name) {
@@ -114,7 +123,7 @@ class MasterplanController extends Controller
                 $marker->name = $request->name;
                 $marker->description = $request->description ? $request->description : '';
                 $marker->filename = $filename;
-                $marker->url = '';
+                $marker->url = $url;
                 $marker->email = $request->email ? $request->email : '';
                 // force user email for authenticated users
                 if ($user) {

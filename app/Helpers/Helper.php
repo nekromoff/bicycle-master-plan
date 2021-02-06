@@ -24,6 +24,14 @@ class Helper
         return false;
     }
 
+    public static function getEditableLayerAllowedUploadFiletypes()
+    {
+        if (self::getEditableLayerId()) {
+            return config('map.layers')[self::getEditableLayerId()]['allowed_filetypes'];
+        }
+        return false;
+    }
+
     public static function getFilename($layer_id, $filename, $thumb = true)
     {
         // URL
