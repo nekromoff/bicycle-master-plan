@@ -38,7 +38,7 @@ translation = {
         "Type:": "Type:",
         "Email:":   "Email:",
         "Description or URL": "Description or URL",
-        "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.": "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.",
+        "Photo or image - JPG, PNG or PDF allowed. Markers without photos will usually not be approved.": "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.",
         "Optional - if you want us to be able to contact you to send you thanks": "Optional - if you want us to be able to thank you",
         "Create marker": "Create marker",
         "Submitted markers are to be verified pending approval by an administrator.": "Submitted markers are to be verified pending approval by an administrator.",

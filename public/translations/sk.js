@@ -38,7 +38,7 @@ translation = {
         "Type:": "Typ:",
         "Email:":   "Email:",
         "Description or URL": "Popis alebo URL adresa",
-        "Photo or image - JPG or PNG allowed. Markers without photos will usually not be approved.": "Fotka alebo obrázok - JPG alebo PNG. Body bez fotiek zvyčajne nebudú schválené.",
+        "Photo or image - JPG, PNG or PDF allowed. Markers without photos will usually not be approved.": "Fotka alebo obrázok - JPG, PNG alebo PDF. Body bez fotiek zvyčajne nebudú schválené.",
         "Optional - if you want us to be able to contact you to send you thanks": "Dobrovoľné - ak chcete, aby sme vám mohli poďakovať",
         "Create marker": "Vytvoriť bod",
         "Submitted markers are to be verified pending approval by an administrator.": "Odoslané body budú overené a prejdú schvaľovaním administrátorom.",
