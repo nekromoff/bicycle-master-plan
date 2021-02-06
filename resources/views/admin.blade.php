@@ -60,7 +60,7 @@
                                 <tr data-lat="{{$marker->lat}}" data-lon="{{$marker->lon}}">
                                     <td>{{$editable_types[$marker->type]['name']}}</td>
                                     <td>{{$marker->created_at->format('Y-m-d')}}</td>
-                                    <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon}}">{{$marker->name}}</a></td>
+                                    <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
                                     <td>{{$marker->description}}
                                         @if ($marker->url)
                                             <br><a href="{{$url}}">{{$url}}</a>
@@ -90,7 +90,7 @@
                                 <tr data-lat="{{$marker->lat}}" data-lon="{{$marker->lon}}">
                                     <td>{{$editable_types[$marker->type]['name']}}</td>
                                     <td>{{$marker->created_at->format('Y-m-d')}}</td>
-                                    <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon}}">{{$marker->name}}</a></td>
+                                    <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
                                     <td>{{$marker->description}}
                                         @if ($marker->url)
                                             <br><a href="{{$url}}">{{$url}}</a>
