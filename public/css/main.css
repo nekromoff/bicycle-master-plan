@@ -219,6 +219,12 @@ a.toconfirm:link, a.toconfirm:hover {
     display: block;
     text-align: center;
 }
+.user-created.projects::before {
+    content: "💡";
+    background: rgba(255,255,255,0.5);
+    display: block;
+    text-align: center;
+}
 .user-created.unknown::before {
     content: "?";
     color: white;
