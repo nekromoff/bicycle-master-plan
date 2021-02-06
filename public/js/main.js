@@ -223,11 +223,14 @@ function parsePaths(data, layer_id, type) {
                 var relation = normalize(path.info.ref, /[^A-Za-z0-9_-]/g);
                 polyline_options.relation = relation;
                 createRelation(relation, path.id);
-            } else if (path.info.name != undefined && path.info.name) {
+            }
+            /* // same name applies to different type of segments, so maybe not the best solution
+             else if (path.info.name != undefined && path.info.name) {
                 var relation = normalize(path.info.name, /[^A-Za-z0-9_-]/g);
                 polyline_options.relation = relation;
                 createRelation(relation, path.id);
             }
+            */
             for (detail_key in path.info) {
                 classes = classes + ' ' + normalize(detail_key) + '-' + normalize(path.info[detail_key], /[^A-Za-z0-9_-]/g)
             }
@@ -342,6 +345,9 @@ function parseMarkers(data, layer_id, type)  {
             popup_content = popup_content + '<strong>' + marker.info.name + '</strong>';
         }
         popup_content = popup_content + '<a href="" class="float-right share" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
+        if (marker.url != undefined && marker.url) {
+            popup_content = popup_content + '<br><a href="' + marker.url + '">' + i18n('Link') + '</a>';
+        }
         if (marker.description != undefined && marker.description) {
             popup_content = popup_content + '<br>' + marker.description;
         } else if (marker.info != undefined && marker.info.description) {
@@ -376,9 +382,6 @@ function parseMarkers(data, layer_id, type)  {
         }
         if (marker.filename != undefined && marker.filename) {
             popup_content = popup_content + '<br><a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '"></a>';
-        }
-        if (marker.url != undefined && marker.url) {
-            popup_content = popup_content + '<br><a href="' + marker.url + '">' + i18n('Link') + '</a>';
         }
         if (marker.relations != undefined && marker.relations.length) {
             popup_content = popup_content + '<br>' + i18n('Path number') + ': ';
