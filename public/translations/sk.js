@@ -7,6 +7,10 @@ translation = {
         "covered (safe)": "krytý (bezpečný)",
         "informal (railing etc.)": "neformálny (zábradlie a pod.)",
         "not suitable": "nevhodný",
+        "Bicycle repair stand": "Stojan na opravu bicyklov",
+        "Bike sharing station": "Stanica zdieľaných bicyklov (bike sharing)",
+        "pump": "pumpa",
+        "tools": "nástroje",
         // general
         "Link": "Odkaz",
         "Copy link to clipboard": "Skopírovať odkaz do schránky",
@@ -14,6 +18,8 @@ translation = {
         "Marking": "Značenie",
         "Left side": "Naľavo",
         "Right side": "Napravo",
+        "Capacity": "Počet miest",
+        "Equipment": "Vybavenie",
         // paths / ways
         "Path number": "Číslo trasy",
         "Advisory": "Ochranný cyklopruh",

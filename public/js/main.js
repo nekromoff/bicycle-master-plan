@@ -27,6 +27,7 @@ $(document).ready(function() {
         setCookie('intro_off', 1, 180);
         map.closePopup();
     })
+    changeZoomClass();
     // if location fragment exists on launch
     if (window.location.hash) {
         setupMap();
@@ -47,6 +48,7 @@ $(document).ready(function() {
     });
     map.on('moveend', rewriteFragment);
     map.on('zoomend', rewriteFragment);
+    map.on('zoomend', changeZoomClass);
     map.on('overlayadd', rewriteFragment);
     map.on('overlayremove', rewriteFragment);
     if (core.editable_layer_id) {
@@ -146,6 +148,13 @@ function rewriteFragment() {
     window.location.hash = fragment;
 }
 
+function changeZoomClass() {
+    for (var i = map.getMinZoom(); i <= map.getMaxZoom(); i++) {
+        $('#map').removeClass('z' + i);
+    }
+    $('#map').addClass('z' + Math.floor(map.getZoom()));
+}
+
 function removeObjectFragment() {
     $('.highlighted').removeClass('highlighted');
     core.options.marker_id = undefined;
@@ -243,6 +252,9 @@ function parsePaths(data, layer_id, type) {
                 popup_content = popup_content + '<strong>' + path.info.name + '</strong>';
             }
             popup_content = popup_content + '<a href="" class="float-right share" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
+            if (path.info.name == undefined) {
+                popup_content = popup_content + '<strong>';
+            }
             if (path.info.highway != undefined && path.info.highway == 'cycleway') {
                 popup_content = popup_content + '<br>' + i18n('Marking') + ': ' + i18n('Segregated bike lane');
             }
@@ -273,6 +285,9 @@ function parsePaths(data, layer_id, type) {
                 popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:right']);
                 popup_content = popup_content + ' (' + i18n('Right side') + ') ';
             }
+            if (path.info.name == undefined) {
+                popup_content = popup_content + '</strong>';
+            }
             if (path.info.ref != undefined && path.info.ref) {
                 popup_content = popup_content + '<br>' + i18n('Path number') + ': ' + path.info.ref;
                 core.paths[path.id].setText(path.info.ref);
@@ -300,7 +315,7 @@ function parsePaths(data, layer_id, type) {
 function parseMarkers(data, layer_id, type)  {
     for (key in data.markers) {
         marker = data.markers[key];
-        marker_content = '<div class="' + normalize(marker.name) + ' ';
+        marker_content = '<div class="marker ' + normalize(marker.name) + ' ';
         if (core.config.layers[layer_id].editable && core.config.layers[layer_id].editable_types) {
             marker_content = marker_content + normalize(core.config.layers[layer_id].editable_types[marker.type].class) + ' ';
         }
@@ -366,6 +381,9 @@ function parseMarkers(data, layer_id, type)  {
                 popup_content = popup_content + '<br>(' + i18n('Reported not up-to-date') + ')';
             }
         }
+        if (marker.name == undefined) {
+            popup_content = popup_content + '<strong>';
+        }
         if (marker.info != undefined && marker.info.bicycle_parking != undefined) {
             popup_content = popup_content + '<br>' + i18n('Bicycle stand') + ': ';
             if (marker.info.bicycle_parking == 'stands' || marker.info.bicycle_parking == 'wide_stands') {
@@ -376,9 +394,42 @@ function parseMarkers(data, layer_id, type)  {
                 popup_content = popup_content + i18n('covered (safe)');
             } else if (marker.info.bicycle_parking == 'informal') {
                 popup_content = popup_content + i18n('informal (railing etc.)');
+            } else if (marker.info.bicycle_parking == 'informal') {
+                popup_content = popup_content + i18n('informal (railing etc.)');
             } else {
                 popup_content = popup_content + i18n('not suitable');
             }
+        }
+        if (marker.info != undefined && marker.info.amenity != undefined) {
+            if (marker.info.amenity == 'bicycle_rental') {
+                popup_content = popup_content + '<br>' + i18n('Bike sharing station');
+            }
+            if (marker.info.amenity == 'bicycle_repair_station') {
+                popup_content = popup_content + '<br>' + i18n('Bicycle repair stand');
+                if (marker.info['service:bicycle:pump'] != undefined || marker.info['service:bicycle:tools'] != undefined) {
+                    if (marker.info['service:bicycle:pump'] == 'yes' || marker.info['service:bicycle:tools'] == 'yes') {
+                        popup_content = popup_content + '<br>' + i18n('Equipment') + ': ';
+                        if (marker.info['service:bicycle:pump'] == 'yes') {
+                            popup_content = popup_content + i18n('pump');
+                        }
+                        if (marker.info['service:bicycle:pump'] == 'yes' && marker.info['service:bicycle:tools'] == 'yes') {
+                            popup_content = popup_content + ',';
+                        }
+                        if (marker.info['service:bicycle:tools'] == 'yes') {
+                            popup_content = popup_content + i18n('tools');
+                        }
+                    }
+                }
+            }
+        }
+        if (marker.name == undefined) {
+            popup_content = popup_content + '</strong>';
+        }
+        if (marker.info.operator != undefined && marker.info.operator) {
+            popup_content = popup_content + '<br>' + i18n('Operator') + ': ' + marker.info.operator;
+        }
+        if (marker.info != undefined && marker.info.capacity != undefined) {
+            popup_content = popup_content + '<br>' + i18n('Capacity') + ': ' + marker.info.capacity;
         }
         if (marker.filename != undefined && marker.filename) {
             popup_content = popup_content + '<br><a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '"></a>';

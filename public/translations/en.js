@@ -7,6 +7,10 @@ translation = {
         "covered (safe)": "covered (safe)",
         "informal (railing etc.)": "informal (railing etc.)",
         "not suitable": "not suitable",
+        "Bicycle repair stand": "Bicycle repair stand",
+        "Bike sharing station": "Bike sharing station",
+        "pump": "pump",
+        "tools": "tools",
         // general
         "Link": "Link",
         "Copy link to clipboard": "Copy link to clipboard",
@@ -14,6 +18,8 @@ translation = {
         "Marking": "Marking",
         "Left side": "Left side",
         "Right side": "Right side",
+        "Capacity": "Capacity",
+        "Equipment": "Equipment",
         // paths / ways
         "Path number": "Path number",
         "Advisory": "Advisory bike lane",

@@ -320,6 +320,37 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke-width: 5;
 }
 
+
+#map.z15 .path {
+    stroke-width: 3;
+}
+#map.z13 .path, #map.z14 .path {
+    stroke-width: 2;
+}
+#map.z0 .path, #map.z1 .path, #map.z2 .path, #map.z3 .path, #map.z4 .path, #map.z5 .path, #map.z6 .path, #map.z7 .path, #map.z8 .path, #map.z9 .path, #map.z10 .path, #map.z11 .path, #map.z12 .path {
+    stroke-width: 1;
+}
+#map.z16 .marker {
+    transform: scale(1);
+}
+#map.z15 .marker {
+    transform: scale(0.8);
+}
+#map.z14 .marker {
+    transform: scale(0.6);
+}
+#map.z13 .marker {
+    transform: scale(0.4);
+}
+#map.z12 .marker {
+    transform: scale(0.3);
+}
+#map.z10 .marker, #map.z11 .marker {
+    transform: scale(0.2);
+}
+#map.z0 .marker, #map.z1 .marker, #map.z2 .marker, #map.z3 .marker, #map.z4 .marker, #map.z5 .marker, #map.z6 .marker, #map.z7 .marker, #map.z8 .marker, #map.z9 .marker {
+    transform: scale(0.1);
+}
 .share:link, .share:hover, .share:visited {
     text-decoration: none;
 }
