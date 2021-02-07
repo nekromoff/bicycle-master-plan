@@ -425,7 +425,7 @@ function parseMarkers(data, layer_id, type)  {
         if (marker.name == undefined) {
             popup_content = popup_content + '</strong>';
         }
-        if (marker.info.operator != undefined && marker.info.operator) {
+        if (marker.info != undefined && marker.info.operator != undefined) {
             popup_content = popup_content + '<br>' + i18n('Operator') + ': ' + marker.info.operator;
         }
         if (marker.info != undefined && marker.info.capacity != undefined) {
