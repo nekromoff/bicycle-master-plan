@@ -206,15 +206,14 @@ function parseLayer(data, layer_id, type) {
     rewriteFragment();
     if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
         core.markers[core.options.marker_id].openPopup();
+        console.log(core.options.marker_id);
+        togglePopupCheck(undefined, [core.options.marker_id, 'marker']);
         map.panTo(core.markers[core.options.marker_id].getLatLng());
-        $('.leaflet-popup-content a.share').attr('href', window.location);
-        $('.leaflet-popup-content a.share').on('click', copyLink);
     }
     if (core.options.path_id != undefined && core.paths[core.options.path_id] != undefined) {
         highlightPath();
         core.paths[core.options.path_id].openPopup();
-        $('.leaflet-popup-content a.share').attr('href', window.location);
-        $('.leaflet-popup-content a.share').on('click', copyLink);
+        togglePopupCheck(undefined, [core.options.path_id, 'path']);
     }
 }
 
@@ -334,14 +333,31 @@ function parseMarkers(data, layer_id, type)  {
             if (core.config.layers[layer_id].types[type].icon == 'name') {
                 marker_content = marker_content + marker.name + '</div>';
             } else if (core.config.layers[layer_id].types[type].icon == 'filename') {
-                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '">';
+                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '" class="img-fluid">';
             }
         } else {
             marker_content = marker_content + core.config.layers[layer_id].class + '">';
             if (core.config.layers[layer_id].icon == 'name') {
                 marker_content = marker_content + marker.name + '</div>';
             } else if (core.config.layers[layer_id].icon == 'filename') {
-                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '">';
+                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '" class="img-fluid>';
+            }
+        }
+
+        var history = '';
+        if (marker.marker_relations != undefined && marker.marker_relations.length) {
+            for (var i = 0; i < marker.marker_relations.length; i++) {
+                if (marker.marker_relations[i].child != undefined) {
+                    history = history + '<tr data-toggle="tooltip" data-placement="top" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td class="col-md-3">' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td class="col-md-4">' + marker.marker_relations[i].child.name;
+                    if (marker.marker_relations[i].url) {
+                        history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
+                    }
+                    history = history + '</td><td class="col-md-2">';
+                    if (marker.marker_relations[i].child.filename) {
+                        history = history + '<a href="' + getFilename(layer_id, marker.marker_relations[i].child.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.marker_relations[i].child.filename) + '" alt="' + marker.filename + '" class="img-fluid"></a>';
+                    }
+                    history = history + '</td></tr>';
+                }
             }
         }
 
@@ -351,7 +367,9 @@ function parseMarkers(data, layer_id, type)  {
                 html: marker_content
             }),
             orig_id: marker.id,
-            orig_type: 'marker'
+            orig_type: 'marker',
+            orig_name: marker.name,
+            orig_editable_type: marker.type
         });
         popup_content = '';
         if (marker.name != undefined && marker.name) {
@@ -376,9 +394,9 @@ function parseMarkers(data, layer_id, type)  {
             });
             popup_content = popup_content + '<br><strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported));
             if (marker.outdated == 0) {
-                popup_content = popup_content + '<br>(<a class="notuptodate">' + i18n('Not up-to-date') + '</a>)';
+                popup_content = popup_content + '<small class="form-text text-muted" id="update-help">' + i18n('Provide more info') + '</small><button type="button" class="btn btn-primary btn-sm update">' + i18n('Update the marker') + '</button> <button type="button" class="btn btn-warning btn-sm outdated">' + i18n('Not up-to-date') + '</button>';
             } else {
-                popup_content = popup_content + '<br>(' + i18n('Reported not up-to-date') + ')';
+                popup_content = popup_content + '<div class="alert alert-warning">' + i18n('Reported not up-to-date') + '</div>';
             }
         }
         if (marker.name == undefined) {
@@ -442,6 +460,9 @@ function parseMarkers(data, layer_id, type)  {
                     popup_content = popup_content + ', ';
                 }
             }
+        }
+        if (history) {
+            popup_content = popup_content + '<br><strong>' + i18n('History') + '</strong><table class="table table-sm table-striped">' + history + '</table>';
         }
         if (marker.info != undefined) {
             for (key in marker.info) {
@@ -520,18 +541,38 @@ function getFilename(layer_id, filename, thumb = true) {
     return url;
 }
 
-function createMarker(e) {
+// e or force @array options lat, lng
+function createMarker(e, options) {
     if (core.editable_marker) {
         map.removeLayer(core.editable_marker);
     }
-    core.editable_marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map).bindPopup($('#form').clone().attr('id', 'editable').html(), {
+    if (e) {
+        var lat = e.latlng.lat;
+        var lng = e.latlng.lng;
+    } else if (options) {
+        var lat = options[0];
+        var lng = options[1];
+        var orig_id = options[2]
+        var name = options[3];
+        var type = options[4];
+    }
+    core.editable_marker = L.marker([lat, lng]).addTo(map).bindPopup($('#form').clone().attr('id', 'editable').html(), {
         minWidth: core.options.popup_width,
         keepInView: true
     }).openPopup().on('popupclose', function(e) {
         map.removeLayer(core.editable_marker);
     });
-    $('.leaflet-popup-content form input[name=lat]').val(e.latlng.lat);
-    $('.leaflet-popup-content form input[name=lon]').val(e.latlng.lng);
+    $('.leaflet-popup-content form input[name=lat]').val(lat);
+    $('.leaflet-popup-content form input[name=lon]').val(lng);
+    if (orig_id) {
+        $('.leaflet-popup-content form input[name=original_id]').val(orig_id);
+    }
+    if (name) {
+        $('.leaflet-popup-content form input[name=name]').val(name);
+    }
+    if (type) {
+        $('.leaflet-popup-content form select[name=type]').val(type);
+    }
     $('.leaflet-popup-content form').on('submit', function(e)  {
         action = $('.leaflet-popup-content form').clone().attr('action');
         core.editable_marker.setPopupContent(i18n('Creating... Please wait.'));
@@ -557,9 +598,18 @@ function createMarker(e) {
     });
 }
 
-function togglePopupCheck(e)  {
-    var object_id = e.popup._source.options.orig_id;
-    var object_type = e.popup._source.options.orig_type;
+// e or force @array options = [object_id, object_type]
+function togglePopupCheck(e, options)  {
+    var object_id, object_type;
+    console.log(e, options);
+    if (e) {
+        object_id = e.popup._source.options.orig_id;
+        object_type = e.popup._source.options.orig_type;
+    } else if (options) {
+        object_id = options[0];
+        object_type = options[1];
+    }
+    console.log(object_id, object_type);
     if (object_id) {
         if (object_type == 'marker') {
             core.options.marker_id = object_id;
@@ -573,9 +623,14 @@ function togglePopupCheck(e)  {
     $('.leaflet-popup-content a.share').off();
     $('.leaflet-popup-content a.share').attr('href', window.location);
     $('.leaflet-popup-content a.share').on('click', copyLink);
-    $('.notuptodate').on('click', function() {
+    $('.update').on('click', function() {
+        createMarker(undefined, [core.markers[object_id]._latlng.lat, core.markers[object_id]._latlng.lng, object_id, core.markers[object_id].options.orig_name, core.markers[object_id].options.orig_editable_type]);
+    });
+    $('.outdated').on('click', function() {
         var parent = this;
         if (!$(this).hasClass('toconfirm')) {
+            $('#update-help').hide();
+            $('.update').hide();
             $(this).addClass('toconfirm');
             $(this).text(i18n('Click again to confirm.'));
         } else {
@@ -594,11 +649,11 @@ function togglePopupCheck(e)  {
                 processData: false,
                 success: function(data) {
                     if (data.success) {
-                        message = i18n('Thank you for your notification. Administrator will verify your information and remove the marker.');
+                        message = i18n('Thank you for your notification. Administrator will verify your information and update the marker.');
                     } else {
                         message = i18n('Something failed. Please try again.');
                     }
-                    $(parent).replaceWith('<span class="confirmedoutdated">' + message + '</span>')
+                    $(parent).replaceWith('<div class="alert alert-warning">' + message + '</div>')
                 }
             });
             pushEvent('markeredit');

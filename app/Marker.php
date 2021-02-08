@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Marker extends Model
 {
     protected $fillable = ['layer_id', 'type', 'lat', 'lon', 'name', 'description', 'filename', 'email', 'approved', 'outdated', 'deleted'];
-    protected $hidden = ['approved', 'deleted', 'created_at', 'updated_at'];
+    protected $hidden = ['approved', 'deleted', 'updated_at'];
 
     public function relations()
     {
@@ -17,6 +17,11 @@ class Marker extends Model
     public function layer()
     {
         return $this->belongsTo('\App\Layer');
+    }
+
+    public function markerRelations()
+    {
+        return $this->hasMany('\App\MarkersRelation')->orderBy('created_at', 'desc');
     }
 
 }

@@ -6,6 +6,7 @@ use App\Cycleway;
 use App\Helpers\Helper;
 use App\Layer;
 use App\Marker;
+use App\MarkersRelation;
 use App\Path;
 use App\Relation;
 use Google_Client;
@@ -61,7 +62,7 @@ class MasterplanController extends Controller
     public function getLayer(Request $request)
     {
         $this->initialize();
-        $this->markers = Marker::with('relations')->select()->where(['approved' => 1, 'deleted' => 0, 'layer_id' => $request->id]);
+        $this->markers = Marker::with(['relations', 'markerRelations.child'])->select()->where(['approved' => 1, 'deleted' => 0, 'layer_id' => $request->id]);
         if (isset($request->type)) {
             $this->markers = $this->markers->where('type', $request->type);
         }
@@ -91,6 +92,7 @@ class MasterplanController extends Controller
 
     public function saveData(Request $request)
     {
+        DB::beginTransaction();
         $this->initialize();
         $user = Auth::user();
         $content['success'] = 0;
@@ -133,9 +135,22 @@ class MasterplanController extends Controller
                 $marker->outdated = 0;
                 $marker->deleted = 0;
                 $marker->save();
+                if ($request->original_id) {
+                    $original_marker = Marker::find($request->original_id);
+                    if ($original_marker and $original_marker->id) {
+                        MarkersRelation::where('marker_id', $request->original_id)->update(['marker_id' => $marker->id]);
+                        $marker_relation = new MarkersRelation;
+                        $marker_relation->marker_id = $marker->id;
+                        $marker_relation->related_marker_id = $request->original_id;
+                        $marker_relation->save();
+                        $original_marker->outdated = 1;
+                        $original_marker->save();
+                    }
+                }
                 $content['success'] = 1;
             }
         }
+        DB::commit();
         return response()->json($content);
     }
 

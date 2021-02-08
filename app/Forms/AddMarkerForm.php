@@ -39,6 +39,7 @@ class AddMarkerForm extends Form
             ]])
             ->add('lat', 'hidden')
             ->add('lon', 'hidden')
+            ->add('original_id', 'hidden', ['value' => 0])
             ->add('submit', 'submit', ['label' => 'Create marker', 'attr' => ['class' => 'btn btn-primary btn-block'], 'help_block' => [
                 'text' => 'Submitted markers are to be verified pending approval by an administrator.',
                 'tag'  => 'small',

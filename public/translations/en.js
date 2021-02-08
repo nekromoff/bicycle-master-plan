@@ -14,6 +14,7 @@ translation = {
         // general
         "Link": "Link",
         "Copy link to clipboard": "Copy link to clipboard",
+        "History": "History",
         "Operator": "Operator",
         "Marking": "Marking",
         "Left side": "Left side",
@@ -48,9 +49,11 @@ translation = {
         "Optional - if you want us to be able to contact you to send you thanks": "Optional - if you want us to be able to thank you",
         "Create marker": "Create marker",
         "Submitted markers are to be verified pending approval by an administrator.": "Submitted markers are to be verified pending approval by an administrator.",
-        "Not up-to-date": "Not up-to-date anymore? Click.",
-        "Click again to confirm.": "Click again to confirm, if the marker is outdated.",
-        "Thank you for your notification. Administrator will verify your information and remove the marker.": "Thank you for your notification. Administrator will verify your information and remove the marker.",
+        "Update the marker": "Update with new info",
+        "Provide more info": "Click to provide new info on this marker.",
+        "Not up-to-date": "Remove as outdated",
+        "Click again to confirm.": "Click again to confirm to mark this marker as outdated.",
+        "Thank you for your notification. Administrator will verify your information and update the marker.": "Thank you for your notification. Administrator will verify your information and update the marker.",
         "Reported not up-to-date": "This marker has been reported as outdated and is to be checked by an administrator.",
         // administration
         "Login":   "Login",

@@ -14,6 +14,7 @@ translation = {
         // general
         "Link": "Odkaz",
         "Copy link to clipboard": "Skopírovať odkaz do schránky",
+        "History": "História",
         "Operator": "Správca",
         "Marking": "Značenie",
         "Left side": "Naľavo",
@@ -48,9 +49,11 @@ translation = {
         "Optional - if you want us to be able to contact you to send you thanks": "Dobrovoľné - ak chcete, aby sme vám mohli poďakovať",
         "Create marker": "Vytvoriť bod",
         "Submitted markers are to be verified pending approval by an administrator.": "Odoslané body budú overené a prejdú schvaľovaním administrátorom.",
-        "Not up-to-date": "Už neaktuálne? Kliknite.",
-        "Click again to confirm.": "Potvrďte opätovným kliknutím, ak je bod neaktuálny.",
-        "Thank you for your notification. Administrator will verify your information and remove the marker.": "Ďakujeme za nahlásenie. Administrátor overí vašu informáciu a odstráni tento bod.",
+        "Update the marker": "Aktualizovať",
+        "Provide more info": "Nová informácia? Pošlite nám nové informácie k tomuto bodu.",
+        "Not up-to-date": "Odstrániť ako neaktuálne",
+        "Click again to confirm.": "Potvrďte opätovným klikom, že je bod neaktuálny.",
+        "Thank you for your notification. Administrator will verify your information and update the marker.": "Ďakujeme za nahlásenie. Administrátor overí vašu informáciu a aktualizuje tento bod.",
         "Reported not up-to-date": "Tento bod bol nahlásený ako neaktuálny a bude skontrolovaný administrátorom.",
         // administration
         "Login":   "Prihlásenie / login",
