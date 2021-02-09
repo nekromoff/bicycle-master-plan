@@ -1,5 +1,5 @@
 # Bicycle Master Plan
-Bicycle Master Plan is a tool / app for displaying various bicycle infrastructure related data on a map. Actually, you can pull any OSM/custom data on a map, not just bicycle-related data.
+Bicycle Master Plan is a tool / app for displaying various bicycle infrastructure related data on a map. Actually, you can pull any OpenStreetMap/custom data on a map, not just bicycle-related data.
 
 It supports the following sources of data:
 - database data (seed your database; markers only)
@@ -79,3 +79,50 @@ Open `public/css/main.css` to customize layer markers or styles of paths etc. SV
 ],
 ```
 5. Refresh your map to see your photos
+
+#### OpenStreeMap cycling paths and bike sharing stations
+1. Edit `config/map.php` and add a layer (change number `5` to suit your purposes) to the `layers`:
+```
+5 => [
+    'type'  => 'path',
+    'name'  => 'Cycling paths<br><span class="cycleway-lane">━━━</span> Segregated<br><span class="cycleway-shared_lane">━━━</span> Shared<br><span class="lcn-provisional">• • • •</span> Recommended<br><span class="highway-pedestrian">━━━</span> Pedestrianized<br><span class="mtb-scale">━━━</span> For mountain bikes',
+    'class' => 'ways',
+    'file'  => 'ways.json',
+],
+```
+2. Add OSM instructions for fetching data in `config/map.php`. Change `network` operator name to your city's one (e.g. `Slovnaft BAjk` for Bratislava):
+```
+// OSM data to fetch
+'osm_server'     => 'https://lz4.overpass-api.de/api/interpreter',
+'osm_data'       => [
+    [
+        'file' => 'ways.json',
+        'data' => '[out:json]; (way[cycleway]({{bbox}}); way["cycleway:left"]({{bbox}}); way["cycleway:right"]({{bbox}}); way[highway=pedestrian]({{bbox}}); way[highway=cycleway]({{bbox}}); way[bicycle=yes]({{bbox}}); way[bicycle=official]({{bbox}}); way[lcn]({{bbox}}); way[bicycle=designated]({{bbox}}); ); out body; >; out skel qt;',
+    ],
+    [
+        'file' => 'bikeshare-sb.json',
+        'data' => '[out:json]; (node[network="Slovnaft BAjk"]({{bbox}}); ); out body; >; out skel qt;',
+    ],
+],
+```
+
+#### Bicycle parking stands from OpenStreeMap
+1. Edit `config/map.php` and add a layer (change number `2` to suit your purposes) to the `layers`:
+```
+2   => [
+            'type'  => 'marker',
+            'name'  => 'Stojany pre bicykle<br><span class="parking"></span> <span class="parking bicycle_parking-rack"></span> <span class="parking bicycle_parking-shed"></span> Bezpečné<br><span class="parking bicycle_parking-anchors"></span> Nevhodné<br><span class="amenity-bicycle_repair_station"></span> Verejná pumpa a náradie',
+            'class' => 'parking',
+            'file'  => 'parking.json',
+],
+```
+2. Add OSM instructions for fetching data in `config/map.php`:
+```
+'osm_server'     => 'https://lz4.overpass-api.de/api/interpreter',
+'osm_data'       => [
+    [
+        'file' => 'parking.json',
+        'data' => '[out:json]; (node[amenity="bicycle_parking"]({{bbox}}); node["amenity"="bicycle_repair_station"]({{bbox}}); ); out body; >; out skel qt;',
+    ],
+],
+```
