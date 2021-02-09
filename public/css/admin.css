@@ -6,9 +6,10 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
 }
 
 #map {
-    width: 100%;
+    width: 50%;
     height: 100vh;
     font-size: 0.9em;
+    position: fixed;
 }
 
 table img {
