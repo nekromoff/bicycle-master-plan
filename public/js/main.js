@@ -56,6 +56,7 @@ $(document).ready(function() {
     }
     map.on('popupopen', togglePopupCheck);
     map.on('popupclose', removeObjectFragment);
+    $('[data-toggle="tooltip"]').tooltip();
 });
 
 function forceOptions() {
@@ -250,7 +251,7 @@ function parsePaths(data, layer_id, type) {
             if (path.info.name != undefined && path.info.name) {
                 popup_content = popup_content + '<strong>' + path.info.name + '</strong>';
             }
-            popup_content = popup_content + '<a href="" class="float-right share" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
+            popup_content = popup_content + '<a href="" class="float-right share" data-toggle="tooltip" data-placement="top" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
             if (path.info.name == undefined) {
                 popup_content = popup_content + '<strong>';
             }
@@ -348,7 +349,7 @@ function parseMarkers(data, layer_id, type)  {
         if (marker.marker_relations != undefined && marker.marker_relations.length) {
             for (var i = 0; i < marker.marker_relations.length; i++) {
                 if (marker.marker_relations[i].child != undefined) {
-                    history = history + '<tr data-toggle="tooltip" data-placement="top" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td class="col-md-3">' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td class="col-md-4">' + marker.marker_relations[i].child.name;
+                    history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td class="col-md-3">' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td class="col-md-4">' + marker.marker_relations[i].child.name;
                     if (marker.marker_relations[i].url) {
                         history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
                     }
@@ -377,7 +378,7 @@ function parseMarkers(data, layer_id, type)  {
         } else if (marker.info != undefined && marker.info.name) {
             popup_content = popup_content + '<strong>' + marker.info.name + '</strong>';
         }
-        popup_content = popup_content + '<a href="" class="float-right share" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
+        popup_content = popup_content + '<a href="" class="float-right share" data-toggle="tooltip" data-placement="top" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
         if (marker.url != undefined && marker.url) {
             popup_content = popup_content + '<br><a href="' + marker.url + '">' + i18n('Link') + '</a>';
         }
@@ -601,15 +602,13 @@ function createMarker(e, options) {
 // e or force @array options = [object_id, object_type]
 function togglePopupCheck(e, options)  {
     var object_id, object_type;
-    console.log(e, options);
-    if (e) {
+    if (e && e.popup._source != undefined) {
         object_id = e.popup._source.options.orig_id;
         object_type = e.popup._source.options.orig_type;
     } else if (options) {
         object_id = options[0];
         object_type = options[1];
     }
-    console.log(object_id, object_type);
     if (object_id) {
         if (object_type == 'marker') {
             core.options.marker_id = object_id;
@@ -623,6 +622,7 @@ function togglePopupCheck(e, options)  {
     $('.leaflet-popup-content a.share').off();
     $('.leaflet-popup-content a.share').attr('href', window.location);
     $('.leaflet-popup-content a.share').on('click', copyLink);
+    $('[data-toggle="tooltip"]').tooltip();
     $('.update').on('click', function() {
         createMarker(undefined, [core.markers[object_id]._latlng.lat, core.markers[object_id]._latlng.lng, object_id, core.markers[object_id].options.orig_name, core.markers[object_id].options.orig_editable_type]);
     });
