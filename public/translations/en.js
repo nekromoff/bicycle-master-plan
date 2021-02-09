@@ -12,6 +12,7 @@ translation = {
         "pump": "pump",
         "tools": "tools",
         // general
+        "Help": "Help",
         "Link": "Link",
         "Copy link to clipboard": "Copy link to clipboard",
         "History": "History",
@@ -56,7 +57,8 @@ translation = {
         "Thank you for your notification. Administrator will verify your information and update the marker.": "Thank you for your notification. Administrator will verify your information and update the marker.",
         "Reported not up-to-date": "This marker has been reported as outdated and is to be checked by an administrator.",
         // administration
-        "Login":   "Login",
-        "Administration":   "Administration",
+        "Login": "Login",
+        "Administration": "Administration",
+        "Map": "Map"
     }
 }

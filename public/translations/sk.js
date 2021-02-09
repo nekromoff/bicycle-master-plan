@@ -12,6 +12,7 @@ translation = {
         "pump": "pumpa",
         "tools": "nástroje",
         // general
+        "Help": "Pomoc",
         "Link": "Odkaz",
         "Copy link to clipboard": "Skopírovať odkaz do schránky",
         "History": "História",
@@ -56,7 +57,8 @@ translation = {
         "Thank you for your notification. Administrator will verify your information and update the marker.": "Ďakujeme za nahlásenie. Administrátor overí vašu informáciu a aktualizuje tento bod.",
         "Reported not up-to-date": "Tento bod bol nahlásený ako neaktuálny a bude skontrolovaný administrátorom.",
         // administration
-        "Login":   "Prihlásenie / login",
-        "Administration":   "Administrácia",
+        "Login": "Prihlásenie / login",
+        "Administration": "Administrácia",
+        "Map": "Mapa"
     }
 }
