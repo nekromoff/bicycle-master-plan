@@ -245,15 +245,16 @@ class Helper
         echo $code;
     }
 
-    public static function jsSetupAdmin()
+    public static function jsSetupUI()
     {
+        $code = 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Help")+"\">❓</span>", function() {
+            core.options.intro = L.popup({ closeButton: true, autoClose: true, minWidth: core.options.popup_width}).setLatLng(map.getBounds().getCenter()).setContent("' . addslashes(config('map.intro')) . '").openOn(map); $("#intro_off").on("click", function() { setCookie("intro_off", 1, 180); map.closePopup(); });}).addTo(map); ';
         if (config('map.admins')) {
             $user = Auth::user();
-            $code = '';
             if (!$user) {
-                $code = 'L.easyButton("<span title=\""+ i18n("Login")+"\">🔑</span>", function() { window.location.assign("' . route('login', ['provider' => 'google']) . '") }).addTo(map);';
+                $code .= 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Login")+"\">🔑</span>", function() { window.location.assign("' . route('login', ['provider' => 'google']) . '") }).addTo(map);';
             } elseif ($user and in_array($user->email, config('map.admins')) === true) {
-                $code = 'L.easyButton("<span title=\""+ i18n("Administration")+"\">🖉</span>", function() { window.location.assign("' . route('admin') . '") }).addTo(map);';
+                $code .= 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Administration")+"\">🖉</span>", function() { window.location.assign("' . route('admin') . '") }).addTo(map);';
             }
             echo $code;
         }
