@@ -1,11 +1,12 @@
 # Bicycle Master Plan
-Bicycle Master Plan is a tool / app for displaying various bicycle infrastructure related data on a map. Actually, you can pull any OpenStreetMap/custom data on a map, not just bicycle-related data.
+Bicycle Master Plan is a tool / web app for displaying various bicycle infrastructure related data on a map. Actually, you can use any OpenStreetMap / custom data on a map, not just bicycle-related data. Extensive visual customization is possible by automatical conversion of OSM keys and values to CSS classes.
 
 It supports the following sources of data:
 - database data (seed your database; markers only)
 - OSM data (JSON format; tiles, paths/ways and markers)
 - custom data (rows in Google Sheets; markers only)
 - GPS EXIF-tagged photos (automatic using default seeder)
+- data provided by users via form
 
 Built with:
 - Laravel (PHP)
@@ -56,8 +57,22 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
     ],
 ```
 
-## Customization
+## Customization / map style
+All standard map tiles providers are supported.
+
 Open `public/css/main.css` to customize layer markers or styles of paths etc. SVG properties (`fill`, `stroke` etc.) need to be used for styling paths/OSM ways, see https://css-tricks.com/svg-properties-and-css/.
+
+Example of path classes created from OpenStreetMap data (bicycle lane):
+```
+class="path cycleway-left-lane cycleway-right-shared_lane foot-use_sidepath highway-residential lit-yes maxspeed-30 name-dunajska name-hu-dunautca surface-asphalt trolley_wire-yes"
+```
+
+Example of marker classes created from OpenStreetMap data (bicycle parking):
+```
+class="marker access-private amenity-bicycle_parking covered-yes surveillance-yes parking"
+```
+
+Any combinations of keys / values can be easily styled for your purposes by using standardized CSS.
 
 ## Examples
 
@@ -80,7 +95,7 @@ Open `public/css/main.css` to customize layer markers or styles of paths etc. SV
 ```
 5. Refresh your map to see your photos
 
-#### OpenStreeMap cycling paths and bike sharing stations
+### OpenStreeMap cycling paths and bike sharing stations
 1. Edit `config/map.php` and add a layer (change number `5` to suit your purposes) to the `layers`:
 ```
 5 => [
@@ -106,7 +121,7 @@ Open `public/css/main.css` to customize layer markers or styles of paths etc. SV
 ],
 ```
 
-#### Bicycle parking stands from OpenStreeMap
+### Bicycle parking stands from OpenStreeMap
 1. Edit `config/map.php` and add a layer (change number `2` to suit your purposes) to the `layers`:
 ```
 2   => [
