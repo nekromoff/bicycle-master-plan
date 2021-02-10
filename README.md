@@ -126,7 +126,7 @@ Any combinations of keys / values can be easily styled for your purposes by usin
 ```
 2   => [
             'type'  => 'marker',
-            'name'  => 'Stojany pre bicykle<br><span class="parking"></span> <span class="parking bicycle_parking-rack"></span> <span class="parking bicycle_parking-shed"></span> Bezpečné<br><span class="parking bicycle_parking-anchors"></span> Nevhodné<br><span class="amenity-bicycle_repair_station"></span> Verejná pumpa a náradie',
+            'name'  => 'Bicycle parking<br><span class="parking"></span> <span class="parking bicycle_parking-rack"></span> <span class="parking bicycle_parking-shed"></span> Safe<br><span class="parking bicycle_parking-anchors"></span> Unsuitable<br><span class="amenity-bicycle_repair_station"></span> Public pump and tools',
             'class' => 'parking',
             'file'  => 'parking.json',
 ],
