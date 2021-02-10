@@ -26,7 +26,7 @@ $(document).ready(function() {
     $('#intro_off').on('click', function() {
         setCookie('intro_off', 1, 180);
         map.closePopup();
-    })
+    });
     changeZoomClass();
     // if location fragment exists on launch
     if (window.location.hash) {
@@ -207,7 +207,6 @@ function parseLayer(data, layer_id, type) {
     rewriteFragment();
     if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
         core.markers[core.options.marker_id].openPopup();
-        console.log(core.options.marker_id);
         togglePopupCheck(undefined, [core.options.marker_id, 'marker']);
         map.panTo(core.markers[core.options.marker_id].getLatLng());
     }
