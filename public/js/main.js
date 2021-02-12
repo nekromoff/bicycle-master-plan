@@ -353,6 +353,12 @@ function parseMarkers(data, layer_id, type)  {
                         history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
                     }
                     history = history + '</td><td class="col-md-2">';
+                    if (marker.marker_relations[i].child.url) {
+                        history = history + '<a href="' + marker.marker_relations[i].child.url + '">' + i18n('Link') + '</a>';
+                    }
+                    if (marker.marker_relations[i].child.url && marker.marker_relations[i].child.filename) {
+                        history = history + '<br>';
+                    }
                     if (marker.marker_relations[i].child.filename) {
                         history = history + '<a href="' + getFilename(layer_id, marker.marker_relations[i].child.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.marker_relations[i].child.filename) + '" alt="' + marker.filename + '" class="img-fluid"></a>';
                     }
