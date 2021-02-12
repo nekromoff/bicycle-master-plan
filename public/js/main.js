@@ -247,55 +247,64 @@ function parsePaths(data, layer_id, type) {
         core.paths[path.id] = L.polyline([path.nodes], polyline_options);
         popup_content = '';
         if (path.info != undefined) {
-            if (path.info.name != undefined && path.info.name) {
-                popup_content = popup_content + '<strong>' + path.info.name + '</strong>';
-            }
             popup_content = popup_content + '<a href="" class="float-right share" data-toggle="tooltip" data-placement="top" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
+            if (path.info.name != undefined && path.info.name) {
+                popup_content = popup_content + '<strong>' + path.info.name + '</strong><br>';
+            }
             if (path.info.name == undefined) {
                 popup_content = popup_content + '<strong>';
             }
             if (path.info.highway != undefined && path.info.highway == 'cycleway') {
-                popup_content = popup_content + '<br>' + i18n('Marking') + ': ' + i18n('Segregated bike lane');
+                popup_content = popup_content + i18n('Marking') + ': ' + i18n('Segregated bike lane') + '<br>';
             }
             if (path.info.railway != undefined && path.info.railway == 'tram' && path.info.bicycle != undefined && path.info.bicycle) {
-                popup_content = popup_content + '<br>' + i18n('Marking') + ': ' + i18n('Tram & bicycle access');
+                popup_content = popup_content + i18n('Marking') + ': ' + i18n('Tram & bicycle access') + '<br>';
             }
             if (path.info.highway != undefined && path.info.cycleway == undefined && (path.info.highway == 'pedestrian' || path.info.highway == 'footway' || path.info.highway == 'path') && path.info.bicycle != undefined && path.info.bicycle) {
                 if ((path.info.motorcar != undefined && path.info.motorcar == 'no') || (path.info['motor_vehicle'] != undefined && path.info['motor_vehicle'] == 'no') && path.info.bicycle == 'yes') {
-                    popup_content = popup_content + '<br>' + i18n('Marking') + ': ' + i18n('No motor vehicles');
+                    popup_content = popup_content + i18n('Marking') + ': ' + i18n('No motor vehicles') + '<br>';
                 } else if (path.info.bicycle == 'yes' || path.info.bicycle == 'designated') {
-                    popup_content = popup_content + '<br>' + i18n('Marking') + ': ' + i18n('Shared-use path');
+                    popup_content = popup_content + i18n('Marking') + ': ' + i18n('Shared-use path') + '<br>';
                 }
             }
             if (path.info['cycleway:lane'] != undefined && path.info['cycleway:lane']) {
-                popup_content = popup_content + '<br>' + i18n('Marking') + ': ';
-                popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:lane']);
+                popup_content = popup_content + i18n('Marking') + ': ';
+                popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:lane']) + '<br>';
             } else if (path.info.cycleway != undefined && path.info.cycleway) {
-                popup_content = popup_content + '<br>' + i18n('Marking') + ': ';
-                popup_content = popup_content + describeBicycleInfrastructure(path.info.cycleway);
+                popup_content = popup_content + i18n('Marking') + ': ';
+                popup_content = popup_content + describeBicycleInfrastructure(path.info.cycleway) + '<br>';
             }
             if (path.info['cycleway:left'] != undefined && path.info['cycleway:left']) {
-                popup_content = popup_content + '<br>' + i18n('Marking') + ': ';
+                popup_content = popup_content + i18n('Marking') + ': ';
                 popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:left']);
-                popup_content = popup_content + ' (' + i18n('Left side') + ') ';
+                popup_content = popup_content + ' (' + i18n('Left side') + ') ' + '<br>';
             }
             if (path.info['cycleway:right'] != undefined && path.info['cycleway:right']) {
-                popup_content = popup_content + '<br>' + i18n('Marking') + ': ';
+                popup_content = popup_content + i18n('Marking') + ': ';
                 popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:right']);
-                popup_content = popup_content + ' (' + i18n('Right side') + ') ';
+                popup_content = popup_content + ' (' + i18n('Right side') + ') ' + '<br>';
             }
             if (path.info.name == undefined) {
                 popup_content = popup_content + '</strong>';
             }
             if (path.info.ref != undefined && path.info.ref) {
-                popup_content = popup_content + '<br>' + i18n('Path number') + ': ' + path.info.ref;
+                popup_content = popup_content + i18n('Path number') + ': ' + path.info.ref + '<br>';
                 core.paths[path.id].setText(path.info.ref);
             }
             if (path.info.operator != undefined && path.info.operator) {
-                popup_content = popup_content + '<br>' + i18n('Operator') + ': ' + path.info.operator;
+                popup_content = popup_content + i18n('Operator') + ': ' + path.info.operator + '<br>';
+            }
+            if (path.info.state != undefined && path.info.state) {
+                popup_content = popup_content + i18n('State') + ': ' + i18n(path.info.state) + '<br>';
+            }
+            if (Object.keys(path.info).length) {
+                popup_content = popup_content + '<hr class="my-2"><p class="text-secondary mt-0">';
             }
             for (detail_key in path.info) {
-                popup_content = popup_content + '<br>' + detail_key + '=' + path.info[detail_key];
+                popup_content = popup_content + detail_key + '=' + path.info[detail_key] + '<br>';
+            }
+            if (Object.keys(path.info).length) {
+                popup_content = popup_content + '</p>';
             }
         }
         // add popup
@@ -343,7 +352,6 @@ function parseMarkers(data, layer_id, type)  {
                 marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '" class="img-fluid>';
             }
         }
-
         var history = '';
         if (marker.marker_relations != undefined && marker.marker_relations.length) {
             for (var i = 0; i < marker.marker_relations.length; i++) {
@@ -366,7 +374,6 @@ function parseMarkers(data, layer_id, type)  {
                 }
             }
         }
-
         marker_content = marker_content + '</div>';
         core.markers[marker.id] = L.marker([marker.lat, marker.lon], {
             icon: new L.DivIcon({
@@ -377,20 +384,19 @@ function parseMarkers(data, layer_id, type)  {
             orig_name: marker.name,
             orig_editable_type: marker.type
         });
-        popup_content = '';
+        popup_content = '<a href="" class="float-right share" data-toggle="tooltip" data-placement="top" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
         if (marker.name != undefined && marker.name) {
-            popup_content = popup_content + '<strong>' + marker.name + '</strong>';
+            popup_content = popup_content + '<strong>' + marker.name + '</strong><br>';
         } else if (marker.info != undefined && marker.info.name) {
-            popup_content = popup_content + '<strong>' + marker.info.name + '</strong>';
+            popup_content = popup_content + '<strong>' + marker.info.name + '</strong><br>';
         }
-        popup_content = popup_content + '<a href="" class="float-right share" data-toggle="tooltip" data-placement="top" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
         if (marker.url != undefined && marker.url) {
-            popup_content = popup_content + '<br><a href="' + marker.url + '">' + i18n('Link') + '</a>';
+            popup_content = popup_content + '<a href="' + marker.url + '">' + i18n('Link') + '</a><br>';
         }
         if (marker.description != undefined && marker.description) {
-            popup_content = popup_content + '<br>' + marker.description;
+            popup_content = popup_content + marker.description + '<br>';
         } else if (marker.info != undefined && marker.info.description) {
-            popup_content = popup_content + '<br>' + marker.info.description;
+            popup_content = popup_content + marker.info.description + '<br>';
         }
         if (layer_id == core.editable_layer_id && marker.date_reported != undefined) {
             formatter = new Intl.DateTimeFormat(core.config.language, {
@@ -398,18 +404,18 @@ function parseMarkers(data, layer_id, type)  {
                 month: 'short',
                 day: '2-digit'
             });
-            popup_content = popup_content + '<br><strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported));
+            popup_content = popup_content + '<strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported)) + '<br>';
             if (marker.outdated == 0) {
                 popup_content = popup_content + '<small class="form-text text-muted" id="update-help">' + i18n('Provide more info') + '</small><button type="button" class="btn btn-primary btn-sm update">' + i18n('Update the marker') + '</button> <button type="button" class="btn btn-warning btn-sm outdated">' + i18n('Not up-to-date') + '</button>';
             } else {
                 popup_content = popup_content + '<div class="alert alert-warning">' + i18n('Reported not up-to-date') + '</div>';
             }
         }
-        if (marker.name == undefined) {
+        if (!marker.name && marker.info.name == undefined) {
             popup_content = popup_content + '<strong>';
         }
         if (marker.info != undefined && marker.info.bicycle_parking != undefined) {
-            popup_content = popup_content + '<br>' + i18n('Bicycle stand') + ': ';
+            popup_content = popup_content + i18n('Bicycle stand') + ': ';
             if (marker.info.bicycle_parking == 'stands' || marker.info.bicycle_parking == 'wide_stands') {
                 popup_content = popup_content + i18n('U type (safe)');
             } else if (marker.info.bicycle_parking == 'rack' || marker.info.bicycle_parking == 'racks') {
@@ -423,16 +429,25 @@ function parseMarkers(data, layer_id, type)  {
             } else {
                 popup_content = popup_content + i18n('not suitable');
             }
+            popup_content = popup_content + '<br>';
         }
         if (marker.info != undefined && marker.info.amenity != undefined) {
             if (marker.info.amenity == 'bicycle_rental') {
-                popup_content = popup_content + '<br>' + i18n('Bike sharing station');
+                popup_content = popup_content + i18n('Bike sharing station') + '<br>';
             }
             if (marker.info.amenity == 'bicycle_repair_station') {
-                popup_content = popup_content + '<br>' + i18n('Bicycle repair stand');
+                popup_content = popup_content + i18n('Bicycle repair stand');
+                popup_content = popup_content + '<br>';
+            }
+        }
+        if (!marker.name && marker.info.name == undefined) {
+            popup_content = popup_content + '</strong>';
+        }
+        if (marker.info != undefined && marker.info.amenity != undefined) {
+            if (marker.info.amenity == 'bicycle_repair_station') {
                 if (marker.info['service:bicycle:pump'] != undefined || marker.info['service:bicycle:tools'] != undefined) {
                     if (marker.info['service:bicycle:pump'] == 'yes' || marker.info['service:bicycle:tools'] == 'yes') {
-                        popup_content = popup_content + '<br>' + i18n('Equipment') + ': ';
+                        popup_content = popup_content + i18n('Equipment') + ': ';
                         if (marker.info['service:bicycle:pump'] == 'yes') {
                             popup_content = popup_content + i18n('pump');
                         }
@@ -443,36 +458,41 @@ function parseMarkers(data, layer_id, type)  {
                             popup_content = popup_content + i18n('tools');
                         }
                     }
+                    popup_content = popup_content + '<br>';
                 }
             }
         }
-        if (marker.name == undefined) {
-            popup_content = popup_content + '</strong>';
-        }
         if (marker.info != undefined && marker.info.operator != undefined) {
-            popup_content = popup_content + '<br>' + i18n('Operator') + ': ' + marker.info.operator;
+            popup_content = popup_content + i18n('Operator') + ': ' + marker.info.operator + '<br>';
         }
         if (marker.info != undefined && marker.info.capacity != undefined) {
-            popup_content = popup_content + '<br>' + i18n('Capacity') + ': ' + marker.info.capacity;
+            popup_content = popup_content + i18n('Capacity') + ': ' + marker.info.capacity + '<br>';
         }
         if (marker.filename != undefined && marker.filename) {
-            popup_content = popup_content + '<br><a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '"></a>';
+            popup_content = popup_content + '<a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '"></a><br>';
         }
         if (marker.relations != undefined && marker.relations.length) {
-            popup_content = popup_content + '<br>' + i18n('Path number') + ': ';
+            popup_content = popup_content + i18n('Path number') + ': ';
             for (key in marker.relations) {
                 popup_content = popup_content + data.cycleways[marker.relations[key].cycleway_id].sign;
                 if (marker.relations.length > key + 1) {
                     popup_content = popup_content + ', ';
                 }
             }
+            popup_content = popup_content + '<br>';
         }
         if (history) {
-            popup_content = popup_content + '<br><strong>' + i18n('History') + '</strong><table class="table table-sm table-striped">' + history + '</table>';
+            popup_content = popup_content + '<strong>' + i18n('History') + '</strong><table class="table table-sm table-striped">' + history + '</table>';
         }
         if (marker.info != undefined) {
+            if (Object.keys(marker.info).length) {
+                popup_content = popup_content + '<hr class="my-2"><p class="text-secondary mt-0">';
+            }
             for (key in marker.info) {
-                popup_content = popup_content + '<br>' + key + ' = ' + marker.info[key];
+                popup_content = popup_content + key + ' = ' + marker.info[key] + '<br>';
+            }
+            if (Object.keys(marker.info).length) {
+                popup_content = popup_content + '</p>';
             }
         }
         // add popup
@@ -733,7 +753,6 @@ function copyLink() {
     temp_text.select();
     document.execCommand('copy');
     document.body.removeChild(temp_text);
-    console.log(temp_text, 'copied');
     window.setTimeout(function() {
         $(this).removeClass('clipboard');
     }, 1000)

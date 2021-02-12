@@ -22,6 +22,9 @@ translation = {
         "Right side": "Right side",
         "Capacity": "Capacity",
         "Equipment": "Equipment",
+        "State": "State",
+        "proposed": "proposed",
+        "completed": "completed",
         // paths / ways
         "Path number": "Path number",
         "Advisory": "Advisory bike lane",

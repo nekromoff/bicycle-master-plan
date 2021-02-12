@@ -22,6 +22,9 @@ translation = {
         "Right side": "Napravo",
         "Capacity": "Počet miest",
         "Equipment": "Vybavenie",
+        "State": "Stav",
+        "proposed": "navrhovaná",
+        "completed": "existujúca",
         // paths / ways
         "Path number": "Číslo trasy",
         "Advisory": "Ochranný cyklopruh",
