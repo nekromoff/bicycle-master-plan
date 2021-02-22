@@ -342,25 +342,25 @@ function parseMarkers(data, layer_id, type)  {
             if (core.config.layers[layer_id].types[type].icon == 'name') {
                 marker_content = marker_content + marker.name + '</div>';
             } else if (core.config.layers[layer_id].types[type].icon == 'filename') {
-                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '" class="img-fluid">';
+                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.name + '" class="img-fluid">';
             }
         } else {
             marker_content = marker_content + core.config.layers[layer_id].class + '">';
             if (core.config.layers[layer_id].icon == 'name') {
                 marker_content = marker_content + marker.name + '</div>';
             } else if (core.config.layers[layer_id].icon == 'filename') {
-                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '" class="img-fluid>';
+                marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.name + '" class="img-fluid>';
             }
         }
         var history = '';
         if (marker.marker_relations != undefined && marker.marker_relations.length) {
             for (var i = 0; i < marker.marker_relations.length; i++) {
                 if (marker.marker_relations[i].child != undefined) {
-                    history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td class="col-md-3">' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td class="col-md-4">' + marker.marker_relations[i].child.name;
+                    history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td>' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td>' + marker.marker_relations[i].child.name;
                     if (marker.marker_relations[i].url) {
                         history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
                     }
-                    history = history + '</td><td class="col-md-2">';
+                    history = history + '</td><td>';
                     if (marker.marker_relations[i].child.url) {
                         history = history + '<a href="' + marker.marker_relations[i].child.url + '">' + i18n('Link') + '</a>';
                     }
@@ -368,7 +368,7 @@ function parseMarkers(data, layer_id, type)  {
                         history = history + '<br>';
                     }
                     if (marker.marker_relations[i].child.filename) {
-                        history = history + '<a href="' + getFilename(layer_id, marker.marker_relations[i].child.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.marker_relations[i].child.filename) + '" alt="' + marker.filename + '" class="img-fluid"></a>';
+                        history = history + '<a href="' + getFilename(layer_id, marker.marker_relations[i].child.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.marker_relations[i].child.filename) + '" alt="' + marker.marker_relations[i].child.name + '" class="img-fluid"></a>';
                     }
                     history = history + '</td></tr>';
                 }
@@ -402,7 +402,7 @@ function parseMarkers(data, layer_id, type)  {
             formatter = new Intl.DateTimeFormat(core.config.language, {
                 year: 'numeric',
                 month: 'short',
-                day: '2-digit'
+                day: 'numeric'
             });
             popup_content = popup_content + '<strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported)) + '<br>';
             if (marker.outdated == 0) {
