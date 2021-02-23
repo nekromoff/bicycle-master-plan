@@ -14,7 +14,6 @@
         <link rel="shortcut icon" href="{{asset('images/'.config('map.image'))}}"/>
         <link rel="stylesheet" href="{{asset('css/bootstrap.min.css')}}" />
         <link rel="stylesheet" href="{{asset('css/leaflet.css')}}" />
-        <!-- future use: link rel="stylesheet" href="{{asset('css/leaflet-sidebar.min.css')}}" / -->
         <link rel="stylesheet" href="{{asset('css/MarkerCluster.Default.css')}}" />
         <link rel="stylesheet" href="{{asset('css/easy-button.css')}}" />
         <link rel="stylesheet" href="{{asset('css/main.css')}}">
@@ -39,7 +38,6 @@
         <script src="{{asset('js/jquery-3.5.1.min.js')}}"></script>
         <script src="{{asset('js/bootstrap.bundle.min.js')}}"></script>
         <script src="{{asset('js/leaflet.js')}}"></script>
-        <!-- future use: script src="{{asset('js/leaflet-sidebar.min.js')}}" -->
         <script src="{{asset('js/leaflet.markercluster.js')}}"></script>
         <script src="{{asset('js/easy-button.js')}}"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
@@ -90,6 +88,7 @@
             zoom: core.options.zoom,
             zoomSnap: 0.5,
             zoomDelta: 0.5,
+            tap: false, // fixes Safari issues with popups
             layers: [
                 @foreach (config('map.default_layers') as $layer)
                     @if ($layer!='base')
