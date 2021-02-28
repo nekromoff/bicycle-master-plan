@@ -132,6 +132,10 @@ class MasterplanController extends Controller
                     $marker->email = $user->email;
                 }
                 $marker->approved = 0;
+                // auto approve for admins
+                if ($user and in_array($user->email, config('map.admins')) === true) {
+                    $marker->approved = 1;
+                }
                 $marker->outdated = 0;
                 $marker->deleted = 0;
                 $marker->save();
@@ -144,6 +148,10 @@ class MasterplanController extends Controller
                         $marker_relation->related_marker_id = $request->original_id;
                         $marker_relation->save();
                         $original_marker->outdated = 1;
+                        // auto delete for admins
+                        if ($user and in_array($user->email, config('map.admins')) === true) {
+                            $original_marker->deleted = 1;
+                        }
                         $original_marker->save();
                     }
                 }
@@ -157,10 +165,15 @@ class MasterplanController extends Controller
     public function editData(Request $request)
     {
         $this->initialize();
+        $user = Auth::user();
         $content['success'] = 0;
         if (isset($request->id) and $request->id) {
             $marker = Marker::find($request->id);
             $marker->outdated = 1;
+            // auto delete for admins
+            if ($user and in_array($user->email, config('map.admins')) === true) {
+                $marker->deleted = 1;
+            }
             $marker->save();
             $content['success'] = 1;
         }
