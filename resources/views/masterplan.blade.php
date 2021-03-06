@@ -16,7 +16,7 @@
         <link rel="stylesheet" href="{{asset('css/leaflet.css')}}" />
         <link rel="stylesheet" href="{{asset('css/MarkerCluster.Default.css')}}" />
         <link rel="stylesheet" href="{{asset('css/easy-button.css')}}" />
-        <link rel="stylesheet" href="{{asset('css/main.css')}}">
+        <link rel="stylesheet" href="{{asset('css/main.css')}}?sidebar">
         <link rel="canonical" href="{{secure_url('/')}}" />
         <meta name="description" content="{{substr(strip_tags(config('map.intro')),0,300)}}">
         <meta property="og:title" content="{{config('map.name')}}">
@@ -58,7 +58,7 @@
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script src="{{asset('js/i18n.min.js')}}"></script>
         <script src="{{asset('translations/'.config('map.language').'.js')}}"></script>
-        <script src="{{asset('js/main.js')}}"></script>
+        <script src="{{asset('js/main.js')}}?sidebar"></script>
         <script>
         i18n.translator.add(translation);
         core.config={!! json_encode(config('map')) !!};
