@@ -6,26 +6,25 @@ core.markers = [];
 core.paths = [];
 core.relations = [];
 core.layers_parsed = [];
-core.options.popup_width = 35 * Math.max(document.documentElement.clientWidth, window.innerWidth || 0) / 100; //50% of viewport
-if (core.options.popup_width < 200) {
-    core.options.popup_width = 200;
-}
 core.editable_marker = false;
 
 $(document).ready(function() {
     // do form translations
     $('#form form label').each(function() {
-        $(this).text(i18n($(this).text().trim()))
+        $(this).text(i18n($(this).text().trim()));
     });
     $('#form form small').each(function() {
-        $(this).text(i18n($(this).text().trim()))
+        $(this).text(i18n($(this).text().trim()));
     });
     $('#form form button').each(function() {
-        $(this).text(i18n($(this).text().trim()))
+        $(this).text(i18n($(this).text().trim()));
+    });
+    $('.close').click(function() {
+        closeSidebar();
     });
     $('#intro_off').on('click', function() {
         setCookie('intro_off', 1, 180);
-        map.closePopup();
+        closeSidebar();
     });
     changeZoomClass();
     // if location fragment exists on launch
@@ -54,8 +53,6 @@ $(document).ready(function() {
     if (core.editable_layer_id) {
         map.on('contextmenu', createMarker);
     }
-    map.on('popupopen', togglePopupCheck);
-    map.on('popupclose', removeObjectFragment);
     $('[data-toggle="tooltip"]').tooltip();
 });
 
@@ -157,7 +154,8 @@ function changeZoomClass() {
 }
 
 function removeObjectFragment() {
-    $('.highlighted').removeClass('highlighted');
+    $('.highlight-path').removeClass('highlight-path');
+    $('.highlight-marker').removeClass('highlight-marker');
     core.options.marker_id = undefined;
     core.options.path_id = undefined;
     rewriteFragment();
@@ -206,14 +204,15 @@ function parseLayer(data, layer_id, type) {
     }
     rewriteFragment();
     if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
-        core.markers[core.options.marker_id].openPopup();
-        togglePopupCheck(undefined, [core.options.marker_id, 'marker']);
+        highlightMarker(core.options.marker_id);
+        openSidebar(core.markers[core.options.marker_id].options.content);
+        toggleSidebarCheck(core.options.marker_id, 'marker');
         map.panTo(core.markers[core.options.marker_id].getLatLng());
     }
     if (core.options.path_id != undefined && core.paths[core.options.path_id] != undefined) {
         highlightPath();
-        core.paths[core.options.path_id].openPopup();
-        togglePopupCheck(undefined, [core.options.path_id, 'path']);
+        openSidebar(core.paths[core.options.path_id].options.content);
+        toggleSidebarCheck(core.options.path_id, 'path');
     }
 }
 
@@ -228,88 +227,100 @@ function parsePaths(data, layer_id, type) {
         if (path.info != undefined) {
             // define relation, if ref exists
             if (path.info.ref != undefined) {
-                var relation = normalize(path.info.ref, /[^A-Za-z0-9_-]/g);
+                var relation = normalize('ref-' + path.info.ref, /[^A-Za-z0-9_-]/g);
                 polyline_options.relation = relation;
                 createRelation(relation, path.id);
-            }
-            /* // same name applies to different type of segments, so maybe not the best solution
-             else if (path.info.name != undefined && path.info.name) {
-                var relation = normalize(path.info.name, /[^A-Za-z0-9_-]/g);
+            } else {
+                var relation = normalize('simulated-' + path.id, /[^A-Za-z0-9_-]/g);
                 polyline_options.relation = relation;
                 createRelation(relation, path.id);
+                classes = classes + ' ' + relation;
             }
-            */
             for (detail_key in path.info) {
                 classes = classes + ' ' + normalize(detail_key) + '-' + normalize(path.info[detail_key], /[^A-Za-z0-9_-]/g)
             }
         }
         polyline_options.className = classes;
         core.paths[path.id] = L.polyline([path.nodes], polyline_options);
-        popup_content = '';
+        content = '';
         if (path.info != undefined) {
-            popup_content = popup_content + '<a href="" class="float-right share" data-toggle="tooltip" data-placement="top" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
             if (path.info.name != undefined && path.info.name) {
-                popup_content = popup_content + '<strong>' + path.info.name + '</strong><br>';
+                content = content + '<h2>';
+            }
+            if (path.info.name != undefined && path.info.name) {
+                content = content + path.info.name;
+            }
+            if (path.info.name != undefined && path.info.name) {
+                content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button>';
+                content = content + '</h2>';
             }
             if (path.info.name == undefined) {
-                popup_content = popup_content + '<strong>';
+                content = content + '<strong>';
+            }
+            if (path.info.lcn != undefined && path.info.lcn == 'provisional') {
+                content = content + i18n('Recommended path for cyclists') + '<br>';
             }
             if (path.info.highway != undefined && path.info.highway == 'cycleway') {
-                popup_content = popup_content + i18n('Marking') + ': ' + i18n('Segregated bike lane') + '<br>';
+                content = content + i18n('Marking') + ': ' + i18n('Segregated bike lane') + '<br>';
             }
             if (path.info.railway != undefined && path.info.railway == 'tram' && path.info.bicycle != undefined && path.info.bicycle) {
-                popup_content = popup_content + i18n('Marking') + ': ' + i18n('Tram & bicycle access') + '<br>';
+                content = content + i18n('Marking') + ': ' + i18n('Tram & bicycle access') + '<br>';
             }
             if (path.info.highway != undefined && path.info.cycleway == undefined && (path.info.highway == 'pedestrian' || path.info.highway == 'footway' || path.info.highway == 'path') && path.info.bicycle != undefined && path.info.bicycle) {
                 if ((path.info.motorcar != undefined && path.info.motorcar == 'no') || (path.info['motor_vehicle'] != undefined && path.info['motor_vehicle'] == 'no') && path.info.bicycle == 'yes') {
-                    popup_content = popup_content + i18n('Marking') + ': ' + i18n('No motor vehicles') + '<br>';
+                    content = content + i18n('Marking') + ': ' + i18n('No motor vehicles') + '<br>';
                 } else if (path.info.bicycle == 'yes' || path.info.bicycle == 'designated') {
-                    popup_content = popup_content + i18n('Marking') + ': ' + i18n('Shared-use path') + '<br>';
+                    content = content + i18n('Marking') + ': ' + i18n('Shared-use path') + '<br>';
                 }
             }
             if (path.info['cycleway:lane'] != undefined && path.info['cycleway:lane']) {
-                popup_content = popup_content + i18n('Marking') + ': ';
-                popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:lane']) + '<br>';
+                content = content + i18n('Marking') + ': ';
+                content = content + describeBicycleInfrastructure(path.info['cycleway:lane']) + '<br>';
             } else if (path.info.cycleway != undefined && path.info.cycleway) {
-                popup_content = popup_content + i18n('Marking') + ': ';
-                popup_content = popup_content + describeBicycleInfrastructure(path.info.cycleway) + '<br>';
+                content = content + i18n('Marking') + ': ';
+                content = content + describeBicycleInfrastructure(path.info.cycleway) + '<br>';
             }
             if (path.info['cycleway:left'] != undefined && path.info['cycleway:left']) {
-                popup_content = popup_content + i18n('Marking') + ': ';
-                popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:left']);
-                popup_content = popup_content + ' (' + i18n('Left side') + ') ' + '<br>';
+                content = content + i18n('Marking') + ': ';
+                content = content + describeBicycleInfrastructure(path.info['cycleway:left']);
+                content = content + ' (' + i18n('Left side') + ') ' + '<br>';
             }
             if (path.info['cycleway:right'] != undefined && path.info['cycleway:right']) {
-                popup_content = popup_content + i18n('Marking') + ': ';
-                popup_content = popup_content + describeBicycleInfrastructure(path.info['cycleway:right']);
-                popup_content = popup_content + ' (' + i18n('Right side') + ') ' + '<br>';
+                content = content + i18n('Marking') + ': ';
+                content = content + describeBicycleInfrastructure(path.info['cycleway:right']);
+                content = content + ' (' + i18n('Right side') + ') ' + '<br>';
             }
             if (path.info.name == undefined) {
-                popup_content = popup_content + '</strong>';
+                content = content + '</strong>';
             }
             if (path.info.ref != undefined && path.info.ref) {
-                popup_content = popup_content + i18n('Path number') + ': ' + path.info.ref + '<br>';
+                content = content + i18n('Path number') + ': ' + path.info.ref + '<br>';
                 core.paths[path.id].setText(path.info.ref);
             }
             if (path.info.operator != undefined && path.info.operator) {
-                popup_content = popup_content + i18n('Operator') + ': ' + path.info.operator + '<br>';
+                content = content + i18n('Operator') + ': ' + path.info.operator + '<br>';
             }
             if (path.info.state != undefined && path.info.state) {
-                popup_content = popup_content + i18n('State') + ': ' + i18n(path.info.state) + '<br>';
+                content = content + i18n('State') + ': ' + i18n(path.info.state) + '<br>';
             }
             if (Object.keys(path.info).length) {
-                popup_content = popup_content + '<hr class="my-2"><p class="text-secondary mt-0">';
+                content = content + '<hr class="my-2"><p class="text-secondary mt-0">';
             }
             for (detail_key in path.info) {
-                popup_content = popup_content + detail_key + '=' + path.info[detail_key] + '<br>';
+                content = content + detail_key + '=' + path.info[detail_key] + '<br>';
             }
             if (Object.keys(path.info).length) {
-                popup_content = popup_content + '</p>';
+                content = content + '</p>';
             }
         }
-        // add popup
-        if (popup_content) {
-            core.paths[path.id].bindPopup(popup_content);
+        // add sidebar content
+        if (content)  {
+            core.paths[path.id].options.content = content;
+            core.paths[path.id].on('click', function() {
+                openSidebar(this.options.content);
+                toggleSidebarCheck(this.options.orig_id, 'path');
+                $('[data-toggle="tooltip"]').tooltip();
+            });
         }
         // add to layer
         if (core.config.layers[layer_id].types != undefined && type) {
@@ -331,7 +342,6 @@ function parseMarkers(data, layer_id, type)  {
             for (key in marker.info) {
                 // keep numbers for "ref" key content
                 marker_content = marker_content + normalize(key) + '-' + normalize(marker.info[key], /[^A-Za-z0-9_-]/g) + ' ';
-
             }
         }
         if (marker.description != undefined && marker.description) {
@@ -356,11 +366,11 @@ function parseMarkers(data, layer_id, type)  {
         if (marker.marker_relations != undefined && marker.marker_relations.length) {
             for (var i = 0; i < marker.marker_relations.length; i++) {
                 if (marker.marker_relations[i].child != undefined) {
-                    history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td>' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td>' + marker.marker_relations[i].child.name;
+                    history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td class="col-2">' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td class="col-4">' + marker.marker_relations[i].child.name;
                     if (marker.marker_relations[i].url) {
                         history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
                     }
-                    history = history + '</td><td>';
+                    history = history + '</td><td class="col-6">';
                     if (marker.marker_relations[i].child.url) {
                         history = history + '<a href="' + marker.marker_relations[i].child.url + '">' + i18n('Link') + '</a>';
                     }
@@ -384,19 +394,31 @@ function parseMarkers(data, layer_id, type)  {
             orig_name: marker.name,
             orig_editable_type: marker.type
         });
-        popup_content = '<a href="" class="float-right share" data-toggle="tooltip" data-placement="top" title="' + i18n('Copy link to clipboard') + '">🔗</a>';
+        content = '';
+        if ((marker.name != undefined && marker.name) || (marker.info != undefined && marker.info.name)) {
+            content = content + '<h2>';
+        }
         if (marker.name != undefined && marker.name) {
-            popup_content = popup_content + '<strong>' + marker.name + '</strong><br>';
+            content = content + marker.name;
         } else if (marker.info != undefined && marker.info.name) {
-            popup_content = popup_content + '<strong>' + marker.info.name + '</strong><br>';
+            content = content + marker.info.name;
+        }
+        if ((marker.name != undefined && marker.name) || (marker.info != undefined && marker.info.name)) {
+            content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button></h2>';
         }
         if (marker.url != undefined && marker.url) {
-            popup_content = popup_content + '<a href="' + marker.url + '">' + i18n('Link') + '</a><br>';
+            content = content + '<a href="' + marker.url + '">' + i18n('Link') + '</a><br>';
+        }
+        if ((marker.description != undefined && marker.description) || (marker.info != undefined && marker.info.description)) {
+            content = content + '<p>';
         }
         if (marker.description != undefined && marker.description) {
-            popup_content = popup_content + marker.description + '<br>';
+            content = content + marker.description;
         } else if (marker.info != undefined && marker.info.description) {
-            popup_content = popup_content + marker.info.description + '<br>';
+            content = content + marker.info.description;
+        }
+        if ((marker.description != undefined && marker.description) || (marker.info != undefined && marker.info.description)) {
+            content = content + '</p>';
         }
         if (layer_id == core.editable_layer_id && marker.date_reported != undefined) {
             formatter = new Intl.DateTimeFormat(core.config.language, {
@@ -404,100 +426,106 @@ function parseMarkers(data, layer_id, type)  {
                 month: 'short',
                 day: 'numeric'
             });
-            popup_content = popup_content + '<strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported)) + '<br>';
+            content = content + '<p><strong>' + i18n('Reported on') + ':</strong> ' + formatter.format(new Date(marker.date_reported)) + '</p>';
             if (marker.outdated == 0) {
-                popup_content = popup_content + '<small class="form-text text-muted" id="update-help">' + i18n('Provide more info') + '</small><button type="button" class="btn btn-primary btn-sm update">' + i18n('Update the marker') + '</button> <button type="button" class="btn btn-warning btn-sm outdated">' + i18n('Not up-to-date') + '</button>';
+                content = content + '<div id="update-help"><p class="form-text text-muted">' + i18n('Provide more info') + '</p><button type="button" class="btn btn-primary update">' + i18n('Update the marker') + '</button> <button type="button" class="btn btn-warning outdated">' + i18n('Not up-to-date') + '</button></div>';
             } else {
-                popup_content = popup_content + '<div class="alert alert-warning">' + i18n('Reported not up-to-date') + '</div>';
+                content = content + '<div class="alert alert-warning">' + i18n('Reported not up-to-date') + '</div>';
             }
         }
         if (!marker.name && marker.info.name == undefined) {
-            popup_content = popup_content + '<strong>';
+            content = content + '<strong>';
         }
         if (marker.info != undefined && marker.info.bicycle_parking != undefined) {
-            popup_content = popup_content + i18n('Bicycle stand') + ': ';
+            content = content + i18n('Bicycle stand') + ': ';
             if (marker.info.bicycle_parking == 'stands' || marker.info.bicycle_parking == 'wide_stands') {
-                popup_content = popup_content + i18n('U type (safe)');
+                content = content + i18n('U type (safe)');
             } else if (marker.info.bicycle_parking == 'rack' || marker.info.bicycle_parking == 'racks') {
-                popup_content = popup_content + i18n('A type (safe)');
+                content = content + i18n('A type (safe)');
             } else if (marker.info.bicycle_parking == 'shed') {
-                popup_content = popup_content + i18n('covered (safe)');
+                content = content + i18n('covered (safe)');
             } else if (marker.info.bicycle_parking == 'informal') {
-                popup_content = popup_content + i18n('informal (railing etc.)');
+                content = content + i18n('informal (railing etc.)');
             } else if (marker.info.bicycle_parking == 'informal') {
-                popup_content = popup_content + i18n('informal (railing etc.)');
+                content = content + i18n('informal (railing etc.)');
             } else {
-                popup_content = popup_content + i18n('not suitable');
+                content = content + i18n('not suitable');
             }
-            popup_content = popup_content + '<br>';
+            content = content + '<br>';
         }
         if (marker.info != undefined && marker.info.amenity != undefined) {
             if (marker.info.amenity == 'bicycle_rental') {
-                popup_content = popup_content + i18n('Bike sharing station') + '<br>';
+                content = content + i18n('Bike sharing station') + '<br>';
             }
             if (marker.info.amenity == 'bicycle_repair_station') {
-                popup_content = popup_content + i18n('Bicycle repair stand');
-                popup_content = popup_content + '<br>';
+                content = content + i18n('Bicycle repair stand');
+                content = content + '<br>';
             }
         }
         if (!marker.name && marker.info.name == undefined) {
-            popup_content = popup_content + '</strong>';
+            content = content + '</strong>';
         }
         if (marker.info != undefined && marker.info.amenity != undefined) {
             if (marker.info.amenity == 'bicycle_repair_station') {
                 if (marker.info['service:bicycle:pump'] != undefined || marker.info['service:bicycle:tools'] != undefined) {
                     if (marker.info['service:bicycle:pump'] == 'yes' || marker.info['service:bicycle:tools'] == 'yes') {
-                        popup_content = popup_content + i18n('Equipment') + ': ';
+                        content = content + i18n('Equipment') + ': ';
                         if (marker.info['service:bicycle:pump'] == 'yes') {
-                            popup_content = popup_content + i18n('pump');
+                            content = content + i18n('pump');
                         }
                         if (marker.info['service:bicycle:pump'] == 'yes' && marker.info['service:bicycle:tools'] == 'yes') {
-                            popup_content = popup_content + ',';
+                            content = content + ',';
                         }
                         if (marker.info['service:bicycle:tools'] == 'yes') {
-                            popup_content = popup_content + i18n('tools');
+                            content = content + i18n('tools');
                         }
                     }
-                    popup_content = popup_content + '<br>';
+                    content = content + '<br>';
                 }
             }
         }
         if (marker.info != undefined && marker.info.operator != undefined) {
-            popup_content = popup_content + i18n('Operator') + ': ' + marker.info.operator + '<br>';
+            content = content + i18n('Operator') + ': ' + marker.info.operator + '<br>';
         }
         if (marker.info != undefined && marker.info.capacity != undefined) {
-            popup_content = popup_content + i18n('Capacity') + ': ' + marker.info.capacity + '<br>';
+            content = content + i18n('Capacity') + ': ' + marker.info.capacity + '<br>';
         }
         if (marker.filename != undefined && marker.filename) {
-            popup_content = popup_content + '<a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '"></a><br>';
+            content = content + '<a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '" class="img-fluid"></a><br>';
         }
         if (marker.relations != undefined && marker.relations.length) {
-            popup_content = popup_content + i18n('Path number') + ': ';
+            content = content + i18n('Path number') + ': ';
             for (key in marker.relations) {
-                popup_content = popup_content + data.cycleways[marker.relations[key].cycleway_id].sign;
+                content = content + data.cycleways[marker.relations[key].cycleway_id].sign;
                 if (marker.relations.length > key + 1) {
-                    popup_content = popup_content + ', ';
+                    content = content + ', ';
                 }
             }
-            popup_content = popup_content + '<br>';
+            content = content + '<br>';
         }
         if (history) {
-            popup_content = popup_content + '<strong>' + i18n('History') + '</strong><table class="table table-sm table-striped">' + history + '</table>';
+            content = content + '<strong>' + i18n('History') + '</strong><table class="table table-sm table-striped">' + history + '</table>';
         }
         if (marker.info != undefined) {
             if (Object.keys(marker.info).length) {
-                popup_content = popup_content + '<hr class="my-2"><p class="text-secondary mt-0">';
+                content = content + '<hr class="my-2"><p class="text-secondary mt-0">';
             }
             for (key in marker.info) {
-                popup_content = popup_content + key + ' = ' + marker.info[key] + '<br>';
+                content = content + key + ' = ' + marker.info[key] + '<br>';
             }
             if (Object.keys(marker.info).length) {
-                popup_content = popup_content + '</p>';
+                content = content + '</p>';
             }
         }
-        // add popup
-        if (popup_content)  {
-            core.markers[marker.id].bindPopup(popup_content);
+        // add sidebar content
+        if (content)  {
+            core.markers[marker.id].options.content = content;
+            core.markers[marker.id].on('click', function() {
+                openSidebar(this.options.content);
+                toggleSidebarCheck(this.options.orig_id, 'marker');
+                highlightMarker();
+                $('[data-toggle="tooltip"]').tooltip();
+            });
         }
         // add to layer
         if (core.config.layers[layer_id].types != undefined && type) {
@@ -521,15 +549,20 @@ function createRelation(relation, path_id) {
 
 // if relation exists, highlight all segments of the way/path
 function highlightPath() {
+    $('.highlight-marker').removeClass('highlight-marker');
+    $('.highlight-path').removeClass('highlight-path');
     if (core.paths[core.options.path_id].options.relation != undefined) {
         var relation = core.paths[core.options.path_id].options.relation;
-        // try ref class first
-        var relation_class = '.ref-' + relation;
-        $(relation_class).addClass('highlighted');
-        // try name class next
-        relation_class = '.name-' + relation;
-        $(relation_class).addClass('highlighted');
+        var relation_class = '.' + relation;
+        $(relation_class).addClass('highlight-path');
     }
+}
+
+function highlightMarker() {
+    $('.highlight-path').removeClass('highlight-path');
+    $('.highlight-marker').removeClass('highlight-marker');
+    $(core.markers[core.options.marker_id]._icon).find('div').eq(0).addClass('highlight-marker');
+    map.panTo(core.markers[core.options.marker_id].getLatLng());
 }
 
 /*
@@ -572,6 +605,7 @@ function createMarker(e, options) {
     if (core.editable_marker) {
         map.removeLayer(core.editable_marker);
     }
+    $('.highlight-marker').removeClass('highlight-marker');
     if (e) {
         var lat = e.latlng.lat;
         var lng = e.latlng.lng;
@@ -582,26 +616,23 @@ function createMarker(e, options) {
         var name = options[3];
         var type = options[4];
     }
-    core.editable_marker = L.marker([lat, lng]).addTo(map).bindPopup($('#form').clone().attr('id', 'editable').html(), {
-        minWidth: core.options.popup_width,
-        keepInView: true
-    }).openPopup().on('popupclose', function(e) {
-        map.removeLayer(core.editable_marker);
-    });
-    $('.leaflet-popup-content form input[name=lat]').val(lat);
-    $('.leaflet-popup-content form input[name=lon]').val(lng);
+    openSidebar($('#form').clone().attr('id', 'editable').html());
+    core.editable_marker = L.marker([lat, lng]).addTo(map);
+    map.setView([lat, lng], core.options.zoom);
+    $('#sidebar-content form input[name=lat]').val(lat);
+    $('#sidebar-content form input[name=lon]').val(lng);
     if (orig_id) {
-        $('.leaflet-popup-content form input[name=original_id]').val(orig_id);
+        $('#sidebar-content form input[name=original_id]').val(orig_id);
     }
     if (name) {
-        $('.leaflet-popup-content form input[name=name]').val(name);
+        $('#sidebar-content form input[name=name]').val(name);
     }
     if (type) {
-        $('.leaflet-popup-content form select[name=type]').val(type);
+        $('#sidebar-content form select[name=type]').val(type);
     }
-    $('.leaflet-popup-content form').on('submit', function(e)  {
-        action = $('.leaflet-popup-content form').clone().attr('action');
-        core.editable_marker.setPopupContent(i18n('Creating... Please wait.'));
+    $('#sidebar-content form').on('submit', function(e)  {
+        action = $('#sidebar-content form').clone().attr('action');
+        openSidebar(i18n('Creating... Please wait.'));
         $.ajax({
             type: 'POST',
             url: action,
@@ -616,7 +647,7 @@ function createMarker(e, options) {
                 } else {
                     message = i18n('Something failed. Please try again.');
                 }
-                core.editable_marker.setPopupContent(message);
+                $('#sidebar-content').html('<div class="alert alert-warning">' + message + '</div>')
             }
         });
         pushEvent('markersubmit');
@@ -624,43 +655,35 @@ function createMarker(e, options) {
     });
 }
 
-// e or force @array options = [object_id, object_type]
-function togglePopupCheck(e, options)  {
-    var object_id, object_type;
-    if (e && e.popup._source != undefined) {
-        object_id = e.popup._source.options.orig_id;
-        object_type = e.popup._source.options.orig_type;
-    } else if (options) {
-        object_id = options[0];
-        object_type = options[1];
-    }
-    if (object_id) {
-        if (object_type == 'marker') {
-            core.options.marker_id = object_id;
+function toggleSidebarCheck(id, type)  {
+    if (id) {
+        if (type == 'marker') {
+            core.options.marker_id = id;
+            core.options.path_id = undefined;
             rewriteFragment();
-        } else if (object_type == 'path') {
-            core.options.path_id = object_id;
+        } else if (type == 'path') {
+            core.options.path_id = id;
+            core.options.marker_id = undefined;
             highlightPath();
             rewriteFragment();
         }
     }
-    $('.leaflet-popup-content a.share').off();
-    $('.leaflet-popup-content a.share').attr('href', window.location);
-    $('.leaflet-popup-content a.share').on('click', copyLink);
+    $('.share').off();
+    $('.share').on('click', copyLink);
     $('[data-toggle="tooltip"]').tooltip();
     $('.update').on('click', function() {
-        createMarker(undefined, [core.markers[object_id]._latlng.lat, core.markers[object_id]._latlng.lng, object_id, core.markers[object_id].options.orig_name, core.markers[object_id].options.orig_editable_type]);
+        createMarker(undefined, [core.markers[id]._latlng.lat, core.markers[id]._latlng.lng, id, core.markers[id].options.orig_name, core.markers[id].options.orig_editable_type]);
+
     });
     $('.outdated').on('click', function() {
-        var parent = this;
         if (!$(this).hasClass('toconfirm')) {
-            $('#update-help').hide();
             $('.update').hide();
             $(this).addClass('toconfirm');
             $(this).text(i18n('Click again to confirm.'));
         } else {
+            $('#update-help').hide();
             var form_data = new FormData();
-            form_data.append('id', object_id);
+            form_data.append('id', id);
             $.ajax({
                 type: 'POST',
                 url: 'data/edit',
@@ -678,7 +701,7 @@ function togglePopupCheck(e, options)  {
                     } else {
                         message = i18n('Something failed. Please try again.');
                     }
-                    $(parent).replaceWith('<div class="alert alert-warning">' + message + '</div>')
+                    $('#sidebar-content').html('<div class="alert alert-warning">' + message + '</div>')
                 }
             });
             pushEvent('markeredit');
@@ -746,9 +769,8 @@ function getEditableLayerId() {
 
 function copyLink() {
     $(this).addClass('clipboard');
-    var link = $(this)[0];
     var temp_text = document.createElement('input');
-    temp_text.value = link.href;
+    temp_text.value = window.location;
     document.body.appendChild(temp_text);
     temp_text.select();
     document.execCommand('copy');
@@ -756,4 +778,22 @@ function copyLink() {
     window.setTimeout(function() {
         $(this).removeClass('clipboard');
     }, 1000)
+}
+
+function openSidebar(content) {
+    $('#sidebar-content').html(content);
+    $('#sidebar').show();
+    if (core.editable_marker) {
+        map.removeLayer(core.editable_marker);
+    }
+    map.invalidateSize();
+}
+
+function closeSidebar() {
+    $('#sidebar').hide();
+    removeObjectFragment();
+    if (core.editable_marker) {
+        map.removeLayer(core.editable_marker);
+    }
+    map.invalidateSize();
 }

@@ -37,6 +37,7 @@ translation = {
         "Crossing": "Cyklopriechod",
         "Shared-use path": "Cestička pre chodcov a cyklistov",
         "No motor vehicles": "Ulica s vylúčením motorových vozidiel",
+        "Recommended path for cyclists": "Odporúčaná trasa pre cyklistov",
         // markers
         "Reported on": "Dátum nahlásenia",
         // submit marker form

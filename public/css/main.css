@@ -5,10 +5,44 @@ workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
     will-change:auto !important;
 }
 
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
 #map {
-    width: 100vw;
+    width: auto;
     height: 100vh;
     font-size: 0.9em;
+}
+#sidebar {
+    float: right;
+    height: 100vh;
+    max-width: 100vw;
+    width: 33vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #fff;
+    display: none;
+}
+@media (max-width: 767.98px) {
+    #sidebar {
+        float: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        height: 40vh;
+        width: 100vw;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 999;
+    }
+}
+#sidebar>div {
+    position: relative;
+}
+#close {
+    cursor: pointer;
 }
 
 .leaflet-popup-content a {
@@ -21,10 +55,6 @@ a.notuptodate:link, a.notuptodate:hover {
 a.toconfirm:link, a.toconfirm:hover {
     background: #000;
     color: #fff;
-}
-
-.highlight {
-    background: rgba(255,255,127,0.6);
 }
 
 .leaflet-div-icon {
@@ -47,6 +77,8 @@ a.toconfirm:link, a.toconfirm:hover {
 /* parking */
 .parking {
     display: inline-block;
+    width: 1.4rem;
+    height: 1.4rem;
 }
 .parking::after {
     color: #432100;
@@ -293,8 +325,39 @@ a.toconfirm:link, a.toconfirm:hover {
 .path.lcn-yes, .path.lcn-proposed, .path.lcn-provisional {
     stroke-dasharray: 2 8;
 }
-.highlighted {
-    stroke-width: 10 !important;
+.highlight-path {
+    stroke-width: 8 !important;
+    animation: path-pulse 1s infinite;
+}
+.highlight-marker {
+    border-radius: 50%;
+    height: 1.4rem;
+    width: 1.4rem;
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2);
+    animation: marker-pulse 1s infinite;
+}
+
+@keyframes path-pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.2;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+@keyframes marker-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 1.4em rgba(255, 193, 7, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2);
+    }
 }
 
 .distances {
@@ -319,7 +382,6 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke: #aa007f;
     stroke-width: 5;
 }
-
 
 #map.z15 .path {
     stroke-width: 3;
@@ -351,9 +413,6 @@ a.toconfirm:link, a.toconfirm:hover {
 #map.z0 .marker, #map.z1 .marker, #map.z2 .marker, #map.z3 .marker, #map.z4 .marker, #map.z5 .marker, #map.z6 .marker, #map.z7 .marker, #map.z8 .marker, #map.z9 .marker {
     transform: scale(0.1);
 }
-.share:link, .share:hover, .share:visited {
-    text-decoration: none;
-}
 .clipboard {
     animation: highlight 1000ms ease-out;
 }
@@ -368,33 +427,3 @@ a.toconfirm:link, a.toconfirm:hover {
 .hidden {
     display: none;
 }
-/*
-//Wraperclass for the divicon
-.map-label {
-  position: absolute;
-  bottom: 0;
-  left: -50%;
-  text-align: center;
-}
-//Wrap the content of the divicon (text) in this class
-.map-label-content {
-  position: relative;
-  left: -50%;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 5px;
-  border-width: 1px;
-  border-style: solid;
-  border-color: #444;
-  border-bottom: 0;
-  padding: 1px 3px;
-}
-//Add this arrow
-.map-label-arrow {
-  width: 0px;
-  height: 0px;
-  left: 50%;
-  border-style: solid;
-  border-color: #444 transparent transparent transparent;
-  border-width: 10px 6px 0 6px; //[first number is height, second/fourth are rigth/left width]
-  margin-left: -6px;
-} */

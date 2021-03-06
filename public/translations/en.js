@@ -37,6 +37,7 @@ translation = {
         "Crossing": "Crossing",
         "Shared-use path": "Shared-use path",
         "No motor vehicles": "Street excluding motor vehicles",
+        "Recommended path for cyclists": "Recommended path for cyclists",
         // markers
         "Reported on": "Reported on",
         // submit marker form

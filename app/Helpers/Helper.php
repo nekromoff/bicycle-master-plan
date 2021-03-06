@@ -247,8 +247,7 @@ class Helper
 
     public static function jsSetupUI()
     {
-        $code = 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Help")+"\">❓</span>", function() {
-            core.options.intro = L.popup({ closeButton: true, autoClose: true, minWidth: core.options.popup_width}).setLatLng(map.getBounds().getCenter()).setContent("' . addslashes(config('map.intro')) . '").openOn(map); $("#intro_off").on("click", function() { setCookie("intro_off", 1, 180); map.closePopup(); });}).addTo(map); ';
+        $code = 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Help")+"\">❓</span>", function() { openSidebar("' . addslashes(config('map.intro')) . '"); }).addTo(map); ';
         if (config('map.admins')) {
             $user = Auth::user();
             if (!$user) {

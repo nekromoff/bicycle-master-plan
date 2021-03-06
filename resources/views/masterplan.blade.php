@@ -34,6 +34,20 @@
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{config('google.GTM_ID')}}"
         height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <!-- End Google Tag Manager (noscript) -->
+        <div id="sidebar">
+            <div class="row bg-light d-md-none">
+                <div class="col">
+                    <button class="btn btn-sm btn-light btn-block close">▽</button>
+                </div>
+            </div>
+            <div class="row h-100 no-gutters bg-light">
+                <div class="col-md-2 col-xl-1 d-none d-md-block">
+                    <button class="btn h-100 btn-lg btn-light btn-block close">▷</button>
+                </div>
+                <div class="col-md-10 col-xl-11 bg-white p-3" id="sidebar-content">
+                </div>
+            </div>
+        </div>
         <div id="map"></div>
         <script src="{{asset('js/jquery-3.5.1.min.js')}}"></script>
         <script src="{{asset('js/bootstrap.bundle.min.js')}}"></script>
@@ -113,7 +127,8 @@
         }).addTo(map);
         L.control.scale({imperial: false}).addTo(map);
         if (!getCookie('intro_off')) {
-            core.options.intro = L.popup({ closeButton: true, autoClose: true, minWidth: core.options.popup_width}).setLatLng(map.getBounds().getCenter()).setContent('{!! addslashes(config('map.intro')) !!}').openOn(map);
+            openSidebar('{!! addslashes(config('map.intro')) !!}')
+            map.setView([core.options.center[0], core.options.center[1]], core.options.zoom);
         }
         {!!Helper::jsSetupClusters()!!}
         {!!Helper::jsSetupUI()!!}
