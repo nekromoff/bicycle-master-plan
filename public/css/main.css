@@ -81,31 +81,28 @@ a.toconfirm:link, a.toconfirm:hover {
     height: 1.4rem;
 }
 .parking::after {
-    color: #432100;
+    color: #464646;
     content: "∩";
     font-size: 120%;
     font-weight: bold;
-    text-shadow: 1px 1px 10px rgba(5, 5, 5, 1);
 }
 .parking.bicycle_parking-rack::after, .parking.bicycle_parking-racks::after {
     content: "∆";
 }
 .parking.bicycle_parking-shed::after {
-    border-top: 1px solid #432100;
-    border-left: 1px solid #432100;
-    border-right: 1px solid #432100;
+    border-top: 1px solid #464646;
+    border-left: 1px solid #464646;
+    border-right: 1px solid #464646;
 }
 .parking.bicycle_parking-informal::after {
     content: "?";
-    color: #ff8a8a;
 }
 .parking.bicycle_parking-anchors::after, .parking.bicycle_parking-wall_loops::after, .parking.bicycle_parking-ground_slots::after {
-    content: "x";
-    color: #ff8a8a;
+    content: "⋌";
 }
 .amenity-bicycle_repair_station::after, service-bicycle-pump-yes::after {
     content: "🔧";
-    border: 2px solid #000;
+    border: 2px solid #464646;
     border-radius: 50%;
 }
 
@@ -325,6 +322,7 @@ a.toconfirm:link, a.toconfirm:hover {
 .path.lcn-yes, .path.lcn-proposed, .path.lcn-provisional {
     stroke-dasharray: 2 8;
 }
+
 .highlight-path {
     stroke-width: 8 !important;
     animation: path-pulse 1s infinite;
