@@ -12,6 +12,7 @@ use App\Relation;
 use Google_Client;
 use Google_Service_Sheets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Kris\LaravelFormBuilder\FormBuilder;
@@ -78,7 +79,7 @@ class MasterplanController extends Controller
         $this->cycleways = Cycleway::get()->keyBy('id');
 
         $layer = config('map.layers')[$request->id];
-        $this->processMapFeatures($layer, $request->id);
+        $this->processMapFeatures($layer, $request->id, $request->type);
         if (isset($this->markers_new)) {
             $this->markers = $this->markers->union(collect($this->markers_new));
         }
@@ -205,36 +206,60 @@ class MasterplanController extends Controller
     public function refreshBikeshareData(Request $request)
     {
         $bikeshares = config('bikeshare.bikeshares');
-        foreach ($bikeshares as $bikeshare) {
-            $url = trim($bikeshare['url']);
-            $content = file_get_contents($url);
-            $stands = json_decode($content, true);
+        foreach ($bikeshares as $bikeshare_key => $bikeshare) {
+            $stands = [];
+            if (!is_array($bikeshare['url'])) {
+                $url = trim($bikeshare['url']);
+                $content = file_get_contents($url);
+                $stands = json_decode($content, true);
+            } else {
+                foreach ($bikeshare['url'] as $url) {
+                    $url = trim($url);
+                    $content = file_get_contents($url);
+                    $stands = array_merge($stands, json_decode($content, true));
+                }
+            }
             foreach ($stands as $stand) {
-                $name = trim($stand[$bikeshare['name']]);
-                $description = trim($stand[$bikeshare['description']]);
+                $name = $bikeshare_key;
+                if ($bikeshare['name']) {
+                    $name = trim($stand[$bikeshare['name']]);
+                }
+                $description = '';
+                if ($bikeshare['description']) {
+                    $description = trim($stand[$bikeshare['description']]);
+                }
+                if ($bikeshare['bicycle_count']) {
+                    $description = trim($stand[$bikeshare['bicycle_count']]) . "\n" . $description;
+                }
                 if (is_array($bikeshare['coords'])) {
-                    $lat = trim($stand[$bikeshare['coords'][0]]);
-                    $lon = trim($stand[$bikeshare['coords'][1]]);
+                    $array = Arr::dot($stand);
+                    $lat = $array[$bikeshare['coords'][0]];
+                    $lon = $array[$bikeshare['coords'][1]];
                 } else {
                     $coords = explode(',', $stand[$bikeshare['coords']]);
                     $lat = trim($coords[0]);
                     $lon = trim($coords[1]);
                 }
-                $filename = trim($stand[$bikeshare['filename']]);
+                $filename = '';
+                if ($bikeshare['filename']) {
+                    $filename = trim($stand[$bikeshare['filename']]);
+                }
                 // not used $bikeshare['bicycle_count']
-                $marker = Marker::updateOrCreate(['layer_id' => 3, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => $filename, 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
+                $marker = Marker::updateOrCreate(['layer_id' => $bikeshare['layer_id'], 'type' => $bikeshare['type'], 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'url' => '', 'filename' => $filename, 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
             }
         }
     }
 
-    public function refreshEIAData(Request $request)
+    public function refreshGooglesheetData(Request $request)
     {
         $sheets = self::createGoogleServiceSheets();
-        $rows = $sheets->spreadsheet(config('google.EIA_FILE'))->sheet(config('google.EIA_SHEET'))->all();
+        $rows = $sheets->spreadsheet(config('google.SPREADSHEET_FILE'))->sheet(config('google.SPREADSHEET_SHEET'))->all();
         $structure = config('google.SHEET_STRUCTURE');
+        $map_details = config('google.MAP_DETAILS');
         for ($i = 1; $i < count($rows); $i++) {
             $name = trim($rows[$i][$structure['name']]);
             $coords = trim($rows[$i][$structure['coords']]);
+            $url = trim($rows[$i][$structure['url']]);
             $coords = explode(',', $coords);
             // skip records without coords
             if (count($coords) > 1 and $coords[0]) {
@@ -245,9 +270,6 @@ class MasterplanController extends Controller
                     foreach ($structure['description'] as $key => $column) {
                         $temp_desc = trim($rows[$i][$column]);
                         if ($temp_desc) {
-                            if (stripos($temp_desc, 'http:') !== false or stripos($temp_desc, 'https:') !== false) {
-                                $temp_desc = '<a href="' . $temp_desc . '">' . $temp_desc . '</a>';
-                            }
                             $description .= $temp_desc;
                             // add line break, if not last one
                             if ($key < count($structure['description']) - 1) {
@@ -259,7 +281,7 @@ class MasterplanController extends Controller
                     $description = trim($rows[$i][$structure['description']]);
                 }
                 $cycleways = explode(',', trim($rows[$i][$structure['cycleways']]));
-                $marker = Marker::updateOrCreate(['layer_id' => 2, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'filename' => '', 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
+                $marker = Marker::updateOrCreate(['layer_id' => $map_details['layer_id'], 'type' => $map_details['type'], 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'url' => $url, 'filename' => '', 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
                 foreach ($cycleways as $cycleway) {
                     $cycleway = trim($cycleway);
                     // skip records with cycleways not filled (#N/A in Google sheets)
@@ -330,7 +352,7 @@ class MasterplanController extends Controller
         return $sheets;
     }
 
-    private function processMapFeatures($layer, $layer_id)
+    private function processMapFeatures($layer, $layer_id, $type)
     {
         $i = count($this->paths);
         if ($layer['type'] == 'path' and isset($layer['file'])) {
@@ -386,19 +408,38 @@ class MasterplanController extends Controller
                 $this->paths[$i]['nodes'][] = [$path->lat_end, $path->lon_end];
                 $i++;
             }
-        } elseif ($layer['type'] == 'marker' and isset($layer['file'])) {
-            $filename = 'osm/' . $layer['file'];
-            $content = Storage::get($filename);
-            $result = json_decode($content);
-            $data = $result->elements;
-            foreach ($data as $item) {
-                if ($item->type == 'node') {
-                    $marker_new_id = $layer_id . '-' . $item->id;
-                    $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
-                    if (isset($item->tags)) {
-                        $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
+        } elseif ($layer['type'] == 'marker') {
+            if (isset($layer['file'])) {
+                $filename = 'osm/' . $layer['file'];
+                $content = Storage::get($filename);
+                $result = json_decode($content);
+                $data = $result->elements;
+                foreach ($data as $item) {
+                    if ($item->type == 'node') {
+                        $marker_new_id = $layer_id . '-' . $item->id;
+                        $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
+                        if (isset($item->tags)) {
+                            $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
+                        }
+                        $this->markers_new[$marker_new_id] = (object) $this->markers_new[$marker_new_id];
                     }
-                    $this->markers_new[$marker_new_id] = (object) $this->markers_new[$marker_new_id];
+                }
+            } elseif (isset($layer['types']) and is_array($layer['types'][$type])) {
+                if (isset($layer['types'][$type]['file'])) {
+                    $filename = 'osm/' . $layer['types'][$type]['file'];
+                    $content = Storage::get($filename);
+                    $result = json_decode($content);
+                    $data = $result->elements;
+                    foreach ($data as $item) {
+                        if ($item->type == 'node') {
+                            $marker_new_id = $layer_id . '-' . $item->id;
+                            $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => $type, 'layer_id' => $layer_id];
+                            if (isset($item->tags)) {
+                                $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
+                            }
+                            $this->markers_new[$marker_new_id] = (object) $this->markers_new[$marker_new_id];
+                        }
+                    }
                 }
             }
         } elseif ($layer['type'] == 'combined') {
