@@ -189,6 +189,13 @@ a.toconfirm:link, a.toconfirm:hover {
     display: block;
     border: 1px dotted #000;
 }
+.bikeshare-rekola {
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/rekola.png);
+    background-size: 20px 20px;
+    display: block;
+}
 .bikeshare-sb {
     width: 20px;
     height: 20px;
@@ -314,7 +321,7 @@ a.toconfirm:link, a.toconfirm:hover {
 .access-private, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no, .highway-construction {
     stroke: transparent !important;
 }
-.access-private.lcn-yes, .access-private.lcn-provisional {
+.access-private.lcn-yes, .access-private.lcn-provisional, .motor_vehicle-customers.lcn-provisional {
     color: #33a02c;
     stroke: #33a02c !important;
     stroke-width: 3;
