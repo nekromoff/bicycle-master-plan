@@ -22,7 +22,7 @@ Route::prefix('data')->middleware('cache.headers:public;max_age=86400;immutable;
 
 Route::prefix('refresh')->group(function () {
     Route::get('osm/{force?}', ['uses' => 'MasterplanController@refreshOSMData', 'as' => 'refresh.osm']);
-    Route::get('eia/{force?}', ['uses' => 'MasterplanController@refreshEIAData', 'as' => 'refresh.eia']);
+    Route::get('googlesheet/{force?}', ['uses' => 'MasterplanController@refreshGooglesheetData', 'as' => 'refresh.googlesheet']);
     Route::get('bikeshare/{force?}', ['uses' => 'MasterplanController@refreshBikeshareData', 'as' => 'refresh.bikeshare']);
     Route::get('feed/{force?}', ['uses' => 'MasterplanController@refreshFeedData', 'as' => 'refresh.feed']);
 });
