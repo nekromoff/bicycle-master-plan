@@ -79,12 +79,28 @@ a.toconfirm:link, a.toconfirm:hover {
     display: inline-block;
     width: 1.4rem;
     height: 1.4rem;
+    z-index: 50;
+    position: relative;
 }
 .parking::after {
     color: #464646;
     content: "∩";
     font-size: 120%;
     font-weight: bold;
+    z-index: 75;
+}
+.parking[class*=capacity-]::before {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    position:absolute;
+    right: 15%;
+    top: 0;
+    background: rgba(255, 255, 255, 0.5);
+    color: #464646;
+    font-size: 80%;
+    z-index: 100;
+    line-height: 1;
 }
 .parking.bicycle_parking-rack::after, .parking.bicycle_parking-racks::after {
     content: "∆";
@@ -104,6 +120,39 @@ a.toconfirm:link, a.toconfirm:hover {
     content: "🔧";
     border: 2px solid #464646;
     border-radius: 50%;
+}
+.capacity-2::before {
+    content: "2";
+}
+.capacity-3::before {
+    content: "3";
+}
+.capacity-4::before {
+    content: "4";
+}
+.capacity-5::before {
+    content: "5";
+}
+.capacity-6::before {
+    content: "6";
+}
+.capacity-7::before {
+    content: "7";
+}
+.capacity-8::before {
+    content: "8";
+}
+.capacity-9::before {
+    content: "9";
+}
+[class*=capacity-1]:not([class*="capacity-1 "])::before {
+    content: "10+";
+}
+[class*=capacity-2]:not([class*="capacity-2 "])::before {
+    content: "20+";
+}
+[class*=capacity-3]:not([class*="capacity-3 "])::before {
+    content: "30+";
 }
 
 /* signs */
