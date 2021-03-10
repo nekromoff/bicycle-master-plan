@@ -2,11 +2,12 @@
 Bicycle Master Plan is a tool / web app for displaying various bicycle infrastructure related data on a map. Actually, you can use any OpenStreetMap / custom data on a map, not just bicycle-related data. Extensive visual customization is possible by automatical conversion of OSM keys and values to CSS classes.
 
 It supports the following sources of data:
-- database data (seed your database; markers only)
 - OSM data (JSON format; tiles, paths/ways and markers)
-- custom data (rows in Google Sheets; markers only)
-- GPS EXIF-tagged photos (automatic using default seeder)
-- data provided by users via form
+- database data (seed your database; markers)
+- GPS EXIF-tagged photos (automatic using default seeder; markers)
+- custom feed data (from any public URL/API in JSON format; markers)
+- custom data (from rows in Google Sheets; markers only)
+- data provided by users via form (if editable layer enabled; markers)
 
 Built with:
 - Laravel (PHP)
@@ -73,6 +74,17 @@ class="marker access-private amenity-bicycle_parking covered-yes surveillance-ye
 ```
 
 Any combinations of keys / values can be easily styled for your purposes by using standardized CSS.
+
+## Automatic data update
+Setup cron to call refresh URLs daily (or other interval), e.g.:
+```
+15 0 * * * /usr/bin/curl --silent https://example.com/public/refresh/osm >/dev/null 2>&1
+```
+Update endpoints are:
+- OSM data: `/refresh/osm`
+- Bikeshare feed data: `/refresh/bikeshare`
+- Google sheets data: `/refresh/googlesheet`
+- Feed data: `/refresh/feed`
 
 ## Examples
 
