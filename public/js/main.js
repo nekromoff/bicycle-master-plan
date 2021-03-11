@@ -366,11 +366,11 @@ function parseMarkers(data, layer_id, type)  {
         if (marker.marker_relations != undefined && marker.marker_relations.length) {
             for (var i = 0; i < marker.marker_relations.length; i++) {
                 if (marker.marker_relations[i].child != undefined) {
-                    history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td class="col-2">' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td class="col-4">' + marker.marker_relations[i].child.name;
+                    history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + marker.marker_relations[i].child.description.replace(/["]+/g, '') + '"><td class="w-20">' + formatter.format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td class="w-40">' + marker.marker_relations[i].child.name;
                     if (marker.marker_relations[i].url) {
                         history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
                     }
-                    history = history + '</td><td class="col-6">';
+                    history = history + '</td><td class="w-60">';
                     if (marker.marker_relations[i].child.url) {
                         history = history + '<a href="' + marker.marker_relations[i].child.url + '">' + i18n('Link') + '</a>';
                     }
