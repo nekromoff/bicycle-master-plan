@@ -370,7 +370,7 @@ function parseMarkers(data, layer_id, type)  {
                     if (marker.marker_relations[i].url) {
                         history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
                     }
-                    history = history + '</td><td class="w-60">';
+                    history = history + '</td><td class="w-40">';
                     if (marker.marker_relations[i].child.url) {
                         history = history + '<a href="' + marker.marker_relations[i].child.url + '">' + i18n('Link') + '</a>';
                     }
