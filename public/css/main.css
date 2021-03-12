@@ -367,7 +367,7 @@ a.toconfirm:link, a.toconfirm:hover {
     stroke: transparent !important;
     fill: none;
 }
-.access-private, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no, .highway-construction {
+.access-private, .access-customers, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no, .highway-construction {
     stroke: transparent !important;
 }
 .access-private.lcn-yes, .access-private.lcn-provisional, .motor_vehicle-customers.lcn-provisional {
