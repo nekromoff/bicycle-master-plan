@@ -17,6 +17,7 @@
         <link rel="stylesheet" href="{{asset('css/MarkerCluster.Default.css')}}" />
         <link rel="stylesheet" href="{{asset('css/easy-button.css')}}" />
         <link rel="stylesheet" href="{{asset('css/main.css')}}?sidebar">
+        <link rel="stylesheet" href="{{asset(config('map.stylesheet'))}}">
         <link rel="canonical" href="{{secure_url('/')}}" />
         <meta name="description" content="{{substr(strip_tags(config('map.intro')),0,300)}}">
         <meta property="og:title" content="{{config('map.name')}}">
