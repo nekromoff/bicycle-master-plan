@@ -288,7 +288,7 @@
     stroke: #33a02c;
     stroke-width: 3;
 }
-[class*="mtb-scale"], .bicycle-yes.surface-gravel, .bicycle-designated.surface-gravel, .bicycle-yes.surface-dirt, .bicycle-designated.surface-dirt, .bicycle-yes.surface-grass, .bicycle-designated.surface-grass .highway-cycleway.surface-gravel, .highway-track.bicycle-yes, .highway-track.bicycle-yes, .bicycle-designated.surface-unpaved, .bicycle-yes.surface-unpaved {
+[class*="mtb-scale"]:not(.mtb-scale-0), .bicycle-yes.surface-gravel, .bicycle-designated.surface-gravel, .bicycle-yes.surface-dirt, .bicycle-designated.surface-dirt, .bicycle-yes.surface-grass, .bicycle-designated.surface-grass .highway-cycleway.surface-gravel, .highway-track.bicycle-yes, .highway-track.bicycle-yes, .bicycle-designated.surface-unpaved, .bicycle-yes.surface-unpaved {
     color: #aa5500;
     stroke: #aa5500 !important;
     stroke-width: 3;
