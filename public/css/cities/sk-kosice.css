@@ -1,0 +1,483 @@
+/*
+workaround for firefox, see https://github.com/Leaflet/Leaflet/issues/4686
+*/
+.leaflet-fade-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-zoom-animated {
+    will-change:auto !important;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+#map {
+    width: auto;
+    height: 100vh;
+    font-size: 0.9em;
+}
+#sidebar {
+    float: right;
+    height: 100vh;
+    max-width: 100vw;
+    width: 33vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #fff;
+    display: none;
+}
+@media (max-width: 767.98px) {
+    #sidebar {
+        float: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        height: 40vh;
+        width: 100vw;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 999;
+    }
+}
+#sidebar>div {
+    position: relative;
+}
+#close {
+    cursor: pointer;
+}
+
+.leaflet-popup-content a {
+    cursor: pointer;
+}
+a.notuptodate:link, a.notuptodate:hover {
+    background: #ffff7f;
+    color: #000;
+}
+a.toconfirm:link, a.toconfirm:hover {
+    background: #000;
+    color: #fff;
+}
+
+.leaflet-div-icon {
+    background: inherit;
+    border: 0;
+}
+.leaflet-popup img {
+    width: 200px;
+}
+
+.photo img {
+    width: 50px;
+    background-color: rgba(255, 255, 255, 0.7);
+}
+.roadsign {
+    display: inline-block;
+    width: max-content;
+}
+
+/* parking */
+.parking {
+    display: inline-block;
+    width: 1.4rem;
+    height: 1.4rem;
+    z-index: 50;
+    position: relative;
+}
+.parking::after {
+    color: #464646;
+    content: "∩";
+    font-size: 120%;
+    font-weight: bold;
+    z-index: 75;
+}
+.parking[class*=capacity-]::before {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    position:absolute;
+    right: 15%;
+    top: 0;
+    background: rgba(255, 255, 255, 0.5);
+    color: #464646;
+    font-size: 80%;
+    z-index: 100;
+    line-height: 1;
+}
+.parking.bicycle_parking-rack::after, .parking.bicycle_parking-racks::after {
+    content: "∆";
+}
+.parking.bicycle_parking-shed::after {
+    border-top: 1px solid #464646;
+    border-left: 1px solid #464646;
+    border-right: 1px solid #464646;
+}
+.parking.bicycle_parking-informal::after {
+    content: "?";
+}
+.parking.bicycle_parking-anchors::after, .parking.bicycle_parking-wall_loops::after, .parking.bicycle_parking-ground_slots::after {
+    content: "⋌";
+}
+.amenity-bicycle_repair_station::after, service-bicycle-pump-yes::after {
+    content: "🔧";
+    border: 2px solid #464646;
+    border-radius: 50%;
+}
+.parking.capacity-2::before {
+    content: "2";
+}
+.parking.capacity-3::before {
+    content: "3";
+}
+.parking.capacity-4::before {
+    content: "4";
+}
+.parking.capacity-5::before {
+    content: "5";
+}
+.parking.capacity-6::before {
+    content: "6";
+}
+.parking.capacity-7::before {
+    content: "7";
+}
+.parking.capacity-8::before {
+    content: "8";
+}
+.parking.capacity-9::before {
+    content: "9";
+}
+.parking[class*=capacity-1]:not([class*="capacity-1 "])::before {
+    content: "10+";
+}
+.parking[class*=capacity-2]:not([class*="capacity-2 "])::before {
+    content: "20+";
+}
+.parking[class*=capacity-3]:not([class*="capacity-3 "])::before {
+    content: "30+";
+}
+
+/* signs */
+.roadsign.b {
+    background: #fff;
+    color: #000;
+    border: 1px solid #f00;
+    border-radius: 50%;
+}
+.roadsign.c, .roadsign.ca, .roadsign.cb, .roadsign.cx {
+    background: navy;
+    color: #fff;
+    border-radius: 50%;
+}
+.roadsign.e, .roadsign.eb, .roadsign.ec, .roadsign.ed {
+    background: #fff;
+    color: #000;
+    border: 1px solid #000;
+}
+.roadsign.ip {
+    background: navy;
+    color: #fff;
+    border-radius: 5%;
+}
+.roadsign.is, .roadsign.isa, .roadsign.isb, .roadsign.isc, .roadsign.isd, .roadsign.ise, .roadsign.isf, .roadsign.isg, .roadsign.ish, .roadsign.isi, roadsign.isj {
+    background: #fff;
+    color: #21663a;
+    border: 1px solid #21663a;
+    border-radius: 5%;
+}
+.roadsign.p {
+    margin: 0 5px;
+    vertical-align: middle;
+    width: 20px;
+    height: 16px;
+    border-top: solid 20px red;
+    border-left: solid 12px transparent;
+    border-right: solid 12px transparent;
+    color: transparent;
+}
+.roadsign.p::after {
+    position: relative;
+    top: -23px;
+    left: -22px;
+    color: #fff;
+    content: "P1";
+    font-weight: bold;
+}
+
+/* end signs diagonal strikethrough */
+.roadsign.bx {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), #f00, #fff calc(50% + 2px) );
+}
+.roadsign.cx {
+    background: linear-gradient(to bottom right, navy calc(50% - 2px), #fff, navy calc(50% + 2px) );
+}
+.roadsign.ex {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), #000, #fff calc(50% + 2px) );
+}
+.roadsign.ipx {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), navy, #fff calc(50% + 2px) );
+}
+.roadsign.isx {
+    background: linear-gradient(to bottom right, #fff calc(50% - 2px), #21663a, #fff calc(50% + 2px) );
+}
+
+/* special path marking sign / not a real roadsign */
+.roadsign.pathsign {
+    background: navy;
+    color: #fff;
+}
+
+.development::before {
+    content: "🏗️";
+    font-size: 200%;
+}
+
+.bikeshare-wb {
+    width: 20px;
+    height: 17px;
+    background-image: url(../../images/whitebikes.png);
+    background-size: 20px 17px;
+    display: block;
+    border: 1px dotted #000;
+}
+.bikeshare-rekola {
+    width: 20px;
+    height: 20px;
+    background-image: url(../../images/rekola.png);
+    background-size: 20px 20px;
+    display: block;
+}
+.bikeshare-sb {
+    width: 20px;
+    height: 20px;
+    background-image: url(../../images/slovnaft-bajk.png);
+    background-size: 20px 20px;
+    display: block;
+}
+
+.feed::before {
+    content: "🔴";
+}
+
+.user-created::before {
+    content: " ";
+    font-weight: bold;
+    width: 1.4rem;
+    height: 1.4rem;
+    display: block;
+}
+.user-created.works::before {
+    background-image: url(../../images/icons/cone.svg);
+    background-size: 1.4rem 1.4rem;
+    filter: saturate(120%);
+}
+.user-created.warning {
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 24px solid red;
+    position:relative;
+}
+.user-created.warning::before {
+    content: " ";
+    position: absolute;
+    top: 3px;
+    left: -10px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 19px solid white;
+}
+.user-created.warning::after {
+    content: "!";
+    font-size: 120%;
+    font-weight: bold;
+    position: absolute;
+    top: 1px;
+    left: -2.5px;
+}
+.user-created.info::before {
+    content: "i";
+    color: #fff;
+    background: #1f2eb4;
+    border: 1px solid #1f2eb4;
+    display: block;
+    text-align: center;
+}
+.user-created.projects::before {
+    content: "💡";
+    background: rgba(255,255,255,0.5);
+    display: block;
+    text-align: center;
+}
+.user-created.unknown::before {
+    content: "?";
+    color: white;
+    background: #dd2e44;
+    border: 1px solid #dd2e44;
+    border-radius: 50%;
+    display: block;
+    text-align: center;
+}
+
+.state-proposed {
+    color: #f00;
+    stroke: #f00;
+    stroke-width: 3;
+    stroke-dasharray: 8 8;
+    stroke-opacity: 0.4;
+}
+/* scheme based on http://colorbrewer2.org/#type=qualitative&scheme=Paired&n=4 */
+.highway-pedestrian, .highway-path, .highway-footway {
+    color: #a6cee3;
+    stroke: #a6cee3;
+    stroke-width: 2;
+}
+.cycleway-lane-advisory, .cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .cycleway-asl, .network-lcn:not(.state-proposed):not(.highway-cycleway), .complete-yes, .lcn-yes, .lcn-proposed, .lcn-provisional, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane {
+    color: #33a02c;
+    stroke: #33a02c;
+    stroke-width: 3;
+}
+.bicycle-oneway-yes, .bicycle-designated, .bicycle-lanes-forward-yes-designated, .bicycle-lanes-backward-yes-designated, .bicycle-official, .complete-yes, .cycleway-crossing, highway-crossing.bicycle-yes {
+    stroke: #1f78b4;
+    stroke-width: 3;
+}
+.cycleway-lane:not(.cycleway-lane-advisory), .cycleway-share_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
+    color: #1f78b4;
+    stroke: #1f78b4;
+    stroke-width: 3;
+}
+.highway-cycleway, .highway-pedestrian.bicycle-designated, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .highway-path.bicycle-yes, .highway-footway.cycleway-shared_lane, .highway-footway.bicycle-yes {
+    stroke: #1f78b4;
+    stroke-width: 3;
+}
+.highway-living_street, .highway-residential.bicycle-yes, .highway-service.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes, .highway-primary.bicycle-yes, .highway-secondary.bicycle-yes, .highway-tertiary.bicycle-yes {
+    stroke: #33a02c;
+    stroke-width: 3;
+}
+[class*="mtb-scale"], .bicycle-yes.surface-gravel, .bicycle-designated.surface-gravel, .bicycle-yes.surface-dirt, .bicycle-designated.surface-dirt, .bicycle-yes.surface-grass, .bicycle-designated.surface-grass .highway-cycleway.surface-gravel, .highway-track.bicycle-yes, .highway-track.bicycle-yes, .bicycle-designated.surface-unpaved, .bicycle-yes.surface-unpaved {
+    color: #aa5500;
+    stroke: #aa5500 !important;
+    stroke-width: 3;
+}
+[class*="incline"]:not(.incline-):not(.incline-0):not(.incline-up):not(.incline-down), [class*="tunnel"] {
+    stroke-dasharray: 6 8;
+}
+.area-yes {
+    stroke: transparent !important;
+    fill: none;
+}
+.access-private, .access-customers, .motor_vehicle-customers, .surface-cobblestone.bicycle-yes, [class*="barrier"], .cycleway-no, .highway-construction, .route-hiking:not(.bicycle-yes):not(.bicycle-designated), .leisure-track {
+    stroke: transparent !important;
+}
+.access-private.lcn-yes, .access-private.lcn-provisional, .motor_vehicle-customers.lcn-provisional {
+    color: #33a02c;
+    stroke: #33a02c !important;
+    stroke-width: 3;
+}
+.path.lcn-yes, .path.lcn-proposed, .path.lcn-provisional {
+    stroke-dasharray: 2 8;
+}
+
+.highlight-path {
+    stroke-width: 8 !important;
+    animation: path-pulse 1s infinite;
+}
+.highlight-marker {
+    border-radius: 50%;
+    height: 1.4rem;
+    width: 1.4rem;
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2);
+    animation: marker-pulse 1s infinite;
+}
+
+@keyframes path-pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.2;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+@keyframes marker-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 1.4em rgba(255, 193, 7, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2);
+    }
+}
+
+.distances {
+    background: #aa007f;
+    color: #fff;
+    border: 1px solid #fff;
+    width: max-content;
+    padding: 2px 4px;
+    text-align: center;
+    font-weight: bold;
+}
+.distances[class*="description-minuty"] {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    color: #aa007f;
+    width: max-content;
+    font-weight: bold;
+    font-size: 150%;
+}
+.class-distances {
+    color: #aa007f;
+    stroke: #aa007f;
+    stroke-width: 5;
+}
+
+#map.z15 .path {
+    stroke-width: 3;
+}
+#map.z13 .path, #map.z14 .path {
+    stroke-width: 2;
+}
+#map.z0 .path, #map.z1 .path, #map.z2 .path, #map.z3 .path, #map.z4 .path, #map.z5 .path, #map.z6 .path, #map.z7 .path, #map.z8 .path, #map.z9 .path, #map.z10 .path, #map.z11 .path, #map.z12 .path {
+    stroke-width: 1;
+}
+#map.z16 .marker {
+    transform: scale(1);
+}
+#map.z15 .marker {
+    transform: scale(0.8);
+}
+#map.z14 .marker {
+    transform: scale(0.6);
+}
+#map.z13 .marker {
+    transform: scale(0.4);
+}
+#map.z12 .marker {
+    transform: scale(0.3);
+}
+#map.z10 .marker, #map.z11 .marker {
+    transform: scale(0.2);
+}
+#map.z0 .marker, #map.z1 .marker, #map.z2 .marker, #map.z3 .marker, #map.z4 .marker, #map.z5 .marker, #map.z6 .marker, #map.z7 .marker, #map.z8 .marker, #map.z9 .marker {
+    transform: scale(0.1);
+}
+.clipboard {
+    animation: highlight 1000ms ease-out;
+}
+@keyframes highlight {
+    from {
+        background-color: #28a745;
+    }
+    to {
+        background-color: #fff;
+    }
+}
+.hidden {
+    display: none;
+}
