@@ -438,16 +438,14 @@ function parseMarkers(data, layer_id, type)  {
         }
         if (marker.info != undefined && marker.info.bicycle_parking != undefined) {
             content = content + i18n('Bicycle stand') + ': ';
-            if (marker.info.bicycle_parking == 'stands' || marker.info.bicycle_parking == 'wide_stands') {
-                content = content + i18n('U type (safe)');
+            if (marker.info.bicycle_parking == 'stands' || marker.info.bicycle_parking == 'wide_stands' || marker.info.bicycle_parking == 'wave' || marker.info.bicycle_parking == 'streetpod' || marker.info.bicycle_parking == 'bollard') {
+                content = content + i18n('U type');
             } else if (marker.info.bicycle_parking == 'rack' || marker.info.bicycle_parking == 'racks') {
-                content = content + i18n('A type (safe)');
-            } else if (marker.info.bicycle_parking == 'shed') {
-                content = content + i18n('covered (safe)');
+                content = content + i18n('A type');
+            } else if (marker.info.bicycle_parking == 'shed' || marker.info.bicycle_parking == 'building') {
+                content = content + i18n('enclosed');
             } else if (marker.info.bicycle_parking == 'informal') {
-                content = content + i18n('informal (railing etc.)');
-            } else if (marker.info.bicycle_parking == 'informal') {
-                content = content + i18n('informal (railing etc.)');
+                content = content + i18n('informal');
             } else {
                 content = content + i18n('not suitable');
             }

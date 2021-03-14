@@ -2,10 +2,10 @@ translation = {
     "values": {
         // bicycle stands
         "Bicycle stand": "Stojan na bicykel",
-        "U type (safe)": "typ U (bezpečný)",
-        "A type (safe)": "typ A (bezpečný)",
-        "covered (safe)": "krytý (bezpečný)",
-        "informal (railing etc.)": "neformálny (zábradlie a pod.)",
+        "U type": "typ U alebo podobný",
+        "A type": "typ A alebo podobný",
+        "enclosed": "uzavretý (klietka a pod.)",
+        "informal": "neformálny (zábradlie a pod.)",
         "not suitable": "nevhodný",
         "Bicycle repair stand": "Stojan na opravu bicyklov",
         "Bike sharing station": "Stanica zdieľaných bicyklov (bike sharing)",

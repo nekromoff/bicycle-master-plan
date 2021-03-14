@@ -2,10 +2,10 @@ translation = {
     "values": {
         // bicycle stands
         "Bicycle stand": "Bicycle stand",
-        "U type (safe)": "U type (safe)",
-        "A type (safe)": "A type (safe)",
-        "covered (safe)": "covered (safe)",
-        "informal (railing etc.)": "informal (railing etc.)",
+        "U type": "U type or similar",
+        "A type": "A type or similar",
+        "enclosed": "enclosed (shed etc.)",
+        "informal": "informal (railing etc.)",
         "not suitable": "not suitable",
         "Bicycle repair stand": "Bicycle repair stand",
         "Bike sharing station": "Bike sharing station",
