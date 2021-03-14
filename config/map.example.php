@@ -6,6 +6,8 @@ return [
     'name'           => 'Your city bicycle master plan map',
     // Map language (two letter ISO code) - matches JSON file in public/translations/ directory
     'language'       => 'en',
+    // stylesheet to use for city specific rendering, path from public/
+    'stylesheet'     => 'css/cities/your-city.css',
     // Favicon + social network image for sharing (min. 200x200 px recommended)
     'image'          => 'image.png',
     // intro informational popup
