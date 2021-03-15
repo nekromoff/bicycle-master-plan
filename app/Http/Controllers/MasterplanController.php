@@ -219,6 +219,10 @@ class MasterplanController extends Controller
                     $stands = array_merge($stands, json_decode($content, true));
                 }
             }
+            // if dot notation used, access deeply nested array
+            if ($bikeshare['stands']) {
+                $stands = Arr::get($stands, $bikeshare['stands']);
+            }
             foreach ($stands as $stand) {
                 $name = $bikeshare_key;
                 if ($bikeshare['name']) {

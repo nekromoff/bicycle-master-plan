@@ -8,6 +8,7 @@ return [
             'layer_id'      => 5, // layer id to use (must match layer in config/map.php)
             'type'          => 1, // type to use (must match layer/type in config/map.php)
             'url'           => '', // URL with JSON bikeshare stands (markers) or array of multiple URLs
+            'stands'        => '', // array name in JSON with stands, empty if array is in root (dot notation for multidimensional arrays, e.g. data.stations for General Bikeshare Feed)
             'name'          => '', // field name in JSON that contains marker "name"
             'coords'        => ['lat', 'lon'], // marker "coords" = string with lat,lon comma separated field or array of separate lat, lon fields containing coordinates (dot notation for multidimensional arrays, e.g. points.0.lat or 0.stand.0)
             'description'   => '', // field name in JSON that contains marker "description"
