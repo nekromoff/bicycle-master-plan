@@ -78,13 +78,13 @@
 .parking.capacity-9::before {
     content: "9";
 }
-.parking[class*=capacity-1]:not([class*="capacity-1 "])::before {
+.parking[class*=" capacity-1"]:not([class*="capacity-1 "])::before {
     content: "10+";
 }
-.parking[class*=capacity-2]:not([class*="capacity-2 "])::before {
+.parking[class*=" capacity-2"]:not([class*="capacity-2 "])::before {
     content: "20+";
 }
-.parking[class*=capacity-3]:not([class*="capacity-3 "])::before {
+.parking[class*=" capacity-3"]:not([class*="capacity-3 "])::before {
     content: "30+";
 }
 
@@ -182,6 +182,13 @@
     width: 20px;
     height: 20px;
     background-image: url(../../images/slovnaft-bajk.png);
+    background-size: 20px 20px;
+    display: block;
+}
+.bikeshare-antik {
+    width: 20px;
+    height: 20px;
+    background-image: url(../../images/antik.png);
     background-size: 20px 20px;
     display: block;
 }
