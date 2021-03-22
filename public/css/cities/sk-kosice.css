@@ -263,6 +263,7 @@
 /* scheme based on http://colorbrewer2.org/#type=qualitative&scheme=Paired&n=4 */
 .highway-pedestrian, .highway-path, .highway-footway {
     color: #a6cee3;
+    stroke: #a6cee3;
     -webkit-text-stroke-width: 0.6px;
     -webkit-text-stroke-color: #a6cee3;
 }
