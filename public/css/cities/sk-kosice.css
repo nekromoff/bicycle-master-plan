@@ -255,21 +255,21 @@
 
 .state-proposed {
     color: #f00;
-    stroke: #f00;
-    stroke-width: 3;
     stroke-dasharray: 8 8;
     stroke-opacity: 0.4;
+    -webkit-text-stroke-width: 0.6px;
+    -webkit-text-stroke-color: #f00;
 }
 /* scheme based on http://colorbrewer2.org/#type=qualitative&scheme=Paired&n=4 */
 .highway-pedestrian, .highway-path, .highway-footway {
     color: #a6cee3;
-    stroke: #a6cee3;
-    stroke-width: 2;
+    -webkit-text-stroke-width: 0.6px;
+    -webkit-text-stroke-color: #a6cee3;
 }
 .cycleway-lane-advisory, .cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .cycleway-asl, .network-lcn:not(.state-proposed):not(.highway-cycleway), .complete-yes, .lcn-yes, .lcn-proposed, .lcn-provisional, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane {
     color: #33a02c;
-    stroke: #33a02c;
-    stroke-width: 3;
+    -webkit-text-stroke-width: 0.6px;
+    -webkit-text-stroke-color: #33a02c;
 }
 .bicycle-oneway-yes, .bicycle-designated, .bicycle-lanes-forward-yes-designated, .bicycle-lanes-backward-yes-designated, .bicycle-official, .complete-yes, .cycleway-crossing, highway-crossing.bicycle-yes {
     stroke: #1f78b4;
@@ -277,8 +277,8 @@
 }
 .cycleway-lane:not(.cycleway-lane-advisory), .cycleway-share_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
     color: #1f78b4;
-    stroke: #1f78b4;
-    stroke-width: 3;
+    -webkit-text-stroke-width: 0.6px;
+    -webkit-text-stroke-color: #1f78b4;
 }
 .highway-cycleway, .highway-pedestrian.bicycle-designated, .highway-unclassified.bicycle-yes, .motorcar-no.bicycle-yes, .motor_vehicle-no.bicycle-yes, .highway-path.bicycle-yes, .highway-footway.cycleway-shared_lane, .highway-footway.bicycle-yes {
     stroke: #1f78b4;
@@ -291,7 +291,8 @@
 [class*="mtb-scale"]:not(.mtb-scale-0), .bicycle-yes.surface-gravel, .bicycle-designated.surface-gravel, .bicycle-yes.surface-dirt, .bicycle-designated.surface-dirt, .bicycle-yes.surface-grass, .bicycle-designated.surface-grass .highway-cycleway.surface-gravel, .highway-track.bicycle-yes, .highway-track.bicycle-yes, .bicycle-designated.surface-unpaved, .bicycle-yes.surface-unpaved {
     color: #aa5500;
     stroke: #aa5500 !important;
-    stroke-width: 3;
+    -webkit-text-stroke-width: 0.6px;
+    -webkit-text-stroke-color: #aa5500;
 }
 [class*="incline"]:not(.incline-):not(.incline-0):not(.incline-up):not(.incline-down), [class*="tunnel"] {
     stroke-dasharray: 6 8;
