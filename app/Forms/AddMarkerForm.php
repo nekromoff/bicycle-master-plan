@@ -27,7 +27,7 @@ class AddMarkerForm extends Form
         if ($this->getData('editable_layer_id') and isset(config('map.layers')[$this->getData('editable_layer_id')]['types'])) {
             $types = [];
             foreach (config('map.layers')[$this->getData('editable_layer_id')]['types'] as $key => $type) {
-                $types[$key] = $type['name'];
+                $types[$key] = strip_tags($type['name']);
             }
             $this->add('type', 'choice', ['label' => 'Type:', 'choices' => $types, 'wrapper' => ['class' => 'form-group input-group-sm']]);
         }
