@@ -327,6 +327,7 @@ function parsePaths(data, layer_id, type) {
             core.paths[path.id].addTo(core.layers['layer' + layer_id + '_type' + type]);
         } else {
             core.paths[path.id].addTo(core.layers['layer' + layer_id]);
+            core.paths[path.id].addTo(core.layers['layer' + layer_id]);
         }
     }
 }
@@ -334,10 +335,7 @@ function parsePaths(data, layer_id, type) {
 function parseMarkers(data, layer_id, type)  {
     for (key in data.markers) {
         marker = data.markers[key];
-        marker_content = '<div class="marker ' + normalize(marker.name) + ' ';
-        if (core.config.layers[layer_id].editable && core.config.layers[layer_id].editable_types) {
-            marker_content = marker_content + normalize(core.config.layers[layer_id].editable_types[marker.type].class) + ' ';
-        }
+        marker_content = '<div class="marker ' + normalize(core.config.layers[layer_id].class) + ' ' + normalize(marker.name) + ' ';
         if (marker.info != undefined) {
             for (key in marker.info) {
                 // keep numbers for "ref" key content

@@ -16,7 +16,7 @@
         <link rel="stylesheet" href="{{asset('css/leaflet.css')}}" />
         <link rel="stylesheet" href="{{asset('css/MarkerCluster.Default.css')}}" />
         <link rel="stylesheet" href="{{asset('css/easy-button.css')}}" />
-        <link rel="stylesheet" href="{{asset('css/main.css')}}?sidebar">
+        <link rel="stylesheet" href="{{asset('css/main.css')}}">
         <link rel="stylesheet" href="{{asset(config('map.stylesheet'))}}">
         <link rel="canonical" href="{{secure_url('/')}}" />
         <meta name="description" content="{{substr(strip_tags(config('map.intro')),0,300)}}">
@@ -59,7 +59,7 @@
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script src="{{asset('js/i18n.min.js')}}"></script>
         <script src="{{asset('translations/'.config('map.language').'.js')}}"></script>
-        <script src="{{asset('js/main.js')}}?sidebar"></script>
+        <script src="{{asset('js/main.js')}}"></script>
         <script>
         i18n.translator.add(translation);
         core.config={!! json_encode(config('map')) !!};
@@ -107,7 +107,11 @@
             layers: [
                 @foreach (config('map.default_layers') as $layer)
                     @if ($layer!='base')
-                        core.layers.layer{{$layer}}
+                        @if (strpos($layer, '/') !== false)
+                            core.layers.layer{{explode('/',$layer)[0]}}_type{{explode('/',$layer)[1]}}
+                        @else
+                            core.layers.layer{{$layer}}
+                        @endif
                     @else
                         {{$layer}}
                     @endif

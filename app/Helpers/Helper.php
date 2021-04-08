@@ -19,7 +19,7 @@ class Helper
     public static function getEditableLayerTypes()
     {
         if (self::getEditableLayerId()) {
-            return config('map.layers')[self::getEditableLayerId()]['editable_types'];
+            return config('map.layers')[self::getEditableLayerId()]['types'];
         }
         return false;
     }
@@ -91,7 +91,7 @@ class Helper
         foreach ($layer_config as $layer_id => $layer) {
             if (isset($layer_config[$layer_id]['types'])) {
                 foreach ($layer_config[$layer_id]['types'] as $type_id => $type) {
-                    if ($type['cluster'] == true) {
+                    if (isset($type['cluster']) and $type['cluster'] == true) {
                         echo 'core.clusters.layer' . $layer_id . '_type' . $type_id . '.checkIn(core.layers.layer' . $layer_id . '_type' . $type_id . ');' . "\n";
                         echo 'core.clusters.layer' . $layer_id . '_type' . $type_id . '.addTo(map);' . "\n";
                     }
