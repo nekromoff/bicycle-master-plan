@@ -335,7 +335,11 @@ function parsePaths(data, layer_id, type) {
 function parseMarkers(data, layer_id, type)  {
     for (key in data.markers) {
         marker = data.markers[key];
-        marker_content = '<div class="marker ' + normalize(core.config.layers[layer_id].class) + ' ' + normalize(marker.name) + ' ';
+        marker_content = '<div class="marker ';
+        if (core.config.layers[layer_id].class) {
+            marker_content = marker_content + normalize(core.config.layers[layer_id].class) + ' '
+        }
+        marker_content = marker_content + normalize(marker.name) + ' ';
         if (marker.info != undefined) {
             for (key in marker.info) {
                 // keep numbers for "ref" key content
