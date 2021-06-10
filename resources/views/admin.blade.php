@@ -54,7 +54,7 @@
                                         <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
                                         <td>{{$marker->description}}
                                             @if ($marker->url)
-                                                <br><a href="{{$url}}">{{$url}}</a>
+                                                <br><a href="{{$marker->url}}">{{$marker->url}}</a>
                                             @endif
                                         </td>
                                         <td>@if ($marker->filename)
@@ -86,7 +86,7 @@
                                         <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
                                         <td>{{$marker->description}}
                                             @if ($marker->url)
-                                                <br><a href="{{$url}}">{{$url}}</a>
+                                                <br><a href="{{$marker->url}}">{{$marker->url}}</a>
                                             @endif
                                         </td>
                                         <td>@if ($marker->filename)
