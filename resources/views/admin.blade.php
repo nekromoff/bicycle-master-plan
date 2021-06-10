@@ -46,22 +46,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($markers['submitted'] as $marker)
-                                <tr data-lat="{{$marker->lat}}" data-lon="{{$marker->lon}}">
-                                    <td>{{$editable_types[$marker->type]['name']}}</td>
-                                    <td>{{$marker->created_at->format('Y-m-d')}}</td>
-                                    <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
-                                    <td>{{$marker->description}}
-                                        @if ($marker->url)
-                                            <br><a href="{{$url}}">{{$url}}</a>
-                                        @endif
-                                    </td>
-                                    <td>@if ($marker->filename)
-                                            <a href="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" target="_blank"><img src="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" class="img-fluid" alt="{{$marker->name}}"></a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
+                            @if (isset($markers['submitted']))
+                                @foreach($markers['submitted'] as $marker)
+                                    <tr data-lat="{{$marker->lat}}" data-lon="{{$marker->lon}}">
+                                        <td>{{$editable_types[$marker->type]['name']}}</td>
+                                        <td>{{$marker->created_at->format('Y-m-d')}}</td>
+                                        <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
+                                        <td>{{$marker->description}}
+                                            @if ($marker->url)
+                                                <br><a href="{{$url}}">{{$url}}</a>
+                                            @endif
+                                        </td>
+                                        <td>@if ($marker->filename)
+                                                <a href="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" target="_blank"><img src="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" class="img-fluid" alt="{{$marker->name}}"></a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endif
                         </tbody>
                     </table>
                     <h2>Outdated</h2>
@@ -76,22 +78,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($markers['outdated'] as $marker)
-                                <tr data-lat="{{$marker->lat}}" data-lon="{{$marker->lon}}">
-                                    <td>{{$editable_types[$marker->type]['name']}}</td>
-                                    <td>{{$marker->created_at->format('Y-m-d')}}</td>
-                                    <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
-                                    <td>{{$marker->description}}
-                                        @if ($marker->url)
-                                            <br><a href="{{$url}}">{{$url}}</a>
-                                        @endif
-                                    </td>
-                                    <td>@if ($marker->filename)
-                                            <a href="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" target="_blank"><img src="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" class="img-fluid" alt="{{$marker->name}}"></a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
+                            @if (isset($markers['outdated']))
+                                @foreach($markers['outdated'] as $marker)
+                                    <tr data-lat="{{$marker->lat}}" data-lon="{{$marker->lon}}">
+                                        <td>{{$editable_types[$marker->type]['name']}}</td>
+                                        <td>{{$marker->created_at->format('Y-m-d')}}</td>
+                                        <td><a href="{{secure_url('/').'#l'.$editable_layer_id.'|z'.config('map.layers')[0]['options']['maxZoom'].'|c'.$marker->lat.','.$marker->lon.'|m'.$marker->id}}">{{$marker->name}}</a></td>
+                                        <td>{{$marker->description}}
+                                            @if ($marker->url)
+                                                <br><a href="{{$url}}">{{$url}}</a>
+                                            @endif
+                                        </td>
+                                        <td>@if ($marker->filename)
+                                                <a href="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" target="_blank"><img src="{{Helper::getFilename($marker->layer_id, $marker->filename, false)}}" class="img-fluid" alt="{{$marker->name}}"></a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endif
                         </tbody>
                     </table>
                 </div>
