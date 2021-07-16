@@ -33,7 +33,7 @@ class MachineLearningPhotosSeeder extends Seeder
                         $lon = self::DMStoDD(trim($parts[0]), str_replace("'", '', $parts[2]), str_replace('"', '', $parts[3]));
                         // road sign layer
                         $marker = Marker::updateOrCreate(['layer_id' => 1, 'type' => 1, 'lat' => $lat, 'lon' => $lon, 'name' => $info[0]['SignName']], ['description' => '', 'filename' => str_replace('public/photos/ml/', '', $photo), 'url' => '', 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
-                        Storage::copy($photo, Storage::copy($photo, str_ireplace('ml/', '', $photo)););
+                        Storage::copy($photo, Storage::copy($photo, str_ireplace('ml/', '', $photo)));
                         echo 'created ' . $info[0]['SignName'] . ' with score ' . $info[0]['Score'] . ' at ' . $lat . ',' . $lon . "\n";
                     }
                 }
