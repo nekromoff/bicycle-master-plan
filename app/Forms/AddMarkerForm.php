@@ -19,7 +19,7 @@ class AddMarkerForm extends Form
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
             ]])
-            ->add('file', 'file', ['label' => 'Photo:', 'attr' => ['accept' => '.png,.PNG,.jpg,.jpeg,.JPG,.JPEG,.PDF,.pdf', 'capture'], 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
+            ->add('file', 'file', ['label' => 'Photo:', 'attr' => ['accept' => '.png,.PNG,.jpg,.jpeg,.JPG,.JPEG,.PDF,.pdf'], 'wrapper' => ['class' => 'form-group input-group-sm'], 'help_block' => [
                 'text' => 'Photo or image - JPG, PNG or PDF allowed. Markers without photos will usually not be approved.',
                 'tag'  => 'small',
                 'attr' => ['class' => 'form-text text-muted'],
