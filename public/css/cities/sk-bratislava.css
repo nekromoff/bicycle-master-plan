@@ -303,7 +303,7 @@
 [class*="incline"]:not(.incline-):not(.incline-0):not(.incline-up):not(.incline-down), [class*="tunnel"] {
     stroke-dasharray: 6 8;
 }
-.area-yes {
+.area-yes, .cycleway-separate {
     stroke: transparent !important;
     fill: none;
 }
