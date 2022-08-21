@@ -282,7 +282,7 @@
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.cycleway-lane:not(.cycleway-lane-advisory), .cycleway-lane:not(.maxspeed-50), .cycleway-lane:not(.maxspeed-type-sk-urban), .cycleway-share_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
+.cycleway-lane:not(.cycleway-lane-advisory):not(.maxspeed-50):not(.maxspeed-type-sk-urban), .cycleway-share_busway, .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
     color: #1f78b4;
     stroke: #1f78b4;
     stroke-width: 3;
