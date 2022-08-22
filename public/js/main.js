@@ -173,7 +173,7 @@ function getLayerId(layer) {
 function fetchLayer(layer_id, type) {
     // if layer_id is entered as layer_id/type combo, separate them
     layer_id = layer_id.toString();
-    if (layer_id.indexOf('/') != -1)  {
+    if (layer_id.indexOf('/') != -1) {
         parts = layer_id.split('/');
         layer_id = parts[0];
         type = parts[1];
@@ -314,7 +314,7 @@ function parsePaths(data, layer_id, type) {
             }
         }
         // add sidebar content
-        if (content)  {
+        if (content) {
             core.paths[path.id].options.content = content;
             core.paths[path.id].on('click', function() {
                 openSidebar(this.options.content);
@@ -332,7 +332,7 @@ function parsePaths(data, layer_id, type) {
     }
 }
 
-function parseMarkers(data, layer_id, type)  {
+function parseMarkers(data, layer_id, type) {
     for (key in data.markers) {
         marker = data.markers[key];
         marker_content = '<div class="marker ';
@@ -518,7 +518,7 @@ function parseMarkers(data, layer_id, type)  {
             }
         }
         // add sidebar content
-        if (content)  {
+        if (content) {
             core.markers[marker.id].options.content = content;
             core.markers[marker.id].on('click', function() {
                 openSidebar(this.options.content);
@@ -630,7 +630,7 @@ function createMarker(e, options) {
     if (type) {
         $('#sidebar-content form select[name=type]').val(type);
     }
-    $('#sidebar-content form').on('submit', function(e)  {
+    $('#sidebar-content form').on('submit', function(e) {
         action = $('#sidebar-content form').clone().attr('action');
         openSidebar(i18n('Creating... Please wait.'));
         $.ajax({
@@ -655,7 +655,7 @@ function createMarker(e, options) {
     });
 }
 
-function toggleSidebarCheck(id, type)  {
+function toggleSidebarCheck(id, type) {
     if (id) {
         if (type == 'marker') {
             core.options.marker_id = id;
@@ -711,17 +711,17 @@ function toggleSidebarCheck(id, type)  {
 }
 
 function describeBicycleInfrastructure(infrastructure_type) {
-    if (infrastructure_type == 'advisory') {
+    if (infrastructure_type.indexOf('advisory') != -1) {
         return i18n('Advisory');
-    } else if (infrastructure_type == 'shared_lane') {
+    } else if (infrastructure_type.indexOf('shared_lane') != -1) {
         return i18n('Sharrows');
-    } else if (infrastructure_type == 'share_busway') {
+    } else if (infrastructure_type.indexOf('share_busway') != -1) {
         return i18n('Bus & bike lane');
-    } else if (infrastructure_type == 'lane') {
+    } else if (infrastructure_type.indexOf('lane') != -1) {
         return i18n('Bike lane');
-    } else if (infrastructure_type == 'opposite' || infrastructure_type == 'opposite_lane') {
+    } else if (infrastructure_type.indexOf('opposite') != -1 || infrastructure_type.indexOf('opposite_lane') != -1) {
         return i18n('Contraflow');
-    } else if (infrastructure_type == 'crossing') {
+    } else if (infrastructure_type.indexOf('crossing') != -1) {
         return i18n('Crossing');
     }
     return '';
