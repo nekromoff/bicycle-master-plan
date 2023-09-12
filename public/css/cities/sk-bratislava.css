@@ -273,7 +273,7 @@
     stroke: #a6cee3;
     stroke-width: 2;
 }
-.cycleway-lane-advisory, .cycleway-left-lane-advisory, .cycleway-right-lane-advisory, .cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .cycleway-asl, .network-lcn:not(.state-proposed):not(.highway-cycleway), .complete-yes, .lcn-yes, .lcn-proposed, .lcn-provisional, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane, .maxspeed-type-sk-urban.cycleway-lane, .maxspeed-type-sk-urban.cycleway-right-lane, .cycleway-share_busway  {
+.cycleway-lane-advisory, .cycleway-left-lane-advisory, .cycleway-right-lane-advisory, .cycleway-shared_lane, .cycleway-left-shared_lane, .cycleway-right-shared_lane, .cycleway-opposite, .cycleway-asl, .network-lcn:not(.state-proposed):not(.highway-cycleway), .complete-yes, .lcn-yes, .lcn-proposed, .lcn-provisional, .maxspeed-50.cycleway-lane, .maxspeed-50.cycleway-right-lane, .maxspeed-type-sk-urban.cycleway-lane, .maxspeed-type-sk-urban.cycleway-right-lane, .cycleway-share_busway, .cycleway-left-share_busway, .cycleway-right-share_busway  {
     color: #33a02c;
     stroke: #33a02c;
     stroke-width: 3;
@@ -282,7 +282,7 @@
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.cycleway-lane:not(.cycleway-lane-advisory):not(.cycleway-left-lane-advisory):not(.cycleway-right-lane-advisory):not(.maxspeed-50):not(.maxspeed-type-sk-urban), .cycleway-left-lane, .cycleway-right-lane, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
+.cycleway-lane:not(.cycleway-lane-advisory):not(.cycleway-left-lane-advisory):not(.cycleway-right-lane-advisory):not(.maxspeed-50):not(.maxspeed-type-sk-urban), .cycleway-left-lane, .cycleway-right-lane, .cycleway-track, .cycleway-right-track, .cycleway-left-track, .cycleway-left-opposite, [class*="opposite_lane"], .oneway-yes.bicycle-yes.highway-cycleway {
     color: #1f78b4;
     stroke: #1f78b4;
     stroke-width: 3;
