@@ -719,6 +719,8 @@ function describeBicycleInfrastructure(infrastructure_type) {
         return i18n('Bus & bike lane');
     } else if (infrastructure_type.indexOf('lane') != -1) {
         return i18n('Bike lane');
+    } else if (infrastructure_type.indexOf('track') != -1) {
+        return i18n('Bike track');
     } else if (infrastructure_type.indexOf('opposite') != -1 || infrastructure_type.indexOf('opposite_lane') != -1) {
         return i18n('Contraflow');
     } else if (infrastructure_type.indexOf('crossing') != -1) {
