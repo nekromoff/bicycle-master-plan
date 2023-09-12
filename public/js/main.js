@@ -280,15 +280,23 @@ function parsePaths(data, layer_id, type) {
                 content = content + i18n('Marking') + ': ';
                 content = content + describeBicycleInfrastructure(path.info.cycleway) + '<br>';
             }
-            if (path.info['cycleway:left'] != undefined && path.info['cycleway:left']) {
+            if (path.info['cycleway:right:lane'] != undefined && path.info['cycleway:right:lane']) {
                 content = content + i18n('Marking') + ': ';
-                content = content + describeBicycleInfrastructure(path.info['cycleway:left']);
-                content = content + ' (' + i18n('Left side') + ') ' + '<br>';
-            }
-            if (path.info['cycleway:right'] != undefined && path.info['cycleway:right']) {
+                content = content + describeBicycleInfrastructure(path.info['cycleway:right:lane']);
+                content = content + ' (' + i18n('Right side') + ') ' + '<br>';
+            } else if (path.info['cycleway:right'] != undefined && path.info['cycleway:right']) {
                 content = content + i18n('Marking') + ': ';
                 content = content + describeBicycleInfrastructure(path.info['cycleway:right']);
                 content = content + ' (' + i18n('Right side') + ') ' + '<br>';
+            }
+            if (path.info['cycleway:left:lane'] != undefined && path.info['cycleway:left:lane']) {
+                content = content + i18n('Marking') + ': ';
+                content = content + describeBicycleInfrastructure(path.info['cycleway:left:lane']);
+                content = content + ' (' + i18n('Left side') + ') ' + '<br>';
+            } else if (path.info['cycleway:left'] != undefined && path.info['cycleway:left']) {
+                content = content + i18n('Marking') + ': ';
+                content = content + describeBicycleInfrastructure(path.info['cycleway:left']);
+                content = content + ' (' + i18n('Left side') + ') ' + '<br>';
             }
             if (path.info.name == undefined) {
                 content = content + '</strong>';
