@@ -244,6 +244,18 @@ function parsePaths(data, layer_id, type) {
         core.paths[path.id] = L.polyline([path.nodes], polyline_options);
         content = '';
         if (path.info != undefined) {
+            if (path.info.cycleway != undefined && (path.info.cycleway == 'opposite' || path.info.cycleway == 'opposite_track' || path.info.cycleway == 'opposite_lane')) {
+                core.paths[path.id].setText('⇄', {
+                    repeat: 10,
+                    offset: -2
+                });
+            }
+            if (path.info['oneway:bicycle'] != undefined && path.info['oneway:bicycle'] == 'no') {
+                core.paths[path.id].setText('⇄', {
+                    repeat: 10,
+                    offset: -2
+                });
+            }
             if (path.info.name != undefined && path.info.name) {
                 content = content + '<h2>';
             }
