@@ -244,6 +244,7 @@ function parsePaths(data, layer_id, type) {
         core.paths[path.id] = L.polyline([path.nodes], polyline_options);
         content = '';
         if (path.info != undefined) {
+            /* This is for cycleway opposite
             if (path.info.cycleway != undefined && (path.info.cycleway == 'opposite' || path.info.cycleway == 'opposite_track' || path.info.cycleway == 'opposite_lane')) {
                 core.paths[path.id].setText('⇄', {
                     repeat: 10,
@@ -254,6 +255,17 @@ function parsePaths(data, layer_id, type) {
                 core.paths[path.id].setText('⇄', {
                     repeat: 10,
                     offset: -2
+                });
+            }
+            */
+            // This provides correct orientation of upward pointing arrow (which is kind of magic!) for oneways (following the line direction)
+            if (path.info.oneway != undefined && path.info.oneway == 'yes' && path.info['oneway:bicycle'] == undefined && path.info.highway != 'cycleway' && path.info.bicycle == undefined && path.info.cycleway == undefined && path.info['cycleway:left'] == undefined && path.info['cycleway:right'] == undefined) {
+                core.paths[path.id].setText('↑', {
+                    repeat: 10,
+                    offset: 6,
+                    attributes: {
+                        rotate: 90
+                    }
                 });
             }
             if (path.info.name != undefined && path.info.name) {
