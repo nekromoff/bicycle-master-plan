@@ -318,6 +318,10 @@
 .path.lcn-yes, .path.lcn-proposed, .path.lcn-provisional {
     stroke-dasharray: 2 8;
 }
+/* Hack to ignore paths where duplicate separate cycleway path exists */
+.cycleway-separate,.cycleway-left-separate, .cycleway-right-separate {
+    display: none;
+}
 
 .distances {
     background: #aa007f;

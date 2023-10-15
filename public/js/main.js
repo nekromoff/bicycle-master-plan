@@ -269,7 +269,8 @@ function parsePaths(data, layer_id, type) {
                 });
             }
             // Bridge sign for bridges (following the line direction, parallel)
-            if (path.info.bridge != undefined && path.info.bridge == 'yes') {
+            // Hack to ignore paths where duplicate separate cycleway path exists
+            if (path.info.bridge != undefined && path.info.bridge == 'yes' && path.info.cycleway != 'separate') {
                 core.paths[path.id].setText('[', {
                     repeat: 5,
                     offset: 3,
@@ -313,7 +314,7 @@ function parsePaths(data, layer_id, type) {
             if (path.info['cycleway:lane'] != undefined && path.info['cycleway:lane']) {
                 content = content + i18n('Marking') + ': ';
                 content = content + describeBicycleInfrastructure(path.info['cycleway:lane']) + '<br>';
-            } else if (path.info.cycleway != undefined && path.info.cycleway) {
+            } else if (path.info.cycleway != undefined && path.info.cycleway != 'separate') {
                 content = content + i18n('Marking') + ': ';
                 content = content + describeBicycleInfrastructure(path.info.cycleway) + '<br>';
             }
