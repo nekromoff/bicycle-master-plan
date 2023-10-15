@@ -40,6 +40,7 @@ translation = {
         "No motor vehicles": "Ulica s vylúčením motorových vozidiel",
         "Recommended path for cyclists": "Odporúčaná trasa pre cyklistov",
         "Bridge": "Most alebo nadjazd",
+        "Incline": "Stúpanie",
         // markers
         "Reported on": "Dátum nahlásenia",
         // submit marker form

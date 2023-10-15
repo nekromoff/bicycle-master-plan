@@ -40,6 +40,7 @@ translation = {
         "No motor vehicles": "Street excluding motor vehicles",
         "Recommended path for cyclists": "Recommended path for cyclists",
         "Bridge": "Bridge or overpass",
+        "Incline": "Incline",
         // markers
         "Reported on": "Reported on",
         // submit marker form

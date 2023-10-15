@@ -279,6 +279,17 @@ function parsePaths(data, layer_id, type) {
                     }
                 });
             }
+            // Slope sign for key incline where specified in %
+            if (path.info.incline != undefined && path.info.incline != 'up' && path.info.incline != 'down' && path.info.incline != '0%' && path.info.incline != '0') {
+                core.paths[path.id].setText('◣', {
+                    repeat: 5,
+                    offset: 3,
+                    attributes: {
+                        rotate: 90,
+                        'font-size': '40%'
+                    }
+                });
+            }
             if (path.info.name != undefined && path.info.name) {
                 content = content + '<h2>';
             }
@@ -335,6 +346,10 @@ function parsePaths(data, layer_id, type) {
                 content = content + i18n('Marking') + ': ';
                 content = content + describeBicycleInfrastructure(path.info['cycleway:left']);
                 content = content + ' (' + i18n('Left side') + ') ' + '<br>';
+            }
+            // include incline only where incline specified in %
+            if (path.info.incline != undefined && path.info.incline != 'up' && path.info.incline != 'down' && path.info.incline != '0%' && path.info.incline != '0') {
+                content = content + i18n('Incline') + ': ' + i18n(path.info.incline) + '<br>';
             }
             if (path.info.name == undefined) {
                 content = content + '</strong>';
