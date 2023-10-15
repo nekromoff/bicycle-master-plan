@@ -268,6 +268,16 @@ function parsePaths(data, layer_id, type) {
                     }
                 });
             }
+            // Bridge sign for bridges (following the line direction, parallel)
+            if (path.info.bridge != undefined && path.info.bridge == 'yes') {
+                core.paths[path.id].setText('[', {
+                    repeat: 5,
+                    offset: 3,
+                    attributes: {
+                        rotate: 90
+                    }
+                });
+            }
             if (path.info.name != undefined && path.info.name) {
                 content = content + '<h2>';
             }
@@ -283,6 +293,9 @@ function parsePaths(data, layer_id, type) {
             }
             if (path.info.lcn != undefined && path.info.lcn == 'provisional') {
                 content = content + i18n('Recommended path for cyclists') + '<br>';
+            }
+            if (path.info.bridge != undefined && path.info.bridge == 'yes') {
+                content = content + i18n('Bridge') + '<br>';
             }
             if (path.info.highway != undefined && path.info.highway == 'cycleway') {
                 content = content + i18n('Marking') + ': ' + i18n('Segregated bike lane') + '<br>';
