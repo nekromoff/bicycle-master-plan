@@ -270,7 +270,7 @@ function parsePaths(data, layer_id, type) {
             }
             // Bridge sign for bridges (following the line direction, parallel)
             // Hack to ignore paths where duplicate separate cycleway path exists
-            if (path.info.bridge != undefined && path.info.bridge == 'yes' && path.info.cycleway != 'separate') {
+            if (path.info.bridge != undefined && (path.info.bridge == 'yes' || path.info.bridge == 'viaduct') && path.info.cycleway != 'separate') {
                 core.paths[path.id].setText('[', {
                     repeat: 5,
                     offset: 3,
@@ -306,7 +306,7 @@ function parsePaths(data, layer_id, type) {
             if (path.info.lcn != undefined && path.info.lcn == 'provisional') {
                 content = content + i18n('Recommended path for cyclists') + '<br>';
             }
-            if (path.info.bridge != undefined && path.info.bridge == 'yes') {
+            if (path.info.bridge != undefined && (path.info.bridge == 'yes' || path.info.bridge == 'viaduct')) {
                 content = content + i18n('Bridge') + '<br>';
             }
             if (path.info.highway != undefined && path.info.highway == 'cycleway') {
