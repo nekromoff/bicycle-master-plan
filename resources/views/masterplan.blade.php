@@ -57,6 +57,7 @@
         <script src="{{asset('js/easy-button.js')}}"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
+        <!-- <script src="{{asset('js/leaflet.polylineoffset.js')}}"></script> -->
         <script src="{{asset('js/i18n.min.js')}}"></script>
         <script src="{{asset('translations/'.config('map.language').'.js')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
@@ -104,6 +105,7 @@
             zoomSnap: 0.5,
             zoomDelta: 0.5,
             tap: false, // fixes Safari issues with popups
+            tapTolerance: 20,
             layers: [
                 @foreach (config('map.default_layers') as $layer)
                     @if ($layer!='base')

@@ -1,3 +1,5 @@
+// if we want to parse paths (buildings) as bicycle parking, we need to make an exception and convert it to markers (nodes)
+
 var core = {};
 core.options = [];
 core.layers = [];
@@ -496,7 +498,7 @@ function parseMarkers(data, layer_id, type) {
                 content = content + '<div class="alert alert-warning">' + i18n('Reported not up-to-date') + '</div>';
             }
         }
-        if (!marker.name && marker.info.name == undefined) {
+        if (!marker.name && marker.info == undefined || marker.info.name == undefined) {
             content = content + '<strong>';
         }
         if (marker.info != undefined && marker.info.bicycle_parking != undefined) {
@@ -523,7 +525,7 @@ function parseMarkers(data, layer_id, type) {
                 content = content + '<br>';
             }
         }
-        if (!marker.name && marker.info.name == undefined) {
+        if (!marker.name && marker.info == undefined || marker.info.name == undefined) {
             content = content + '</strong>';
         }
         if (marker.info != undefined && marker.info.amenity != undefined) {
