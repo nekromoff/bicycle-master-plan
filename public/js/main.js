@@ -498,7 +498,7 @@ function parseMarkers(data, layer_id, type) {
                 content = content + '<div class="alert alert-warning">' + i18n('Reported not up-to-date') + '</div>';
             }
         }
-        if (!marker.name && marker.info == undefined || marker.info.name == undefined) {
+        if (!marker.name || !marker.info) {
             content = content + '<strong>';
         }
         if (marker.info != undefined && marker.info.bicycle_parking != undefined) {
