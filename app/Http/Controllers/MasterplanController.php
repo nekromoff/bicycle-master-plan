@@ -4,13 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Cycleway;
 use App\Helpers\Helper;
-use App\Layer;
 use App\Marker;
 use App\MarkersRelation;
 use App\Path;
 use App\Relation;
 use Google_Client;
-use Google_Service_Sheets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -31,11 +29,11 @@ class MasterplanController extends Controller
         }
         $this->initialize();
         $form = $formBuilder->create('App\Forms\AddMarkerForm', [
-            'url'    => route('data.save'),
+            'url' => route('data.save'),
             'method' => 'POST',
-            'data'   => [
+            'data' => [
                 'editable_layer_id' => $this->editable_layer_id,
-                'email'             => $email,
+                'email' => $email,
             ],
         ]);
         return view('masterplan', compact('form'));
@@ -199,7 +197,13 @@ class MasterplanController extends Controller
     public function fetchAndSaveOverpassData($filename, $data)
     {
         $overpass = config('map.osm_server') . '?data=' . urlencode($data);
-        $content = file_get_contents($overpass);
+        $options = [
+            'http' => [
+                'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n" . ,
+            ],
+        ];
+        $context = stream_context_create($options);
+        $content = file_get_contents($overpass, false, $context);
         Storage::put($filename, $content);
     }
 
@@ -473,5 +477,4 @@ class MasterplanController extends Controller
         }
         return redirect()->route('login', ['provider' => 'google']);
     }
-
 }
