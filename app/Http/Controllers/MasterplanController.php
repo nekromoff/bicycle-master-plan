@@ -199,7 +199,7 @@ class MasterplanController extends Controller
         $overpass = config('map.osm_server') . '?data=' . urlencode($data);
         $options = [
             'http' => [
-                'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n" . ,
+                'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n",
             ],
         ];
         $context = stream_context_create($options);
