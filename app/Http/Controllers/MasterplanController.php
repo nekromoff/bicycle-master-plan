@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Kris\LaravelFormBuilder\FormBuilder;
-use Revolution\Google\Sheets\Sheets;
+use Revolution\Google\Sheets\SheetsClient;
 
 class MasterplanController extends Controller
 {
@@ -234,33 +234,16 @@ class MasterplanController extends Controller
         $servers = (array) config('map.osm_server');
         $content = null;
         foreach ($servers as $server) {
-            // Overpass prefers POST for long queries; GET URLs are also more likely to be cached/rejected by gateways
-            $options = [
-                'http' => [
-                    'method' => 'POST',
-                    'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n"
-                        ."Content-type: application/x-www-form-urlencoded\r\n",
-                    'content' => http_build_query(['data' => $data]),
-                    'timeout' => 300,
-                    // return the body instead of throwing on 4xx/5xx, so we can fall back to another mirror
-                    'ignore_errors' => true,
-                ],
-            ];
-            $context = stream_context_create($options);
-            $response = @file_get_contents($server, false, $context);
-            $status = $this->getResponseStatus($http_response_header ?? []);
-            if ($response !== false and $status === 200 and json_decode($response) !== null) {
+            // Overpass prefers POST for long queries
+            $response = $this->fetchUrl($server, http_build_query(['data' => $data]));
+            if ($response !== null and json_decode($response) !== null) {
                 $content = $response;
                 break;
             }
-            Log::warning('Overpass fetch failed, trying next server', [
-                'server' => $server,
-                'file' => $filename,
-                'status' => $status,
-            ]);
+            Log::warning('Overpass fetch failed, trying next server', ['server' => $server, 'file' => $filename]);
         }
         if ($content === null) {
-            // keep the previously downloaded data rather than overwriting it with an empty/error response
+            // keep previously downloaded data instead of overwriting it with an empty/error response
             Log::error('Overpass fetch failed on all servers, keeping existing data', ['file' => $filename]);
 
             return;
@@ -269,17 +252,37 @@ class MasterplanController extends Controller
     }
 
     /**
-     * @param  array<int, string>  $headers
+     * Fetch a remote URL with our user agent, returning null instead of throwing when it fails.
      */
-    protected function getResponseStatus(array $headers): ?int
+    protected function fetchUrl(string $url, ?string $post_data = null): ?string
     {
-        foreach ($headers as $header) {
+        $options = [
+            'http' => [
+                'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n",
+                'timeout' => 300,
+                // return the body instead of throwing on 4xx/5xx, so callers can decide what to do
+                'ignore_errors' => true,
+            ],
+        ];
+        if ($post_data !== null) {
+            $options['http']['method'] = 'POST';
+            $options['http']['header'] .= "Content-type: application/x-www-form-urlencoded\r\n";
+            $options['http']['content'] = $post_data;
+        }
+        $response = @file_get_contents($url, false, stream_context_create($options));
+        $status = null;
+        foreach ($http_response_header ?? [] as $header) {
             if (preg_match('#^HTTP/\S+\s+(\d{3})#', $header, $matches)) {
                 $status = (int) $matches[1];
             }
         }
+        if ($response === false or ($status !== null and $status !== 200)) {
+            Log::warning('Fetch failed', ['url' => $url, 'status' => $status]);
 
-        return $status ?? null;
+            return null;
+        }
+
+        return $response;
     }
 
     public function refreshBikeshareData(Request $request)
@@ -287,22 +290,21 @@ class MasterplanController extends Controller
         $bikeshares = config('bikeshare.bikeshares');
         foreach ($bikeshares as $bikeshare_key => $bikeshare) {
             $stands = [];
-            if (! is_array($bikeshare['url'])) {
-                $url = trim($bikeshare['url']);
-                $content = file_get_contents($url);
-                $stands = json_decode($content, true);
-            } else {
-                foreach ($bikeshare['url'] as $url) {
-                    $url = trim($url);
-                    $content = file_get_contents($url);
-                    $stands = array_merge($stands, json_decode($content, true));
+            foreach ((array) $bikeshare['url'] as $url) {
+                $content = $this->fetchUrl(trim($url));
+                $feed_stands = $content === null ? null : json_decode($content, true);
+                if (! is_array($feed_stands)) {
+                    Log::warning('Bikeshare feed unavailable or invalid, skipping', ['bikeshare' => $bikeshare_key, 'url' => trim($url)]);
+
+                    continue;
                 }
+                $stands = array_merge($stands, $feed_stands);
             }
             // if dot notation used, access deeply nested array
             if ($bikeshare['stands']) {
                 $stands = Arr::get($stands, $bikeshare['stands']);
             }
-            foreach ($stands as $stand) {
+            foreach ((array) $stands as $stand) {
                 $name = $bikeshare_key;
                 if ($bikeshare['name']) {
                     $name = trim($stand[$bikeshare['name']]);
@@ -416,7 +418,7 @@ class MasterplanController extends Controller
         }
     }
 
-    private static function createGoogleServiceSheets(): Sheets
+    private static function createGoogleServiceSheets(): SheetsClient
     {
         $client = new GoogleClient;
         $client->setApplicationName(config('google.APPLICATION_NAME'));
@@ -428,7 +430,7 @@ class MasterplanController extends Controller
             $client->refreshTokenWithAssertion();
         }
         $service = new GoogleServiceSheets($client);
-        $sheets = new Sheets;
+        $sheets = new SheetsClient;
         $sheets->setService($service);
 
         return $sheets;
