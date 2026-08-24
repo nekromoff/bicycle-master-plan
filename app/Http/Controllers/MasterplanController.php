@@ -2,23 +2,53 @@
 
 namespace App\Http\Controllers;
 
-use App\Cycleway;
 use App\Helpers\Helper;
-use App\Marker;
-use App\MarkersRelation;
-use App\Path;
-use App\Relation;
-use Google_Client;
+use App\Models\Cycleway;
+use App\Models\Marker;
+use App\Models\MarkersRelation;
+use App\Models\Path;
+use App\Models\Relation;
+use Google\Client as GoogleClient;
+use Google\Service\Sheets as GoogleServiceSheets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Kris\LaravelFormBuilder\FormBuilder;
 use Revolution\Google\Sheets\Sheets;
-use Storage;
 
 class MasterplanController extends Controller
 {
+    /** @var array<int|string, array{lat: float, lon: float}> */
+    protected array $nodes = [];
+
+    /** @var array<int, array<string, mixed>> */
+    protected array $paths = [];
+
+    /** @var array<int|string, object> */
+    protected array $relations = [];
+
+    /** @var array<int|string, int|string> */
+    protected array $parents = [];
+
+    /** @var array<int|string, object> */
+    protected array $markers_new = [];
+
+    protected int|string|false $editable_layer_id = false;
+
+    /** @var array<int|string, mixed>|false */
+    protected array|false $editable_types = false;
+
+    /** @var array<string, string>|false */
+    protected array|false $editable_allowed_filetypes = false;
+
+    protected ?Collection $markers = null;
+
+    protected ?Collection $paths_db = null;
+
+    protected ?Collection $cycleways = null;
 
     public function map(FormBuilder $formBuilder, Request $request)
     {
@@ -28,7 +58,7 @@ class MasterplanController extends Controller
             $email = $user->email;
         }
         $this->initialize();
-        $form = $formBuilder->create('App\Forms\AddMarkerForm', [
+        $form = $formBuilder->create(\App\Forms\AddMarkerForm::class, [
             'url' => route('data.save'),
             'method' => 'POST',
             'data' => [
@@ -36,6 +66,7 @@ class MasterplanController extends Controller
                 'email' => $email,
             ],
         ]);
+
         return view('masterplan', compact('form'));
     }
 
@@ -43,10 +74,11 @@ class MasterplanController extends Controller
     {
         $this->initialize();
         $markers = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 1, 'deleted' => 0])->orderBy('type')->orderBy('created_at')->get();
+
         return view('issues', ['markers' => $markers, 'editable_layer_id' => $this->editable_layer_id, 'editable_types' => $this->editable_types]);
     }
 
-    private function initialize()
+    private function initialize(): void
     {
         $this->nodes = [];
         $this->paths = [];
@@ -55,30 +87,30 @@ class MasterplanController extends Controller
         $this->editable_layer_id = Helper::getEditableLayerId();
         $this->editable_types = Helper::getEditableLayerTypes();
         $this->editable_allowed_filetypes = Helper::getEditableLayerAllowedUploadFiletypes();
-        $bounding_box = config('map.bounding_box');
     }
 
     public function getLayer(Request $request)
     {
         $this->initialize();
-        $this->markers = Marker::with(['relations', 'markerRelations.child'])->select()->where(['approved' => 1, 'deleted' => 0, 'layer_id' => $request->id]);
+        $markers = Marker::with(['relations', 'markerRelations.child'])->select()->where(['approved' => 1, 'deleted' => 0, 'layer_id' => $request->id]);
         if (isset($request->type)) {
-            $this->markers = $this->markers->where('type', $request->type);
+            $markers = $markers->where('type', $request->type);
         }
         if ($request->id == $this->editable_layer_id) {
-            $this->markers->addSelect(DB::raw('DATE(created_at) as date_reported'));
+            $markers->addSelect(DB::raw('DATE(created_at) as date_reported'));
         }
-        $this->markers = $this->markers->get();
-        $this->paths_db = Path::where('layer_id', $request->id);
+        $this->markers = $markers->get();
+
+        $paths_db = Path::where('layer_id', $request->id);
         if (isset($request->type)) {
-            $this->paths_db = $this->paths_db->where('type', $request->type);
+            $paths_db = $paths_db->where('type', $request->type);
         }
-        $this->paths_db = $this->paths_db->get();
+        $this->paths_db = $paths_db->get();
         $this->cycleways = Cycleway::get()->keyBy('id');
 
         $layer = config('map.layers')[$request->id];
         $this->processMapFeatures($layer, $request->id, $request->type);
-        if (isset($this->markers_new)) {
+        if ($this->markers_new) {
             $this->markers = $this->markers->union(collect($this->markers_new));
         }
 
@@ -106,7 +138,7 @@ class MasterplanController extends Controller
                         if ($db_column == 'filename') {
                             $filename = basename($path);
                         } else {
-                            $url = asset('storage/uploads/' . basename($path));
+                            $url = asset('storage/uploads/'.basename($path));
                         }
                         break;
                     }
@@ -158,6 +190,7 @@ class MasterplanController extends Controller
             }
         }
         DB::commit();
+
         return response()->json($content);
     }
 
@@ -176,6 +209,7 @@ class MasterplanController extends Controller
             $marker->save();
             $content['success'] = 1;
         }
+
         return response()->json($content);
     }
 
@@ -185,18 +219,18 @@ class MasterplanController extends Controller
         $osm_data = config('map.osm_data');
         if (is_array($osm_data)) {
             foreach ($osm_data as $data) {
-                $filename = 'osm/' . $data['file'];
+                $filename = 'osm/'.$data['file'];
                 $data = str_replace('{{bbox}}', $bounding_box, $data['data']);
-                if (isset($request->force) or !Storage::exists($filename) or Storage::lastModified($filename) < time() - 86400) {
-                    MasterplanController::fetchAndSaveOverpassData($filename, $data);
+                if (isset($request->force) or ! Storage::exists($filename) or Storage::lastModified($filename) < time() - 86400) {
+                    $this->fetchAndSaveOverpassData($filename, $data);
                 }
             }
         }
     }
 
-    public function fetchAndSaveOverpassData($filename, $data)
+    public function fetchAndSaveOverpassData($filename, $data): void
     {
-        $overpass = config('map.osm_server') . '?data=' . urlencode($data);
+        $overpass = config('map.osm_server').'?data='.urlencode($data);
         $options = [
             'http' => [
                 'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n",
@@ -212,7 +246,7 @@ class MasterplanController extends Controller
         $bikeshares = config('bikeshare.bikeshares');
         foreach ($bikeshares as $bikeshare_key => $bikeshare) {
             $stands = [];
-            if (!is_array($bikeshare['url'])) {
+            if (! is_array($bikeshare['url'])) {
                 $url = trim($bikeshare['url']);
                 $content = file_get_contents($url);
                 $stands = json_decode($content, true);
@@ -237,7 +271,7 @@ class MasterplanController extends Controller
                     $description = trim($stand[$bikeshare['description']]);
                 }
                 if ($bikeshare['bicycle_count']) {
-                    $description = trim($stand[$bikeshare['bicycle_count']]) . "\n" . $description;
+                    $description = trim($stand[$bikeshare['bicycle_count']])."\n".$description;
                 }
                 if (is_array($bikeshare['coords'])) {
                     $array = Arr::dot($stand);
@@ -252,8 +286,7 @@ class MasterplanController extends Controller
                 if ($bikeshare['filename']) {
                     $filename = trim($stand[$bikeshare['filename']]);
                 }
-                // not used $bikeshare['bicycle_count']
-                $marker = Marker::updateOrCreate(['layer_id' => $bikeshare['layer_id'], 'type' => $bikeshare['type'], 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'url' => '', 'filename' => $filename, 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
+                Marker::updateOrCreate(['layer_id' => $bikeshare['layer_id'], 'type' => $bikeshare['type'], 'lat' => $lat, 'lon' => $lon, 'name' => $name], ['description' => $description, 'url' => '', 'filename' => $filename, 'email' => '', 'approved' => 1, 'outdated' => 0, 'deleted' => 0]);
             }
         }
     }
@@ -310,7 +343,7 @@ class MasterplanController extends Controller
                 $layer_id = $feed['layer_id'];
                 $rows = $sheets->spreadsheet($feed['url'])->sheet('markers')->all();
                 foreach ($rows as $key => $row) {
-                    if (!$key) {
+                    if (! $key) {
                         continue;
                     }
                     $name = $row[$feed['name']];
@@ -321,7 +354,7 @@ class MasterplanController extends Controller
                         $lat = trim($row[$feed['coords'][0]]);
                         $lon = trim($row[$feed['coords'][1]]);
                     } else {
-                        $coords = explode(',', $feed[$coords]);
+                        $coords = explode(',', $row[$feed['coords']]);
                         $lat = trim($coords[0]);
                         $lon = trim($coords[1]);
                     }
@@ -342,9 +375,9 @@ class MasterplanController extends Controller
         }
     }
 
-    private static function createGoogleServiceSheets()
+    private static function createGoogleServiceSheets(): Sheets
     {
-        $client = new Google_Client();
+        $client = new GoogleClient;
         $client->setApplicationName(config('google.APPLICATION_NAME'));
         $client->setClientId(config('google.CLIENT_ID'));
         $client->setScopes([config('google.SPREADSHEETS_SCOPE')]);
@@ -353,18 +386,18 @@ class MasterplanController extends Controller
         if ($client->isAccessTokenExpired()) {
             $client->refreshTokenWithAssertion();
         }
-        $service_token = $client->getAccessToken();
-        $service = new \Google_Service_Sheets($client);
-        $sheets = new Sheets();
+        $service = new GoogleServiceSheets($client);
+        $sheets = new Sheets;
         $sheets->setService($service);
+
         return $sheets;
     }
 
-    private function processMapFeatures($layer, $layer_id, $type)
+    private function processMapFeatures($layer, $layer_id, $type): void
     {
         $i = count($this->paths);
         if ($layer['type'] == 'path' and isset($layer['file'])) {
-            $filename = 'osm/' . $layer['file'];
+            $filename = 'osm/'.$layer['file'];
             $content = Storage::get($filename);
             $result = json_decode($content);
             $data = $result->elements;
@@ -375,7 +408,7 @@ class MasterplanController extends Controller
                 } elseif ($item->type == 'relation') {
                     $this->relations[$item->id] = $item->tags;
                     foreach ($item->members as $member) {
-                        if (!isset($this->parents[$member->ref])) {
+                        if (! isset($this->parents[$member->ref])) {
                             $this->parents[$member->ref] = $item->id;
                         } elseif (isset($this->parents[$member->ref]) and isset($this->relations[$this->parents[$member->ref]]->state) and $this->relations[$this->parents[$member->ref]]->state == 'proposed') {
                             // overwrite proposed with completed in case of multiple relations
@@ -399,7 +432,7 @@ class MasterplanController extends Controller
                         $this->paths[$i]['info'] = (array) $item->tags;
                     }
                     $this->paths[$i]['layer_id'] = $layer_id;
-                    $this->paths[$i]['id'] = $layer_id . '-' . $item->id;
+                    $this->paths[$i]['id'] = $layer_id.'-'.$item->id;
                     $i++;
                 }
             }
@@ -407,7 +440,7 @@ class MasterplanController extends Controller
             $temp_paths = $this->paths_db;
             $temp_paths = $temp_paths->where('layer_id', $layer_id);
             foreach ($temp_paths as $path) {
-                $this->paths[$i]['id'] = $layer_id . '-' . $path->id;
+                $this->paths[$i]['id'] = $layer_id.'-'.$path->id;
                 $this->paths[$i]['layer_id'] = $path->layer_id;
                 $this->paths[$i]['info']['name'] = $path->name;
                 $this->paths[$i]['info']['description'] = $path->description;
@@ -418,13 +451,13 @@ class MasterplanController extends Controller
             }
         } elseif ($layer['type'] == 'marker') {
             if (isset($layer['file'])) {
-                $filename = 'osm/' . $layer['file'];
+                $filename = 'osm/'.$layer['file'];
                 $content = Storage::get($filename);
                 $result = json_decode($content);
                 $data = $result->elements;
                 foreach ($data as $item) {
                     if ($item->type == 'node') {
-                        $marker_new_id = $layer_id . '-' . $item->id;
+                        $marker_new_id = $layer_id.'-'.$item->id;
                         $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
                         if (isset($item->tags)) {
                             $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
@@ -434,13 +467,13 @@ class MasterplanController extends Controller
                 }
             } elseif (isset($layer['types']) and is_array($layer['types'][$type])) {
                 if (isset($layer['types'][$type]['file'])) {
-                    $filename = 'osm/' . $layer['types'][$type]['file'];
+                    $filename = 'osm/'.$layer['types'][$type]['file'];
                     $content = Storage::get($filename);
                     $result = json_decode($content);
                     $data = $result->elements;
                     foreach ($data as $item) {
                         if ($item->type == 'node') {
-                            $marker_new_id = $layer_id . '-' . $item->id;
+                            $marker_new_id = $layer_id.'-'.$item->id;
                             $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => $type, 'layer_id' => $layer_id];
                             if (isset($item->tags)) {
                                 $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
@@ -454,7 +487,7 @@ class MasterplanController extends Controller
             $temp_paths = $this->paths_db;
             $temp_paths = $temp_paths->where('layer_id', $layer_id);
             foreach ($temp_paths as $path) {
-                $this->paths[$i]['id'] = $layer_id . '-' . $path->id;
+                $this->paths[$i]['id'] = $layer_id.'-'.$path->id;
                 $this->paths[$i]['layer_id'] = $path->layer_id;
                 $this->paths[$i]['info']['name'] = $path->name;
                 $this->paths[$i]['info']['description'] = $path->description;
@@ -473,8 +506,10 @@ class MasterplanController extends Controller
         if ($user and in_array($user->email, config('map.admins')) === true) {
             $markers['submitted'] = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 0, 'deleted' => 0])->orderBy('type')->orderBy('created_at')->get();
             $markers['outdated'] = Marker::with('relations')->where(['layer_id' => $this->editable_layer_id, 'approved' => 1, 'outdated' => 1, 'deleted' => 0])->orderBy('type')->orderBy('created_at')->get();
+
             return view('admin', ['markers' => $markers, 'editable_layer_id' => $this->editable_layer_id, 'editable_types' => $this->editable_types]);
         }
+
         return redirect()->route('login', ['provider' => 'google']);
     }
 }

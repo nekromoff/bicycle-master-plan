@@ -1,13 +1,6 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <!-- Google Tag Manager -->
-        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-        })(window,document,'script','dataLayer','{{config('google.GTM_ID')}}');</script>
-        <!-- End Google Tag Manager -->
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <title>{{config('map.name')}}</title>
@@ -18,12 +11,6 @@
         <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     </head>
     <body>
-        <!-- Google Tag Manager (noscript) -->
-        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{config('google.GTM_ID')}}"
-        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-        <!-- End Google Tag Manager (noscript) -->
-        <script src="{{asset('js/jquery-3.5.1.min.js')}}"></script>
-        <script src="{{asset('js/bootstrap.bundle.min.js')}}"></script>
         <script src="{{asset('js/leaflet.js')}}"></script>
         <script src="{{asset('js/easy-button.js')}}"></script>
         <script src="{{asset('js/i18n.min.js')}}"></script>
@@ -125,16 +112,23 @@
             L.control.scale({imperial: false}).addTo(map);
             map.setView([core.options.center[0], core.options.center[1]], core.options.zoom);
             var marker;
-            $('tbody tr').on('mouseover', function() {
-                if ($(this).attr('data-lat')) {
-                    coords=[$(this).attr('data-lat'), $(this).attr('data-lon')];
+            document.querySelectorAll('tbody tr').forEach(function(row) {
+                row.addEventListener('mouseover', function() {
+                    if (!row.getAttribute('data-lat')) {
+                        return;
+                    }
+                    var coords = [row.getAttribute('data-lat'), row.getAttribute('data-lon')];
                     marker = L.marker(coords);
                     marker.addTo(map);
                     map.setView(coords);
-                }
-            });
-            $('tbody tr').on('mouseout', function() {
-                map.removeLayer(marker);
+                });
+                row.addEventListener('mouseout', function() {
+                    // rows without coordinates never placed one
+                    if (marker) {
+                        map.removeLayer(marker);
+                        marker = undefined;
+                    }
+                });
             });
             L.easyButton('<span data-toggle="tooltip" data-placement="top" title="'+ i18n("Map")+'">↑</span>', function() { window.location.assign("{{route('map')}}") }).addTo(map);
         </script>

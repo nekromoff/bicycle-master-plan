@@ -63,6 +63,10 @@ translation = {
         "Click again to confirm.": "Potvrďte opätovným klikom, že je bod neaktuálny.",
         "Thank you for your notification. Administrator will verify your information and update the marker.": "Ďakujeme za nahlásenie. Administrátor overí vašu informáciu a aktualizuje tento bod.",
         "Reported not up-to-date": "Tento bod bol nahlásený ako neaktuálny a bude skontrolovaný administrátorom.",
+        // location
+        "My location": "Moja poloha",
+        "Your location could not be determined.": "Vašu polohu sa nepodarilo zistiť.",
+        "Location is not supported by this browser.": "Tento prehliadač nepodporuje zisťovanie polohy.",
         // administration
         "Login": "Prihlásenie / login",
         "Administration": "Administrácia",

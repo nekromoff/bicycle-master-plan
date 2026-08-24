@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Marker;
-use App\Path;
+use App\Models\Marker;
+use App\Models\Path;
 use Illuminate\Database\Seeder;
 
 class PathDistanceSeeder extends Seeder

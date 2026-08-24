@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Marker;
+use App\Models\Marker;
 use Illuminate\Database\Seeder;
 
 class PhotosSeeder extends Seeder

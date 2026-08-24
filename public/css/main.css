@@ -138,3 +138,79 @@ a.toconfirm:link, a.toconfirm:hover {
         box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2);
     }
 }
+
+/* own position, as reported by the browser */
+.own-location {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #1a73e8;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+.own-location-accuracy {
+    fill: #1a73e8;
+    fill-opacity: 0.12;
+    stroke: #1a73e8;
+    stroke-opacity: 0.4;
+    stroke-width: 1;
+}
+
+/*
+    The target is drawn rather than typed: the character sits differently in every font,
+    so it never lines up in the middle of the button.
+*/
+.easy-button-button .locate {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    font-size: 0;
+}
+.easy-button-button .locate::before,
+.easy-button-button .locate::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 50%;
+}
+.easy-button-button .locate::before {
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #000;
+}
+.easy-button-button .locate::after {
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0 -3px;
+    background: #000;
+}
+
+/*
+    Within the tap tolerance of a line or marker, so a click here would open it.
+    Leaflet marks a drag in progress on the body, which keeps its grabbing cursor.
+*/
+body:not(.leaflet-dragging) .leaflet-container.almost-over {
+    cursor: pointer;
+}
+
+/*
+    Route numbers are drawn on every segment of a route, which is hundreds of times for
+    the longer ones. The further the map is zoomed out, the fewer tiers are shown, and
+    labels too close to another one of the same route are never drawn at all.
+*/
+#map.refs-none .ref-t1,
+#map.refs-none .ref-t2,
+#map.refs-none .ref-t3,
+#map.refs-none .ref-t4,
+#map.refs-0 .ref-t2,
+#map.refs-0 .ref-t3,
+#map.refs-0 .ref-t4,
+#map.refs-1 .ref-t3,
+#map.refs-1 .ref-t4,
+#map.refs-2 .ref-t4 {
+    display: none;
+}

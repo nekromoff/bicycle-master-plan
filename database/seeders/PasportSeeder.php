@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Cycleway;
-use App\Marker;
-use App\Relation;
+use App\Models\Cycleway;
+use App\Models\Marker;
+use App\Models\Relation;
 use Illuminate\Database\Seeder;
 
 class PasportSeeder extends Seeder

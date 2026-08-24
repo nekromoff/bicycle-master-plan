@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Layer;
+use App\Models\Layer;
 use Illuminate\Database\Seeder;
 
 class LayerSeeder extends Seeder

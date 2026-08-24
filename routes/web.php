@@ -1,37 +1,30 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
- */
+use App\Http\Controllers\LoginController;
+use App\Http\Controllers\MasterplanController;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/', ['uses' => 'MasterplanController@map', 'as' => 'map']);
-Route::get('/issues', ['uses' => 'MasterplanController@issues', 'as' => 'issues']);
+Route::get('/', [MasterplanController::class, 'map'])->name('map');
+Route::get('/issues', [MasterplanController::class, 'issues'])->name('issues');
 
 Route::prefix('data')->middleware('cache.headers:public;max_age=86400;immutable;etag')->group(function () {
-    Route::get('layer/{id}/{type?}', ['uses' => 'MasterplanController@getLayer', 'as' => 'data.layer']);
-    Route::post('save', ['uses' => 'MasterplanController@saveData', 'as' => 'data.save']);
-    Route::post('edit', ['uses' => 'MasterplanController@editData', 'as' => 'data.edit']);
+    Route::get('layer/{id}/{type?}', [MasterplanController::class, 'getLayer'])->name('data.layer');
+    Route::post('save', [MasterplanController::class, 'saveData'])->name('data.save');
+    Route::post('edit', [MasterplanController::class, 'editData'])->name('data.edit');
 });
 
 Route::prefix('refresh')->group(function () {
-    Route::get('osm/{force?}', ['uses' => 'MasterplanController@refreshOSMData', 'as' => 'refresh.osm']);
-    Route::get('googlesheet/{force?}', ['uses' => 'MasterplanController@refreshGooglesheetData', 'as' => 'refresh.googlesheet']);
-    Route::get('bikeshare/{force?}', ['uses' => 'MasterplanController@refreshBikeshareData', 'as' => 'refresh.bikeshare']);
-    Route::get('feed/{force?}', ['uses' => 'MasterplanController@refreshFeedData', 'as' => 'refresh.feed']);
+    Route::get('osm/{force?}', [MasterplanController::class, 'refreshOSMData'])->name('refresh.osm');
+    Route::get('googlesheet/{force?}', [MasterplanController::class, 'refreshGooglesheetData'])->name('refresh.googlesheet');
+    Route::get('bikeshare/{force?}', [MasterplanController::class, 'refreshBikeshareData'])->name('refresh.bikeshare');
+    Route::get('feed/{force?}', [MasterplanController::class, 'refreshFeedData'])->name('refresh.feed');
 });
 
 Route::prefix('login')->group(function () {
-    Route::get('{provider}', ['uses' => 'LoginController@redirectToProvider', 'as' => 'login']);
-    Route::get('{provider}/callback', ['uses' => 'LoginController@handleProviderCallback', 'as' => 'login.callback']);
+    Route::get('{provider}', [LoginController::class, 'redirectToProvider'])->name('login');
+    Route::get('{provider}/callback', [LoginController::class, 'handleProviderCallback'])->name('login.callback');
 });
 
 Route::prefix('admin')->group(function () {
-    Route::get('/', ['uses' => 'MasterplanController@admin', 'as' => 'admin']);
+    Route::get('/', [MasterplanController::class, 'admin'])->name('admin');
 });

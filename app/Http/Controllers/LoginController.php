@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\User;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,9 +12,7 @@ use Laravel\Socialite\Facades\Socialite;
 class LoginController extends Controller
 {
     /**
-     * Redirect the user to authentication page.
-     *
-     * @return \Illuminate\Http\Response
+     * Redirect the user to the provider's authentication page.
      */
     public function redirectToProvider(Request $request)
     {
@@ -23,24 +20,23 @@ class LoginController extends Controller
     }
 
     /**
-     * Obtain the user information from provider.
-     *
-     * @return \Illuminate\Http\Response
+     * Obtain the user information from the provider.
      */
     public function handleProviderCallback(Request $request)
     {
         $user = Socialite::driver($request->provider)->user();
         if ($user and isset($user->token)) {
             $user_local = User::where('email', $user->getEmail())->first();
-            if (!$user_local) {
+            if (! $user_local) {
                 $user_local = new User;
                 $user_local->name = $user->getName();
                 $user_local->email = $user->getEmail();
-                $user_local->email_verified_at = time();
+                $user_local->email_verified_at = now();
                 $user_local->password = Hash::make(Str::random(32));
                 $user_local->save();
             }
             Auth::login($user_local);
+
             return redirect()->route('map');
         }
     }

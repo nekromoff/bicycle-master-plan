@@ -1,13 +1,6 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <!-- Google Tag Manager -->
-        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-        })(window,document,'script','dataLayer','{{config('google.GTM_ID')}}');</script>
-        <!-- End Google Tag Manager -->
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <title>{{config('map.name')}}</title>
@@ -31,10 +24,6 @@
         <meta name="twitter:card" content="summary_large_image">
     </head>
     <body>
-        <!-- Google Tag Manager (noscript) -->
-        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{config('google.GTM_ID')}}"
-        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-        <!-- End Google Tag Manager (noscript) -->
         <div id="sidebar">
             <div class="row bg-light d-md-none">
                 <div class="col">
@@ -50,13 +39,13 @@
             </div>
         </div>
         <div id="map"></div>
-        <script src="{{asset('js/jquery-3.5.1.min.js')}}"></script>
-        <script src="{{asset('js/bootstrap.bundle.min.js')}}"></script>
         <script src="{{asset('js/leaflet.js')}}"></script>
         <script src="{{asset('js/leaflet.markercluster.js')}}"></script>
         <script src="{{asset('js/easy-button.js')}}"></script>
         <script src="{{asset('js/leaflet.markercluster.layersupport.js')}}"></script>
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
+        <script src="{{asset('js/leaflet.geometryutil.js')}}"></script>
+        <script src="{{asset('js/leaflet.almostover.js')}}"></script>
         <!-- <script src="{{asset('js/leaflet.polylineoffset.js')}}"></script> -->
         <script src="{{asset('js/i18n.min.js')}}"></script>
         <script src="{{asset('translations/'.config('map.language').'.js')}}"></script>
@@ -106,6 +95,10 @@
             zoomDelta: 0.5,
             tap: false, // fixes Safari issues with popups
             tapTolerance: 20,
+            // how far from a line or marker a tap still counts, fingers are less precise than a mouse
+            almostDistance: L.Browser.mobile ? 25 : 10,
+            // tracked on desktop as well, so the cursor can show what a click would hit
+            almostOnMouseMove: !L.Browser.mobile,
             layers: [
                 @foreach (config('map.default_layers') as $layer)
                     @if ($layer!='base')
@@ -131,6 +124,10 @@
         };
         L.control.layers(baselayers, overlays, {
             hideSingleBase: true
+        }).addTo(map);
+        // added after the layers control, so that it sits right under its icon
+        L.easyButton('<span class="locate" data-toggle="tooltip" data-placement="left" title="'+ i18n("My location")+'">◎</span>', locateUser, {
+            position: 'topright'
         }).addTo(map);
         L.control.scale({imperial: false}).addTo(map);
         if (!getCookie('intro_off')) {

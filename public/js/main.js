@@ -10,27 +10,114 @@ core.relations = {};
 core.layers_parsed = {};
 core.normalized = {};
 core.marker_aliases = {};
+core.location_marker = false;
+core.location_accuracy = false;
+core.location_best_accuracy = false;
+core.locate_timer = false;
+core.tap_layers = {};
+core.label_cells = {};
+/*
+    Route numbers are thinned out on a grid, one tier per zoom range. The cell is in
+    degrees, so roughly 11 km, 2 km, 550 m and 220 m apart. Even fully zoomed in the
+    labels keep a distance, a route repeats its number on every single segment.
+*/
+core.label_tiers = [
+    {class: 'ref-t1', cell: 0.1, zoom: 12},
+    {class: 'ref-t2', cell: 0.05, zoom: 13},
+    {class: 'ref-t3', cell: 0.014, zoom: 15},
+    {class: 'ref-t4', cell: 0.0035, zoom: 17}
+];
+// rough width of one character of a route number, used to tell whether it fits on a line
+core.label_character_width = 9;
+// zoom to use when the visitor asks to be located
+core.locate_zoom = 17;
+// above this accuracy in metres the reported position is too vague to draw a circle for
+core.locate_accuracy_limit = 250;
+// accuracy in metres that is precise enough to stop asking for a better fix
+core.locate_accuracy_target = 50;
+// how long to keep waiting for the device to improve its fix
+core.locate_max_wait = 30000;
 core.highlighted = null;
 core.editable_marker = false;
+core.tooltip = null;
 
-$(document).ready(function() {
+/*
+    Small DOM helpers, so that the rest of the file reads the way it did while it was
+    still built on jQuery.
+*/
+function qs(selector, root) {
+    return (root || document).querySelector(selector);
+}
+
+function qsa(selector, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(selector));
+}
+
+/*
+    Replaces a handler of the same type instead of stacking another one on top, which is
+    what the .off() before .on() used to take care of.
+*/
+function bindOnce(element, type, handler) {
+    if (element == undefined) {
+        return;
+    }
+    if (element.bound_handlers == undefined) {
+        element.bound_handlers = {};
+    }
+    if (element.bound_handlers[type]) {
+        element.removeEventListener(type, element.bound_handlers[type]);
+    }
+    element.bound_handlers[type] = handler;
+    element.addEventListener(type, handler);
+}
+
+/*
+    AlmostOver measures the exact pixel distance to every layer it knows about on each
+    click. A bounding box test first keeps that work off the thousands of paths that are
+    nowhere near the tap.
+*/
+if (window.L != undefined && L.Handler != undefined && L.Handler.AlmostOver != undefined) {
+    L.Handler.AlmostOver.include({
+        searchBuffer: function(latlng, buffer) {
+            // the buffer is a latitude distance, a degree of longitude is shorter than that
+            var longitude_buffer = buffer / Math.max(0.01, Math.cos(latlng.lat * Math.PI / 180));
+            var bounds = L.latLngBounds(
+                [latlng.lat - buffer, latlng.lng - longitude_buffer],
+                [latlng.lat + buffer, latlng.lng + longitude_buffer]
+            );
+            var found = [];
+            for (var i = 0; i < this._layers.length; i++) {
+                var layer = this._layers[i];
+                if (typeof layer.getBounds == 'function') {
+                    if (bounds.intersects(layer.getBounds())) {
+                        found.push(layer);
+                    }
+                } else if (typeof layer.getLatLng == 'function') {
+                    if (bounds.contains(layer.getLatLng())) {
+                        found.push(layer);
+                    }
+                } else {
+                    found.push(layer);
+                }
+            }
+            return found;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
     // do form translations
-    $('#form form label').each(function() {
-        $(this).text(i18n($(this).text().trim()));
+    qsa('#form form label').forEach(function(element) {
+        element.textContent = i18n(element.textContent.trim());
     });
-    $('#form form small').each(function() {
-        $(this).text(i18n($(this).text().trim()));
+    qsa('#form form small').forEach(function(element) {
+        element.textContent = i18n(element.textContent.trim());
     });
-    $('#form form button').each(function() {
-        $(this).text(i18n($(this).text().trim()));
+    qsa('#form form button').forEach(function(element) {
+        element.textContent = i18n(element.textContent.trim());
     });
-    $('.close').click(function() {
-        closeSidebar();
-    });
-    $('#intro_off').on('click', function() {
-        setCookie('intro_off', 1, 180);
-        closeSidebar();
-    });
+    initSidebarButtons();
+    initTooltips();
     changeZoomClass();
     // if location fragment exists on launch
     if (window.location.hash) {
@@ -53,13 +140,156 @@ $(document).ready(function() {
     map.on('moveend', scheduleFragmentRewrite);
     map.on('zoomend', scheduleFragmentRewrite);
     map.on('zoomend', changeZoomClass);
+    map.on('overlayremove', function(e) {
+        for (var layer in core.layers) {
+            if (core.layers[layer] == e.layer) {
+                removeTapLayer(layer);
+            }
+        }
+    });
+    map.on('almost:click', openNearestObject);
+    map.on('almost:over', showTapCursor);
+    map.on('almost:out', hideTapCursor);
     map.on('overlayadd', scheduleFragmentRewrite);
     map.on('overlayremove', scheduleFragmentRewrite);
     if (core.editable_layer_id) {
         map.on('contextmenu', createMarker);
     }
-    $('[data-toggle="tooltip"]').tooltip();
+    map.on('locationfound', showLocation);
+    map.on('locationerror', showLocationError);
 });
+
+/*
+    The intro is written into the sidebar by the inline script on the page, and the
+    sidebar is rewritten on every marker and path that gets opened, so these are matched
+    on the way up from the click rather than bound to the elements themselves. That way
+    it does not matter whether the markup was there when the page finished loading.
+*/
+function initSidebarButtons() {
+    document.addEventListener('click', function(e) {
+        if (e.target == undefined || typeof e.target.closest != 'function') {
+            return;
+        }
+        if (e.target.closest('#intro_off')) {
+            setCookie('intro_off', 1, 180);
+            closeSidebar();
+            return;
+        }
+        if (e.target.closest('.close')) {
+            closeSidebar();
+        }
+    });
+}
+
+/*
+    Bootstrap's tooltips were the only thing on the page that still needed jQuery, so
+    they are drawn here instead. The markup and the class names are the ones Bootstrap's
+    stylesheet already ships, and the listeners sit on the document, so markup added to
+    the sidebar later is covered without having to be initialised again.
+*/
+function initTooltips() {
+    document.addEventListener('mouseover', function(e) {
+        var trigger = getTooltipTrigger(e.target);
+        if (trigger && (core.tooltip == null || core.tooltip.trigger != trigger)) {
+            showTooltip(trigger);
+        }
+    });
+    document.addEventListener('mouseout', function(e) {
+        var trigger = getTooltipTrigger(e.target);
+        if (trigger && core.tooltip != null && core.tooltip.trigger == trigger) {
+            hideTooltip();
+        }
+    });
+    // a tap on a touch device would otherwise leave the tooltip standing on the page
+    document.addEventListener('click', function(e) {
+        if (!getTooltipTrigger(e.target)) {
+            hideTooltip();
+        }
+    });
+    window.addEventListener('scroll', hideTooltip, true);
+}
+
+function getTooltipTrigger(target) {
+    if (target == undefined || typeof target.closest != 'function') {
+        return null;
+    }
+    return target.closest('[data-toggle="tooltip"]');
+}
+
+function showTooltip(trigger) {
+    hideTooltip();
+    // the title is taken off the element, so the browser does not draw its own on top
+    var title = trigger.getAttribute('title') || trigger.getAttribute('data-original-title');
+    if (!title) {
+        return;
+    }
+    trigger.setAttribute('data-original-title', title);
+    trigger.removeAttribute('title');
+    var placement = trigger.getAttribute('data-placement') || 'top';
+    var tooltip = document.createElement('div');
+    tooltip.className = 'tooltip bs-tooltip-' + placement;
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.innerHTML = '<div class="arrow"></div><div class="tooltip-inner"></div>';
+    qs('.tooltip-inner', tooltip).textContent = title;
+    tooltip.style.position = 'absolute';
+    tooltip.style.left = '0';
+    tooltip.style.top = '0';
+    document.body.appendChild(tooltip);
+    positionTooltip(tooltip, trigger, placement);
+    tooltip.classList.add('show');
+    core.tooltip = {
+        element: tooltip,
+        trigger: trigger
+    };
+}
+
+function positionTooltip(tooltip, trigger, placement) {
+    var rect = trigger.getBoundingClientRect();
+    var width = tooltip.offsetWidth;
+    var height = tooltip.offsetHeight;
+    var scroll_x = window.pageXOffset;
+    var scroll_y = window.pageYOffset;
+    var left;
+    var top;
+    if (placement == 'bottom') {
+        top = rect.bottom + scroll_y;
+        left = rect.left + scroll_x + (rect.width - width) / 2;
+    } else if (placement == 'left') {
+        top = rect.top + scroll_y + (rect.height - height) / 2;
+        left = rect.left + scroll_x - width;
+    } else if (placement == 'right') {
+        top = rect.top + scroll_y + (rect.height - height) / 2;
+        left = rect.right + scroll_x;
+    } else {
+        top = rect.top + scroll_y - height;
+        left = rect.left + scroll_x + (rect.width - width) / 2;
+    }
+    // a tooltip on something at the edge of the window would otherwise be cut off
+    var limit = scroll_x + document.documentElement.clientWidth - width;
+    if (left > limit) {
+        left = limit;
+    }
+    if (left < scroll_x) {
+        left = scroll_x;
+    }
+    tooltip.style.left = Math.round(left) + 'px';
+    tooltip.style.top = Math.round(top) + 'px';
+}
+
+function hideTooltip() {
+    if (core.tooltip == null) {
+        return;
+    }
+    var stored = core.tooltip.trigger.getAttribute('data-original-title');
+    if (stored) {
+        core.tooltip.trigger.setAttribute('title', stored);
+        core.tooltip.trigger.removeAttribute('data-original-title');
+    }
+    if (core.tooltip.element.parentNode) {
+        core.tooltip.element.parentNode.removeChild(core.tooltip.element);
+    }
+    core.tooltip = null;
+}
 
 /*
     Reads the location fragment into core.options, without touching the map.
@@ -210,10 +440,100 @@ function rewriteFragment() {
 }
 
 function changeZoomClass() {
+    var map_element = qs('#map');
     for (var i = map.getMinZoom(); i <= map.getMaxZoom(); i++) {
-        $('#map').removeClass('z' + i);
+        map_element.classList.remove('z' + i);
     }
-    $('#map').addClass('z' + Math.floor(map.getZoom()));
+    var zoom = Math.floor(map.getZoom());
+    map_element.classList.add('z' + zoom);
+    /*
+        A route number is repeated on every segment of the route, so only the tiers that
+        are far enough apart for the current zoom are shown.
+    */
+    map_element.classList.remove('refs-none');
+    for (var tier = 0; tier < core.label_tiers.length; tier++) {
+        map_element.classList.remove('refs-' + tier);
+    }
+    var visible_tier = false;
+    for (var tier = core.label_tiers.length - 1; tier >= 0; tier--) {
+        if (zoom >= core.label_tiers[tier].zoom) {
+            visible_tier = tier;
+            break;
+        }
+    }
+    map_element.classList.add(visible_tier === false ? 'refs-none' : 'refs-' + visible_tier);
+}
+
+/*
+    Route numbers come from the route relation, so every segment of a route carries the
+    same one, hundreds of times over for the longer routes.
+
+    Each label claims a cell in the widest grid it still fits in, which spreads the
+    labels that survive along the whole route rather than dropping entire stretches.
+    The longest segments are dealt out first, because the label is drawn along the line
+    and is cut short on a line that is shorter than the text.
+
+    @paths object paths as received from the server
+    @return object path id -> class name, ids without a label are missing from it
+*/
+function getLabelClasses(paths) {
+    var labelled = [];
+    for (var key in paths) {
+        var path = paths[key];
+        if (path.info == undefined || !path.info.ref || path.nodes == undefined || path.nodes.length < 2) {
+            continue;
+        }
+        labelled.push({
+            id: path.id,
+            ref: String(path.info.ref),
+            lat: path.nodes[0][0],
+            lon: path.nodes[0][1],
+            length: getPathLength(path.nodes)
+        });
+    }
+    labelled.sort(function(a, b) {
+        return b.length - a.length;
+    });
+    var classes = {};
+    for (var i = 0; i < labelled.length; i++) {
+        var label_class = getLabelClass(labelled[i]);
+        if (label_class) {
+            classes[labelled[i].id] = label_class;
+        }
+    }
+    return classes;
+}
+
+function getLabelClass(label) {
+    for (var tier = 0; tier < core.label_tiers.length; tier++) {
+        // a label longer than its own line is cut off, so it is not put there at all
+        var needed = label.ref.length * core.label_character_width * getResolution(core.label_tiers[tier].zoom, label.lat);
+        if (label.length < needed) {
+            continue;
+        }
+        var cell = core.label_tiers[tier].cell;
+        var key = label.ref + '|' + tier + '|' + Math.round(label.lat / cell) + '|' + Math.round(label.lon / cell);
+        if (core.label_cells[key] == undefined) {
+            core.label_cells[key] = true;
+            return core.label_tiers[tier].class;
+        }
+    }
+    return false;
+}
+
+// metres per pixel at the given zoom, the map is in the usual web mercator projection
+function getResolution(zoom, lat) {
+    return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+}
+
+function getPathLength(nodes) {
+    var length = 0;
+    for (var i = 1; i < nodes.length; i++) {
+        var lat_distance = (nodes[i][0] - nodes[i - 1][0]) * 110540;
+        var lon_distance = (nodes[i][1] - nodes[i - 1][1]) * 111320 * Math.cos(nodes[i - 1][0] * Math.PI / 180);
+        length = length + Math.sqrt(lat_distance * lat_distance + lon_distance * lon_distance);
+    }
+    return length;
 }
 
 function removeObjectFragment() {
@@ -249,8 +569,16 @@ function fetchLayer(layer_id, type) {
     if (type) {
         url = url + '/' + type;
     }
-    jQuery.get(url).done(function(data) {
+    fetch(url, {
+        headers: {
+            'Accept': 'application/json'
+        }
+    }).then(function(response) {
+        return response.json();
+    }).then(function(data) {
         parseLayer(data, layer_id, type);
+    }).catch(function(error) {
+        console.error('Layer ' + layer_id + ' could not be loaded', error);
     });
 }
 
@@ -272,11 +600,12 @@ function parseLayer(data, layer_id, type) {
 }
 
 function showLayer(layer_id, type) {
+    var layer_key = 'layer' + layer_id;
     if (core.config.layers[layer_id].types != undefined && type) {
-        map.addLayer(core.layers['layer' + layer_id + '_type' + type]);
-    } else {
-        map.addLayer(core.layers['layer' + layer_id]);
+        layer_key = 'layer' + layer_id + '_type' + type;
     }
+    map.addLayer(core.layers[layer_key]);
+    addTapLayer(layer_key);
     rewriteFragment();
     core.options.marker_id = resolveMarkerId(core.options.marker_id);
     if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
@@ -292,12 +621,15 @@ function showLayer(layer_id, type) {
 }
 
 function parsePaths(data, layer_id, type) {
+    var label_classes = getLabelClasses(data.paths);
     for (var path_key in data.paths) {
         var path = data.paths[path_key];
         var classes = 'path';
         var polyline_options = {
             orig_id: path.id,
-            orig_type: 'path'
+            orig_type: 'path',
+            // without this a direct hit also reaches the map and opens the path twice
+            bubblingMouseEvents: false
         };
         if (path.info != undefined) {
             // define relation, if ref exists
@@ -365,18 +697,16 @@ function parsePaths(data, layer_id, type) {
                     }
                 });
             }
-            if (path.info.ref != undefined && path.info.ref) {
-                core.paths[path.id].setText(path.info.ref);
+            if (label_classes[path.id] != undefined) {
+                core.paths[path.id].setText(path.info.ref, {
+                    attributes: {
+                        class: label_classes[path.id]
+                    }
+                });
             }
         }
         core.paths[path.id].on('click', function() {
-            var content = getPathContent(this.options.orig_id);
-            if (!content) {
-                return;
-            }
-            openSidebar(content);
-            toggleSidebarCheck(this.options.orig_id, 'path');
-            $('#sidebar-content [data-toggle="tooltip"]').tooltip();
+            openPath(this.options.orig_id);
         });
         // add to layer
         if (core.config.layers[layer_id].types != undefined && type) {
@@ -554,14 +884,7 @@ function parseMarkers(data, layer_id, type) {
             }
         }
         core.markers[marker.id].on('click', function() {
-            var content = getMarkerContent(this.options.orig_id);
-            if (!content) {
-                return;
-            }
-            openSidebar(content);
-            toggleSidebarCheck(this.options.orig_id, 'marker');
-            highlightMarker();
-            $('#sidebar-content [data-toggle="tooltip"]').tooltip();
+            openMarker(this.options.orig_id);
         });
         // add to layer
         if (core.config.layers[layer_id].types != undefined && type) {
@@ -570,6 +893,70 @@ function parseMarkers(data, layer_id, type) {
             core.markers[marker.id].addTo(core.layers['layer' + layer_id]);
         }
     }
+}
+
+function openMarker(marker_id) {
+    var content = getMarkerContent(marker_id);
+    if (!content) {
+        return;
+    }
+    openSidebar(content);
+    toggleSidebarCheck(marker_id, 'marker');
+    highlightMarker();
+}
+
+function openPath(path_id) {
+    var content = getPathContent(path_id);
+    if (!content) {
+        return;
+    }
+    openSidebar(content);
+    toggleSidebarCheck(path_id, 'path');
+}
+
+/*
+    The pointer is shown as soon as a click would land on something, not only when the
+    cursor is exactly over the line, so that the cursor matches what the click does.
+*/
+function showTapCursor() {
+    L.DomUtil.addClass(map.getContainer(), 'almost-over');
+}
+
+function hideTapCursor() {
+    L.DomUtil.removeClass(map.getContainer(), 'almost-over');
+}
+
+// a tap that landed near an object rather than on it
+function openNearestObject(e) {
+    if (e.layer == undefined || e.layer.options == undefined) {
+        return;
+    }
+    hideTapCursor();
+    if (e.layer.options.orig_type == 'path') {
+        openPath(e.layer.options.orig_id);
+    } else if (e.layer.options.orig_type == 'marker') {
+        openMarker(e.layer.options.orig_id);
+    }
+}
+
+/*
+    Only what is currently shown takes part in the search, so that hidden layers
+    cannot be tapped and the search stays as small as possible.
+*/
+function addTapLayer(layer_key) {
+    if (map.almostOver == undefined || !map.almostOver.enabled() || core.tap_layers[layer_key]) {
+        return;
+    }
+    map.almostOver.addLayer(core.layers[layer_key]);
+    core.tap_layers[layer_key] = true;
+}
+
+function removeTapLayer(layer_key) {
+    if (map.almostOver == undefined || !core.tap_layers[layer_key]) {
+        return;
+    }
+    map.almostOver.removeLayer(core.layers[layer_key]);
+    core.tap_layers[layer_key] = false;
 }
 
 /*
@@ -772,7 +1159,10 @@ function createRelation(relation, path_id) {
 */
 function removeHighlight() {
     if (core.highlighted) {
-        core.highlighted.removeClass('highlight-path').removeClass('highlight-marker');
+        core.highlighted.forEach(function(element) {
+            element.classList.remove('highlight-path');
+            element.classList.remove('highlight-marker');
+        });
         core.highlighted = null;
     }
 }
@@ -782,7 +1172,10 @@ function highlightPath() {
     removeHighlight();
     if (core.paths[core.options.path_id].options.relation != undefined) {
         var relation = core.paths[core.options.path_id].options.relation;
-        core.highlighted = $('.' + relation).addClass('highlight-path');
+        core.highlighted = qsa('.' + relation);
+        core.highlighted.forEach(function(element) {
+            element.classList.add('highlight-path');
+        });
     }
 }
 
@@ -792,7 +1185,11 @@ function highlightMarker() {
     if (marker == undefined) {
         return;
     }
-    core.highlighted = $(marker._icon).find('div').eq(0).addClass('highlight-marker');
+    var icon = marker._icon ? qs('div', marker._icon) : null;
+    if (icon) {
+        icon.classList.add('highlight-marker');
+        core.highlighted = [icon];
+    }
     map.panTo(marker.getLatLng());
 }
 
@@ -844,6 +1241,92 @@ function getFilename(layer_id, filename, thumb = true) {
     return url;
 }
 
+/*
+    Centers the map on the visitor, if they allow it. The position is not stored
+    anywhere and is not written into the location fragment.
+*/
+function locateUser() {
+    if (navigator.geolocation == undefined) {
+        openSidebar('<div class="alert alert-warning">' + i18n('Location is not supported by this browser.') + '</div>');
+        return;
+    }
+    stopLocating();
+    core.location_best_accuracy = false;
+    /*
+        The first answer is whatever the browser has at hand, which is the coarse wifi or
+        IP based one. Watching keeps the device reporting, so the GPS fix replaces it as
+        soon as it is acquired. setView is deliberately not used: it fits the accuracy
+        bounds, which zooms the map back out to the whole city on a coarse fix.
+    */
+    map.locate({
+        watch: true,
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: core.locate_max_wait
+    });
+    core.locate_timer = window.setTimeout(stopLocating, core.locate_max_wait);
+}
+
+function showLocation(e) {
+    // a later reading is only used when the device has actually become more precise
+    if (core.location_best_accuracy !== false && e.accuracy > core.location_best_accuracy) {
+        return;
+    }
+    core.location_best_accuracy = e.accuracy;
+    removeLocation();
+    map.setView(e.latlng, Math.max(map.getZoom(), core.locate_zoom));
+    core.location_marker = L.marker(e.latlng, {
+        icon: new L.DivIcon({
+            html: '<div class="own-location"></div>',
+            // sized explicitly, so that the dot is centred on the reported position
+            iconSize: [16, 16]
+        }),
+        interactive: false,
+        keyboard: false
+    }).addTo(map);
+    // the browser reports how far off the position may be, but drawing a kilometres wide
+    // circle just covers the map, so it is only shown when it says something useful
+    if (e.accuracy && e.accuracy <= core.locate_accuracy_limit) {
+        core.location_accuracy = L.circle(e.latlng, {
+            radius: e.accuracy,
+            className: 'own-location-accuracy',
+            interactive: false
+        }).addTo(map);
+    }
+    if (e.accuracy <= core.locate_accuracy_target) {
+        stopLocating();
+    }
+}
+
+function stopLocating() {
+    if (core.locate_timer) {
+        window.clearTimeout(core.locate_timer);
+        core.locate_timer = false;
+    }
+    map.stopLocate();
+}
+
+function showLocationError() {
+    stopLocating();
+    // a fix that arrived earlier is still worth more than an error message
+    if (core.location_marker) {
+        return;
+    }
+    removeLocation();
+    openSidebar('<div class="alert alert-warning">' + i18n('Your location could not be determined.') + '</div>');
+}
+
+function removeLocation() {
+    if (core.location_marker) {
+        map.removeLayer(core.location_marker);
+        core.location_marker = false;
+    }
+    if (core.location_accuracy) {
+        map.removeLayer(core.location_accuracy);
+        core.location_accuracy = false;
+    }
+}
+
 // e or force @array options lat, lng
 function createMarker(e, options) {
     if (core.editable_marker) {
@@ -860,43 +1343,59 @@ function createMarker(e, options) {
         var name = options[3];
         var type = options[4];
     }
-    openSidebar($('#form').clone().attr('id', 'editable').html());
+    var template = qs('#form');
+    openSidebar(template ? template.innerHTML : '');
     core.editable_marker = L.marker([lat, lng]).addTo(map);
     map.setView([lat, lng], core.options.zoom);
-    $('#sidebar-content form input[name=lat]').val(lat);
-    $('#sidebar-content form input[name=lon]').val(lng);
+    var form = qs('#sidebar-content form');
+    if (form == null) {
+        return;
+    }
+    setFieldValue(form, 'input[name=lat]', lat);
+    setFieldValue(form, 'input[name=lon]', lng);
     if (orig_id) {
-        $('#sidebar-content form input[name=original_id]').val(orig_id);
+        setFieldValue(form, 'input[name=original_id]', orig_id);
     }
     if (name) {
-        $('#sidebar-content form input[name=name]').val(name);
+        setFieldValue(form, 'input[name=name]', name);
     }
     if (type) {
-        $('#sidebar-content form select[name=type]').val(type);
+        setFieldValue(form, 'select[name=type]', type);
     }
-    $('#sidebar-content form').on('submit', function(e) {
-        action = $('#sidebar-content form').clone().attr('action');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        var action = form.getAttribute('action');
+        // read before the sidebar is replaced, that detaches the form
+        var form_data = new FormData(form);
         openSidebar(i18n('Creating... Please wait.'));
-        $.ajax({
-            type: 'POST',
-            url: action,
-            data: new FormData(this),
-            dataType: 'json',
-            contentType: false,
-            cache: false,
-            processData: false,
-            success: function(data) {
-                if (data.success) {
-                    message = i18n('Thank you for making our map better. Your marker will be displayed after we review and accept your submission.');
-                } else {
-                    message = i18n('Something failed. Please try again.');
-                }
-                $('#sidebar-content').html('<div class="alert alert-warning">' + message + '</div>')
+        fetch(action, {
+            method: 'POST',
+            body: form_data,
+            headers: {
+                'Accept': 'application/json'
             }
+        }).then(function(response) {
+            return response.json();
+        }).then(function(data) {
+            showSidebarMessage(data.success ? i18n('Thank you for making our map better. Your marker will be displayed after we review and accept your submission.') : i18n('Something failed. Please try again.'));
+        }).catch(function() {
+            showSidebarMessage(i18n('Something failed. Please try again.'));
         });
-        pushEvent('markersubmit');
-        return false;
     });
+}
+
+function setFieldValue(form, selector, value) {
+    var field = qs(selector, form);
+    if (field) {
+        field.value = value;
+    }
+}
+
+function showSidebarMessage(message) {
+    var sidebar_content = qs('#sidebar-content');
+    if (sidebar_content) {
+        sidebar_content.innerHTML = '<div class="alert alert-warning">' + message + '</div>';
+    }
 }
 
 function toggleSidebarCheck(id, type) {
@@ -912,45 +1411,46 @@ function toggleSidebarCheck(id, type) {
             rewriteFragment();
         }
     }
-    $('#sidebar-content .share').off();
-    $('#sidebar-content .share').on('click', copyLink);
-    $('#sidebar-content [data-toggle="tooltip"]').tooltip();
-    $('.update').on('click', function() {
-        createMarker(undefined, [core.markers[id]._latlng.lat, core.markers[id]._latlng.lng, id, core.markers[id].options.orig_name, core.markers[id].options.orig_editable_type]);
-
+    qsa('#sidebar-content .share').forEach(function(element) {
+        bindOnce(element, 'click', copyLink);
     });
-    $('.outdated').on('click', function() {
-        if (!$(this).hasClass('toconfirm')) {
-            $('.update').hide();
-            $(this).addClass('toconfirm');
-            $(this).text(i18n('Click again to confirm.'));
-        } else {
-            $('#update-help').hide();
+    qsa('.update').forEach(function(element) {
+        bindOnce(element, 'click', function() {
+            createMarker(undefined, [core.markers[id]._latlng.lat, core.markers[id]._latlng.lng, id, core.markers[id].options.orig_name, core.markers[id].options.orig_editable_type]);
+        });
+    });
+    qsa('.outdated').forEach(function(element) {
+        bindOnce(element, 'click', function() {
+            if (!element.classList.contains('toconfirm')) {
+                qsa('.update').forEach(function(update) {
+                    update.style.display = 'none';
+                });
+                element.classList.add('toconfirm');
+                element.textContent = i18n('Click again to confirm.');
+                return;
+            }
+            var update_help = qs('#update-help');
+            if (update_help) {
+                update_help.style.display = 'none';
+            }
             var form_data = new FormData();
             form_data.append('id', id);
-            $.ajax({
-                type: 'POST',
-                url: 'data/edit',
+            var token = qs('input[name="_token"]');
+            fetch('data/edit', {
+                method: 'POST',
+                body: form_data,
                 headers: {
-                    'X-CSRF-TOKEN': $('input[name="_token"]').val()
-                },
-                data: form_data,
-                dataType: 'json',
-                contentType: false,
-                cache: false,
-                processData: false,
-                success: function(data) {
-                    if (data.success) {
-                        message = i18n('Thank you for your notification. Administrator will verify your information and update the marker.');
-                    } else {
-                        message = i18n('Something failed. Please try again.');
-                    }
-                    $('#sidebar-content').html('<div class="alert alert-warning">' + message + '</div>')
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token ? token.value : ''
                 }
+            }).then(function(response) {
+                return response.json();
+            }).then(function(data) {
+                showSidebarMessage(data.success ? i18n('Thank you for your notification. Administrator will verify your information and update the marker.') : i18n('Something failed. Please try again.'));
+            }).catch(function() {
+                showSidebarMessage(i18n('Something failed. Please try again.'));
             });
-            pushEvent('markeredit');
-            return false;
-        }
+        });
     });
 }
 
@@ -960,7 +1460,7 @@ function describeBicycleInfrastructure(infrastructure_type) {
     } else if (infrastructure_type.indexOf('shared_lane') != -1) {
         return i18n('Sharrows');
     } else if (infrastructure_type.indexOf('share_busway') != -1) {
-        return i18n('Bus & bike lane');
+        return i18n('Bus & bike lane');
     } else if (infrastructure_type.indexOf('lane') != -1) {
         return i18n('Bike lane');
     } else if (infrastructure_type.indexOf('track') != -1) {
@@ -996,14 +1496,6 @@ function getCookie(cname) {
     return "";
 }
 
-function pushEvent(datalayer_event) {
-    if (dataLayer) {
-        dataLayer.push({
-            event: datalayer_event
-        });
-    }
-}
-
 function getEditableLayerId() {
     for (layer_id in core.config.layers) {
         if (core.config.layers[layer_id].editable && core.config.layers[layer_id].editable == true) {
@@ -1013,22 +1505,41 @@ function getEditableLayerId() {
     return false;
 }
 
-function copyLink() {
-    $(this).addClass('clipboard');
+function copyLink(event) {
+    // the button, the timeout below used to lose it and never cleared the class again
+    var button = event.currentTarget;
+    button.classList.add('clipboard');
+    copyText(window.location.href);
+    window.setTimeout(function() {
+        button.classList.remove('clipboard');
+    }, 1000);
+}
+
+function copyText(text) {
+    if (navigator.clipboard != undefined && navigator.clipboard.writeText != undefined) {
+        navigator.clipboard.writeText(text).catch(function() {
+            copyTextFallback(text);
+        });
+        return;
+    }
+    copyTextFallback(text);
+}
+
+// the clipboard API needs a secure context, this covers the pages served over plain http
+function copyTextFallback(text) {
     var temp_text = document.createElement('input');
-    temp_text.value = window.location;
+    temp_text.value = text;
     document.body.appendChild(temp_text);
     temp_text.select();
     document.execCommand('copy');
     document.body.removeChild(temp_text);
-    window.setTimeout(function() {
-        $(this).removeClass('clipboard');
-    }, 1000)
 }
 
 function openSidebar(content) {
-    $('#sidebar-content').html(content);
-    $('#sidebar').show();
+    // the tooltip would be left behind by the markup it belongs to
+    hideTooltip();
+    qs('#sidebar-content').innerHTML = content;
+    qs('#sidebar').style.display = 'block';
     if (core.editable_marker) {
         map.removeLayer(core.editable_marker);
     }
@@ -1036,7 +1547,8 @@ function openSidebar(content) {
 }
 
 function closeSidebar() {
-    $('#sidebar').hide();
+    hideTooltip();
+    qs('#sidebar').style.display = 'none';
     removeObjectFragment();
     if (core.editable_marker) {
         map.removeLayer(core.editable_marker);

@@ -63,6 +63,10 @@ translation = {
         "Click again to confirm.": "Click again to confirm to mark this marker as outdated.",
         "Thank you for your notification. Administrator will verify your information and update the marker.": "Thank you for your notification. Administrator will verify your information and update the marker.",
         "Reported not up-to-date": "This marker has been reported as outdated and is to be checked by an administrator.",
+        // location
+        "My location": "My location",
+        "Your location could not be determined.": "Your location could not be determined.",
+        "Location is not supported by this browser.": "Location is not supported by this browser.",
         // administration
         "Login": "Login",
         "Administration": "Administration",
