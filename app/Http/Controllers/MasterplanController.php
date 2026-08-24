@@ -15,6 +15,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Kris\LaravelFormBuilder\FormBuilder;
 use Revolution\Google\Sheets\Sheets;
@@ -230,15 +231,55 @@ class MasterplanController extends Controller
 
     public function fetchAndSaveOverpassData($filename, $data): void
     {
-        $overpass = config('map.osm_server').'?data='.urlencode($data);
-        $options = [
-            'http' => [
-                'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n",
-            ],
-        ];
-        $context = stream_context_create($options);
-        $content = file_get_contents($overpass, false, $context);
+        $servers = (array) config('map.osm_server');
+        $content = null;
+        foreach ($servers as $server) {
+            // Overpass prefers POST for long queries; GET URLs are also more likely to be cached/rejected by gateways
+            $options = [
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "User-agent: bicycle-master-plan (https://github.com/nekromoff/bicycle-master-plan)\r\n"
+                        ."Content-type: application/x-www-form-urlencoded\r\n",
+                    'content' => http_build_query(['data' => $data]),
+                    'timeout' => 300,
+                    // return the body instead of throwing on 4xx/5xx, so we can fall back to another mirror
+                    'ignore_errors' => true,
+                ],
+            ];
+            $context = stream_context_create($options);
+            $response = @file_get_contents($server, false, $context);
+            $status = $this->getResponseStatus($http_response_header ?? []);
+            if ($response !== false and $status === 200 and json_decode($response) !== null) {
+                $content = $response;
+                break;
+            }
+            Log::warning('Overpass fetch failed, trying next server', [
+                'server' => $server,
+                'file' => $filename,
+                'status' => $status,
+            ]);
+        }
+        if ($content === null) {
+            // keep the previously downloaded data rather than overwriting it with an empty/error response
+            Log::error('Overpass fetch failed on all servers, keeping existing data', ['file' => $filename]);
+
+            return;
+        }
         Storage::put($filename, $content);
+    }
+
+    /**
+     * @param  array<int, string>  $headers
+     */
+    protected function getResponseStatus(array $headers): ?int
+    {
+        foreach ($headers as $header) {
+            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $header, $matches)) {
+                $status = (int) $matches[1];
+            }
+        }
+
+        return $status ?? null;
     }
 
     public function refreshBikeshareData(Request $request)
