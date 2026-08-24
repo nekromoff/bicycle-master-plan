@@ -9,6 +9,7 @@ core.paths = {};
 core.relations = {};
 core.layers_parsed = {};
 core.normalized = {};
+core.marker_aliases = {};
 core.highlighted = null;
 core.editable_marker = false;
 
@@ -277,6 +278,7 @@ function showLayer(layer_id, type) {
         map.addLayer(core.layers['layer' + layer_id]);
     }
     rewriteFragment();
+    core.options.marker_id = resolveMarkerId(core.options.marker_id);
     if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
         highlightMarker();
         openSidebar(getMarkerContent(core.options.marker_id));
@@ -538,6 +540,19 @@ function parseMarkers(data, layer_id, type) {
             layer_id: layer_id,
             signs: signs
         });
+        /*
+            An updated marker is saved as a new row with a new id, so links pointing at
+            the marker it replaced have to end up here. Every historical id is registered,
+            saveData() re-points the whole history to the newest marker, so one hop is enough.
+        */
+        if (marker.marker_relations != undefined) {
+            for (var relation_index = 0; relation_index < marker.marker_relations.length; relation_index++) {
+                var child = marker.marker_relations[relation_index].child;
+                if (child != undefined && child.id != undefined) {
+                    core.marker_aliases[child.id] = marker.id;
+                }
+            }
+        }
         core.markers[marker.id].on('click', function() {
             var content = getMarkerContent(this.options.orig_id);
             if (!content) {
@@ -555,6 +570,21 @@ function parseMarkers(data, layer_id, type) {
             core.markers[marker.id].addTo(core.layers['layer' + layer_id]);
         }
     }
+}
+
+/*
+    Links are shared with the marker id they were created with, but that id is replaced
+    every time somebody updates the marker. A link to a marker that has been replaced
+    resolves to the marker that replaced it, and the fragment is rewritten to the new id.
+*/
+function resolveMarkerId(marker_id) {
+    if (marker_id == undefined || core.markers[marker_id] != undefined) {
+        return marker_id;
+    }
+    if (core.marker_aliases[marker_id] != undefined) {
+        return core.marker_aliases[marker_id];
+    }
+    return marker_id;
 }
 
 /*
