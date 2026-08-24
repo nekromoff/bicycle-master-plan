@@ -665,34 +665,27 @@ function parsePaths(data, layer_id, type) {
                 });
             }
             */
-            // This provides correct orientation of upward pointing arrow (which is kind of magic!) for oneways (following the line direction)
+            // Arrow follows the line direction on its own (Safari ignores the SVG rotate attribute, so no rotation hack here)
             if (path.info.oneway != undefined && path.info.oneway == 'yes' && path.info['oneway:bicycle'] == undefined && path.info.highway != 'cycleway' && path.info.bicycle == undefined && path.info.cycleway == undefined && path.info['cycleway:left'] == undefined && path.info['cycleway:right'] == undefined) {
-                core.paths[path.id].setText('↑', {
+                core.paths[path.id].setText('→', {
                     repeat: 10,
-                    offset: 6,
-                    attributes: {
-                        rotate: 90
-                    }
+                    offset: 6
                 });
             }
             // Bridge sign for bridges (following the line direction, parallel)
             // Hack to ignore paths where duplicate separate cycleway path exists
             if (path.info.bridge != undefined && (path.info.bridge == 'yes' || path.info.bridge == 'viaduct') && path.info.cycleway != 'separate') {
-                core.paths[path.id].setText('[', {
+                core.paths[path.id].setText('⎴', {
                     repeat: 5,
-                    offset: 3,
-                    attributes: {
-                        rotate: 90
-                    }
+                    offset: 3
                 });
             }
             // Slope sign for key incline where specified in %
             if (path.info.incline != undefined && path.info.incline != 'up' && path.info.incline != 'down' && path.info.incline != '0%' && path.info.incline != '0') {
-                core.paths[path.id].setText('◣', {
+                core.paths[path.id].setText('◤', {
                     repeat: 5,
                     offset: 3,
                     attributes: {
-                        rotate: 90,
                         'font-size': '40%'
                     }
                 });
