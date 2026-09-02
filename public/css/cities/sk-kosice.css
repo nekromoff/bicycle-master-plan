@@ -336,3 +336,45 @@
     stroke: #aa007f;
     stroke-width: 5;
 }
+
+/*
+    Side features: form carries the colour, separation the weight and casing.
+    These sit after the tag-based rules above so they win for a way whose
+    infrastructure is drawn beside the centreline rather than on it.
+*/
+.path.form-track,
+.path.form-lane {
+    color: #1f78b4;
+    stroke: #1f78b4;
+    stroke-width: 3;
+}
+.path.form-shared_lane,
+.path.form-share_busway,
+.path.form-shoulder {
+    color: #33a02c;
+    stroke: #33a02c;
+    stroke-width: 3;
+}
+.path.form-tolerated {
+    color: #a6cee3;
+    stroke: #a6cee3;
+    stroke-width: 2;
+}
+.path.form-track {
+    stroke-width: 4;
+}
+.path.surface-gravel,
+.path.surface-dirt,
+.path.surface-grass,
+.path.surface-unpaved {
+    color: #aa5500;
+    stroke: #aa5500;
+}
+/*
+    The centreline of a way whose infrastructure is drawn beside it keeps only its
+    route styling; without this it would also colour itself in on the tags that
+    produced the side features, and the street would be drawn twice.
+*/
+.path.has-sides:not([class*="lcn-"]):not(.state-proposed) {
+    stroke: transparent !important;
+}

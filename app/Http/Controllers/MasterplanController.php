@@ -8,6 +8,8 @@ use App\Models\Marker;
 use App\Models\MarkersRelation;
 use App\Models\Path;
 use App\Models\Relation;
+use App\Services\CyclewayNormalizer;
+use App\Services\PathJoiner;
 use Google\Client as GoogleClient;
 use Google\Service\Sheets as GoogleServiceSheets;
 use Illuminate\Http\Request;
@@ -474,11 +476,30 @@ class MasterplanController extends Controller
                     if (isset($item->tags)) {
                         $this->paths[$i]['info'] = (array) $item->tags;
                     }
+                    // resolve side-specific cycleway tagging into left/right features
+                    // (info is the way's own tags, or the parent relation's where it has none)
+                    if (isset($this->paths[$i]['info'])) {
+                        $normalizer = new CyclewayNormalizer;
+                        $tags = $this->paths[$i]['info'];
+                        $sides = $normalizer->sides($tags);
+                        if ($sides) {
+                            $this->paths[$i]['sides'] = $sides;
+                        }
+                        $this->paths[$i]['info'] = $normalizer->centreTags($tags, $sides);
+                        // only the keys that moved onto a side feature, so the client can
+                        // put the whole tag set back together without shipping it twice
+                        $moved = array_diff_key($tags, $this->paths[$i]['info']);
+                        if ($moved) {
+                            $this->paths[$i]['side_tags'] = $moved;
+                        }
+                    }
                     $this->paths[$i]['layer_id'] = $layer_id;
                     $this->paths[$i]['id'] = $layer_id.'-'.$item->id;
                     $i++;
                 }
             }
+            // OSM splits a street on any tag change, so put the pieces back together
+            $this->paths = (new PathJoiner)->join($this->paths);
         } elseif ($layer['type'] == 'path') {
             $temp_paths = $this->paths_db;
             $temp_paths = $temp_paths->where('layer_id', $layer_id);
