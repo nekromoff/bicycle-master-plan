@@ -214,3 +214,89 @@ body:not(.leaflet-dragging) .leaflet-container.almost-over {
 #map.refs-2 .ref-t4 {
     display: none;
 }
+
+/*
+    Side features and the cross-section.
+
+    A way with cycling infrastructure tagged per side is drawn as one offset line per
+    side, styled on three independent channels instead of on the raw tags: form carries
+    the colour, separation the casing, direction the glyph along the line. The palette
+    lives in the city stylesheet, this file only sets the structure.
+*/
+:root {
+    --xs-cycle: #1f78b4;
+    --xs-shared: #33a02c;
+    --xs-foot: #a6cee3;
+    --xs-foot-glyph: #4a89ab;
+    --xs-transit: #aa5500;
+    --xs-asphalt: #dcdfe3;
+    --xs-parking: #b8b3a8;
+    --xs-parking-car: #7d766a;
+    --xs-rail: #4f463d;
+    /* text tones, all >= 7:1 on the panel's white ground (WCAG AAA) */
+    --xs-label: #454545;
+    --xs-cycle-text: #10557f;
+    --xs-transit-text: #7a3d00;
+}
+
+.path[class*="side-"] {
+    stroke-width: 3;
+}
+/* separated from motor traffic by a kerb: a casing under the stroke */
+.path.separation-kerb {
+    stroke-width: 4;
+    paint-order: stroke;
+}
+/* held apart by paint only */
+.path.separation-paint {
+    stroke-dasharray: 12 4;
+}
+/* in the carriageway, shared with motor traffic or with buses */
+.path.shared-1,
+.path.form-shared_lane,
+.path.form-share_busway {
+    stroke-dasharray: 9 6;
+}
+
+/* follows the pointer; main.js sets left/top on every almost:move */
+#crosssection {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 800;
+    width: 480px;
+    max-width: calc(100% - 20px);
+    padding: 12px 16px 14px;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #1c1c1c;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 6px 18px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.12s ease;
+}
+#crosssection.show {
+    opacity: 1;
+    visibility: visible;
+}
+.crosssection-name {
+    font-weight: bold;
+    font-size: 1.05rem;
+    margin-bottom: 6px;
+}
+svg.crosssection {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+.crosssection-sidebar {
+    margin-bottom: 10px;
+    color: #1c1c1c;
+}
+/* the panel covers too much of a small screen to be worth it */
+@media (max-width: 767px) {
+    #crosssection {
+        display: none;
+    }
+}

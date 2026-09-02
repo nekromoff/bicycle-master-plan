@@ -46,9 +46,10 @@
         <script src="{{asset('js/leaflet.textpath.js')}}"></script>
         <script src="{{asset('js/leaflet.geometryutil.js')}}"></script>
         <script src="{{asset('js/leaflet.almostover.js')}}"></script>
-        <!-- <script src="{{asset('js/leaflet.polylineoffset.js')}}"></script> -->
+        <script src="{{asset('js/leaflet.polylineoffset.js')}}"></script>
         <script src="{{asset('js/i18n.min.js')}}"></script>
         <script src="{{asset('translations/'.config('map.language').'.js')}}"></script>
+        <script src="{{asset('js/crosssection.js')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
         <script>
         i18n.translator.add(translation);

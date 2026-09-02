@@ -40,6 +40,17 @@ core.locate_max_wait = 30000;
 core.highlighted = null;
 core.editable_marker = false;
 core.tooltip = null;
+core.offsets_collapsed = true;
+// below this zoom the two sides of a street are not far enough apart to be worth drawing
+core.offset_min_zoom = 15;
+// the way the cross-section panel is currently describing
+core.crosssection_id = null;
+// measured once per drawing, so positioning never forces a layout
+core.crosssection_size = null;
+core.crosssection_latlng = null;
+core.crosssection_frame = null;
+// way ids that were joined into a longer path, pointing at the path that replaced them
+core.path_aliases = {};
 
 /*
     Small DOM helpers, so that the rest of the file reads the way it did while it was
@@ -78,6 +89,28 @@ function bindOnce(element, type, handler) {
 */
 if (window.L != undefined && L.Handler != undefined && L.Handler.AlmostOver != undefined) {
     L.Handler.AlmostOver.include({
+        /*
+            A side feature is the same way as its centreline, drawn a few pixels to one
+            side, and it carries the same path data. Registering both would make every
+            pointer move measure the same geometry twice for no different answer, so only
+            the centreline takes part in the search.
+        */
+        addLayer: function(layer) {
+            if (typeof layer.eachLayer == 'function') {
+                layer.eachLayer(function(child) {
+                    this.addLayer(child);
+                }, this);
+                return;
+            }
+            if (layer.options != undefined && layer.options.side != undefined) {
+                return;
+            }
+            if (typeof this.indexLayer == 'function') {
+                this.indexLayer(layer);
+            }
+            this._layers.push(layer);
+        },
+
         searchBuffer: function(latlng, buffer) {
             // the buffer is a latitude distance, a degree of longitude is shorter than that
             var longitude_buffer = buffer / Math.max(0.01, Math.cos(latlng.lat * Math.PI / 180));
@@ -150,6 +183,8 @@ document.addEventListener('DOMContentLoaded', function() {
     map.on('almost:click', openNearestObject);
     map.on('almost:over', showTapCursor);
     map.on('almost:out', hideTapCursor);
+    map.on('almost:move', trackCrossSection);
+    map.on('zoomend', applyPathOffsets);
     map.on('overlayadd', scheduleFragmentRewrite);
     map.on('overlayremove', scheduleFragmentRewrite);
     if (core.editable_layer_id) {
@@ -620,17 +655,83 @@ function showLayer(layer_id, type) {
     }
 }
 
+/*
+    A way with cycling infrastructure tagged per side is drawn as one line per side,
+    offset from the centreline, instead of a single line centred on the carriageway.
+    The offset is in screen pixels, so the gap between the two stays constant as the
+    map zooms. Below street zoom the offsets collapse to nothing - two parallel lines
+    a few pixels apart read as noise at city scale.
+*/
 function parsePaths(data, layer_id, type) {
     var label_classes = getLabelClasses(data.paths);
     for (var path_key in data.paths) {
         var path = data.paths[path_key];
+        /*
+            The tags that moved onto a side feature are stripped from info, so that the
+            centreline does not restyle on them. The sidebar and the cross-section still
+            want the whole set, and it is cheaper to put it back together here than to
+            ship it down the wire twice.
+        */
+        /*
+            The way ids a joined path was built from keep resolving to it, so a link
+            shared before the join still opens the street it pointed at.
+        */
+        if (path.members != undefined) {
+            path.members.forEach(function(member_id) {
+                core.path_aliases[member_id] = path.id;
+            });
+        }
+        if (path.side_tags != undefined) {
+            path.tags = {};
+            for (var info_key in path.info) {
+                path.tags[info_key] = path.info[info_key];
+            }
+            for (var moved_key in path.side_tags) {
+                path.tags[moved_key] = path.side_tags[moved_key];
+            }
+        }
+        buildPathFeature(path, path.id, null, label_classes, layer_id, type);
+        if (path.sides != undefined) {
+            path.sides.forEach(function(side) {
+                if (side.side == 'centre') {
+                    return;
+                }
+                buildPathFeature(path, path.id + ':' + side.side, side, label_classes, layer_id, type);
+            });
+        }
+    }
+}
+
+/*
+    @path object the whole way, shared by every feature drawn from it
+    @feature_id string id of this feature: the way id, or the way id plus a side
+    @side object|null the resolved side channels, or null for the centreline
+*/
+function buildPathFeature(path, feature_id, side, label_classes, layer_id, type) {
+    {
         var classes = 'path';
         var polyline_options = {
-            orig_id: path.id,
+            orig_id: feature_id,
             orig_type: 'path',
             // without this a direct hit also reaches the map and opens the path twice
             bubblingMouseEvents: false
         };
+        if (side != null) {
+            polyline_options.side = side.side;
+            polyline_options.side_offset = side.offset;
+            polyline_options.offset = core.offsets_collapsed ? 0 : side.offset;
+            classes = classes + ' side-' + side.side;
+            for (var channel_key in side.channels) {
+                if (side.channels[channel_key] != null && side.channels[channel_key] !== false) {
+                    classes = classes + ' ' + normalize(channel_key) + '-' + normalize(side.channels[channel_key], /[^A-Za-z0-9_-]/g);
+                }
+            }
+        }
+        if (side == null && hasSides(path)) {
+            // the infrastructure is drawn as its own offset line, so the centreline
+            // must not also colour itself in on the tags that produced it
+            classes = classes + ' has-sides';
+        }
         if (path.info != undefined) {
             // define relation, if ref exists
             if (path.info.ref != undefined) {
@@ -649,25 +750,26 @@ function parsePaths(data, layer_id, type) {
         }
         polyline_options.className = classes;
         polyline_options.path_data = path;
-        core.paths[path.id] = L.polyline([path.nodes], polyline_options);
-        if (path.info != undefined) {
-            /* This is for cycleway opposite
-            if (path.info.cycleway != undefined && (path.info.cycleway == 'opposite' || path.info.cycleway == 'opposite_track' || path.info.cycleway == 'opposite_lane')) {
-                core.paths[path.id].setText('⇄', {
-                    repeat: 10,
-                    offset: -2
-                });
-            }
-            if (path.info['oneway:bicycle'] != undefined && path.info['oneway:bicycle'] == 'no') {
-                core.paths[path.id].setText('⇄', {
-                    repeat: 10,
-                    offset: -2
-                });
-            }
+        var feature = L.polyline([path.nodes], polyline_options);
+        core.paths[feature_id] = feature;
+        if (side != null) {
+            /*
+                Only the directions worth remarking on get a glyph. Riding with the
+                traffic is what the street already says, so an arrow for it adds nothing
+                and costs a repeated text run on every one of these features - which is
+                most of them.
             */
+            var direction_glyph = {backward: '←', two_way: '↔'};
+            if (direction_glyph[side.channels.direction] != undefined) {
+                feature.setText(direction_glyph[side.channels.direction], {
+                    repeat: 6,
+                    offset: 6
+                });
+            }
+        } else if (path.info != undefined) {
             // Arrow follows the line direction on its own (Safari ignores the SVG rotate attribute, so no rotation hack here)
-            if (path.info.oneway != undefined && path.info.oneway == 'yes' && path.info['oneway:bicycle'] == undefined && path.info.highway != 'cycleway' && path.info.bicycle == undefined && path.info.cycleway == undefined && path.info['cycleway:left'] == undefined && path.info['cycleway:right'] == undefined) {
-                core.paths[path.id].setText('→', {
+            if (path.info.oneway != undefined && path.info.oneway == 'yes' && path.info['oneway:bicycle'] == undefined && path.info.highway != 'cycleway' && path.info.bicycle == undefined && !hasSides(path)) {
+                feature.setText('→', {
                     repeat: 10,
                     offset: 6
                 });
@@ -675,14 +777,14 @@ function parsePaths(data, layer_id, type) {
             // Bridge sign for bridges (following the line direction, parallel)
             // Hack to ignore paths where duplicate separate cycleway path exists
             if (path.info.bridge != undefined && (path.info.bridge == 'yes' || path.info.bridge == 'viaduct') && path.info.cycleway != 'separate') {
-                core.paths[path.id].setText('⎴', {
+                feature.setText('⎴', {
                     repeat: 5,
                     offset: 3
                 });
             }
             // Slope sign for key incline where specified in %
             if (path.info.incline != undefined && path.info.incline != 'up' && path.info.incline != 'down' && path.info.incline != '0%' && path.info.incline != '0') {
-                core.paths[path.id].setText('◤', {
+                feature.setText('◤', {
                     repeat: 5,
                     offset: 3,
                     attributes: {
@@ -691,21 +793,59 @@ function parsePaths(data, layer_id, type) {
                 });
             }
             if (label_classes[path.id] != undefined) {
-                core.paths[path.id].setText(path.info.ref, {
+                feature.setText(path.info.ref, {
                     attributes: {
                         class: label_classes[path.id]
                     }
                 });
             }
         }
-        core.paths[path.id].on('click', function() {
+        feature.on('click', function() {
             openPath(this.options.orig_id);
         });
         // add to layer
         if (core.config.layers[layer_id].types != undefined && type) {
-            core.paths[path.id].addTo(core.layers['layer' + layer_id + '_type' + type]);
+            feature.addTo(core.layers['layer' + layer_id + '_type' + type]);
         } else {
-            core.paths[path.id].addTo(core.layers['layer' + layer_id]);
+            feature.addTo(core.layers['layer' + layer_id]);
+        }
+    }
+}
+
+// does this way carry cycling infrastructure drawn as its own offset line?
+function hasSides(path) {
+    if (path.sides == undefined) {
+        return false;
+    }
+    for (var i = 0; i < path.sides.length; i++) {
+        if (path.sides[i].side != 'centre') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+    Offsets are a street-scale device. Kept at city zoom they only double the number
+    of visible lines, so they are collapsed until the map is zoomed in far enough for
+    the two sides of a street to be worth telling apart.
+*/
+function applyPathOffsets() {
+    var collapsed = map.getZoom() < core.offset_min_zoom;
+    if (collapsed === core.offsets_collapsed) {
+        return;
+    }
+    core.offsets_collapsed = collapsed;
+    for (var path_id in core.paths) {
+        var feature = core.paths[path_id];
+        if (feature.options.side == undefined || typeof feature.setOffset != 'function') {
+            continue;
+        }
+        var offset = collapsed ? 0 : feature.options.side_offset;
+        if (feature._map) {
+            feature.setOffset(offset);
+        } else {
+            feature.options.offset = offset;
         }
     }
 }
@@ -713,8 +853,27 @@ function parsePaths(data, layer_id, type) {
 /*
     Same as for markers: only the path that gets opened needs its sidebar markup.
 */
+/*
+    A way drawn per side has one feature id per side, and a link may have been shared
+    before it was split, or may point at a side that is no longer tagged. Both fall back
+    to the centreline, which is always drawn.
+*/
+function resolvePathId(path_id) {
+    if (path_id == undefined || core.paths[path_id] != undefined) {
+        return path_id;
+    }
+    var centre = String(path_id).split(':')[0];
+    if (core.paths[centre] != undefined) {
+        return centre;
+    }
+    if (core.path_aliases[centre] != undefined) {
+        return core.path_aliases[centre];
+    }
+    return path_id;
+}
+
 function getPathContent(path_id) {
-    var path_layer = core.paths[path_id];
+    var path_layer = core.paths[resolvePathId(path_id)];
     if (path_layer == undefined) {
         return '';
     }
@@ -726,6 +885,23 @@ function getPathContent(path_id) {
 
 function buildPathContent(path) {
     var content = '';
+    // the same drawing the hover panel shows, so the two never disagree
+    if (typeof crossSection != 'undefined') {
+        if (path.crosssection == undefined) {
+            path.crosssection = crossSection.render(path);
+        }
+        if (path.crosssection) {
+            content = content + '<div class="crosssection-sidebar">' + path.crosssection + '</div>';
+        }
+    }
+    /*
+        The cycleway tags are moved out of info and onto the side features, so that the
+        centreline does not restyle on them. The description below still wants the whole
+        tag set, and reads it from the copy the server keeps.
+    */
+    if (path.tags != undefined) {
+        path = {id: path.id, nodes: path.nodes, sides: path.sides, tags: path.tags, info: path.tags};
+    }
     if (path.info != undefined) {
         if (path.info.name != undefined && path.info.name) {
             content = content + '<h2>';
@@ -746,23 +922,36 @@ function buildPathContent(path) {
         if (path.info.bridge != undefined && (path.info.bridge == 'yes' || path.info.bridge == 'viaduct')) {
             content = content + i18n('Bridge') + '<br>';
         }
-        if (path.info.highway != undefined && path.info.highway == 'cycleway') {
+        /*
+            A crossing is named for who may use it, so it is decided once in
+            crosssection.js and printed here, rather than falling through to the rules
+            for the path types it is tagged on.
+        */
+        var is_crossing = typeof crossSection != 'undefined' && crossSection.isCrossing(path.info);
+        if (is_crossing) {
+            content = content + i18n('Marking') + ': ' + crossSection.crossingLabel(path.info) + '<br>';
+        }
+        if (!is_crossing && path.info.highway != undefined && path.info.highway == 'cycleway') {
             content = content + i18n('Marking') + ': ' + i18n('Segregated bike lane') + '<br>';
         }
         if (path.info.railway != undefined && path.info.railway == 'tram' && path.info.bicycle != undefined && path.info.bicycle) {
             content = content + i18n('Marking') + ': ' + i18n('Tram & bicycle access') + '<br>';
         }
-        if (path.info.highway != undefined && path.info.cycleway == undefined && (path.info.highway == 'pedestrian' || path.info.highway == 'footway' || path.info.highway == 'path') && path.info.bicycle != undefined && path.info.bicycle) {
+        // highway=pedestrian is a pedestrian zone, whether or not cycling is allowed in it
+        if (!is_crossing && path.info.highway != undefined && path.info.highway == 'pedestrian') {
+            content = content + i18n('Marking') + ': ' + i18n('Pedestrian zone') + '<br>';
+        }
+        if (!is_crossing && path.info.highway != undefined && path.info.highway != 'pedestrian' && path.info.cycleway == undefined && (path.info.highway == 'footway' || path.info.highway == 'path') && path.info.bicycle != undefined && path.info.bicycle) {
             if ((path.info.motorcar != undefined && path.info.motorcar == 'no') || (path.info['motor_vehicle'] != undefined && path.info['motor_vehicle'] == 'no') && path.info.bicycle == 'yes') {
                 content = content + i18n('Marking') + ': ' + i18n('No motor vehicles') + '<br>';
             } else if (path.info.bicycle == 'yes' || path.info.bicycle == 'designated') {
                 content = content + i18n('Marking') + ': ' + i18n('Shared-use path') + '<br>';
             }
         }
-        if (path.info['cycleway:lane'] != undefined && path.info['cycleway:lane']) {
+        if (!is_crossing && path.info['cycleway:lane'] != undefined && path.info['cycleway:lane']) {
             content = content + i18n('Marking') + ': ';
             content = content + describeBicycleInfrastructure(path.info['cycleway:lane']) + '<br>';
-        } else if (path.info.cycleway != undefined && path.info.cycleway != 'separate') {
+        } else if (!is_crossing && path.info.cycleway != undefined && path.info.cycleway != 'separate') {
             content = content + i18n('Marking') + ': ';
             content = content + describeBicycleInfrastructure(path.info.cycleway) + '<br>';
         }
@@ -911,12 +1100,120 @@ function openPath(path_id) {
     The pointer is shown as soon as a click would land on something, not only when the
     cursor is exactly over the line, so that the cursor matches what the click does.
 */
-function showTapCursor() {
+function showTapCursor(e) {
     L.DomUtil.addClass(map.getContainer(), 'almost-over');
+    trackCrossSection(e);
+}
+
+// almost:move keeps firing as the pointer travels along a line, so the panel follows it
+function trackCrossSection(e) {
+    if (e == undefined || e.layer == undefined || e.layer.options == undefined) {
+        return;
+    }
+    if (e.layer.options.orig_type != 'path') {
+        return;
+    }
+    showCrossSection(e.layer.options.path_data, e.latlng);
 }
 
 function hideTapCursor() {
     L.DomUtil.removeClass(map.getContainer(), 'almost-over');
+    hideCrossSection();
+}
+
+/*
+    The cross-section follows the pointer, so that the drawing and the line it describes
+    are read in one glance. It is redrawn only when the way under the pointer changes;
+    moving along the same street just repositions it.
+*/
+function showCrossSection(path, latlng) {
+    if (path == undefined || typeof crossSection == 'undefined') {
+        return;
+    }
+    var panel = qs('#crosssection');
+    if (panel == null) {
+        panel = document.createElement('div');
+        panel.id = 'crosssection';
+        map.getContainer().appendChild(panel);
+    }
+    core.crosssection_latlng = latlng;
+    if (core.crosssection_id != path.id) {
+        // most streets share a handful of profiles, so the drawing is worth keeping
+        if (path.crosssection == undefined) {
+            path.crosssection = crossSection.render(path);
+        }
+        if (!path.crosssection) {
+            hideCrossSection();
+            return;
+        }
+        core.crosssection_id = path.id;
+        core.crosssection_size = null;
+        panel.innerHTML = '<div class="crosssection-name">' + escapeHtml(crossSection.title(path)) + '</div>' + path.crosssection;
+        panel.classList.add('show');
+    }
+    /*
+        almost:move fires for every pointer sample. Coalescing the moves into one write
+        per frame keeps the panel following the cursor without asking the browser to
+        reposition it more often than it can draw.
+    */
+    if (core.crosssection_frame == null) {
+        core.crosssection_frame = window.requestAnimationFrame(function() {
+            core.crosssection_frame = null;
+            positionCrossSection(panel, core.crosssection_latlng);
+        });
+    }
+}
+
+/*
+    Sits down and to the right of the pointer, and flips to the other side when there is
+    not enough room left - the same rule a tooltip follows, so it never leaves the map or
+    covers the stretch of street the pointer is on.
+*/
+function positionCrossSection(panel, latlng) {
+    if (latlng == undefined) {
+        return;
+    }
+    var point = map.latLngToContainerPoint(latlng);
+    var container = map.getContainer();
+    var gap = 18;
+    /*
+        Reading offsetWidth forces the browser to lay the page out there and then. This
+        runs on every pointer move along a line, so the size is measured once per drawing
+        instead - it only changes when the panel's content does.
+    */
+    if (core.crosssection_size == null) {
+        core.crosssection_size = {width: panel.offsetWidth, height: panel.offsetHeight};
+    }
+    var width = core.crosssection_size.width;
+    var height = core.crosssection_size.height;
+    var left = point.x + gap;
+    var top = point.y + gap;
+    if (left + width > container.clientWidth - 8) {
+        left = point.x - gap - width;
+    }
+    if (top + height > container.clientHeight - 8) {
+        top = point.y - gap - height;
+    }
+    panel.style.left = Math.max(8, left) + 'px';
+    panel.style.top = Math.max(8, top) + 'px';
+}
+
+function hideCrossSection() {
+    var panel = qs('#crosssection');
+    core.crosssection_id = null;
+    if (core.crosssection_frame != null) {
+        window.cancelAnimationFrame(core.crosssection_frame);
+        core.crosssection_frame = null;
+    }
+    if (panel != null) {
+        panel.classList.remove('show');
+    }
+}
+
+function escapeHtml(text) {
+    var element = document.createElement('div');
+    element.textContent = text;
+    return element.innerHTML;
 }
 
 // a tap that landed near an object rather than on it
@@ -1163,8 +1460,12 @@ function removeHighlight() {
 // if relation exists, highlight all segments of the way/path
 function highlightPath() {
     removeHighlight();
-    if (core.paths[core.options.path_id].options.relation != undefined) {
-        var relation = core.paths[core.options.path_id].options.relation;
+    var path_layer = core.paths[resolvePathId(core.options.path_id)];
+    if (path_layer == undefined) {
+        return;
+    }
+    if (path_layer.options.relation != undefined) {
+        var relation = path_layer.options.relation;
         core.highlighted = qsa('.' + relation);
         core.highlighted.forEach(function(element) {
             element.classList.add('highlight-path');
