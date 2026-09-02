@@ -212,14 +212,23 @@ var crossSection = (function() {
 
     /*
         Everything between the footway and the carriageway on one side, ordered from the
-        kerb inward: the cycle facility sits against the kerb and the parking sits
-        between it and the moving traffic.
+        kerb inward.
+
+        Which of the cycle lane and the parking is nearer the kerb is not a convention -
+        the parking tag says it. parking:<side>=lane means the parked cars occupy a lane
+        of the carriageway, so they sit between the moving traffic and the cycle lane.
+        Every other value - separate, street_side, on_kerb - puts them outside the
+        carriageway, and the cycle lane runs between them and the traffic.
     */
     function kerbside(tags, side, name) {
         var slots = [];
         var cycle = (side && !channel(side, 'shared')) ? cycleSlot(side, name) : null;
         var parking = parkingSlot(tags, name);
 
+        if (parking && !parking.in_carriageway) {
+            slots.push(parking);
+            parking = null;
+        }
         if (cycle) {
             slots.push(cycle);
         }
@@ -282,6 +291,8 @@ var crossSection = (function() {
             w: widths[orientation] || 2.0,
             orientation: orientation || 'parallel',
             separate: mapped_elsewhere,
+            // parked in a lane of the road, rather than in a bay outside it
+            in_carriageway: value == 'lane',
             label: i18n('Parking')
         };
     }
