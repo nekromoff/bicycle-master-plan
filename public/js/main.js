@@ -886,7 +886,7 @@ function getPathContent(path_id) {
 function buildPathContent(path) {
     var content = '';
     // the same drawing the hover panel shows, so the two never disagree
-    if (typeof crossSection != 'undefined') {
+    if (crossSectionEnabled(path)) {
         if (path.crosssection == undefined) {
             path.crosssection = crossSection.render(path);
         }
@@ -1126,8 +1126,21 @@ function hideTapCursor() {
     are read in one glance. It is redrawn only when the way under the pointer changes;
     moving along the same street just repositions it.
 */
+/*
+    The drawing only makes sense for a layer whose ways carry street tagging, so a layer
+    opts in with crosssection=true in the map config rather than every layer getting it.
+*/
+function crossSectionEnabled(path) {
+    if (path == undefined || path.layer_id == undefined || typeof crossSection == 'undefined') {
+        return false;
+    }
+    var layer = core.config.layers[path.layer_id];
+    return layer != undefined && layer.crosssection == true;
+}
+
 function showCrossSection(path, latlng) {
-    if (path == undefined || typeof crossSection == 'undefined') {
+    if (!crossSectionEnabled(path)) {
+        hideCrossSection();
         return;
     }
     var panel = qs('#crosssection');
