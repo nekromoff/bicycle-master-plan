@@ -21,14 +21,23 @@ class PathJoiner
     private array $signatures = [];
 
     /**
-     * Tag prefixes that decide how a way is drawn. Everything else - sources, notes,
-     * turn lanes, survey dates - may differ between two ways that look identical.
+     * What has to match before two ways are the same thing.
+     *
+     * The name is the primary signal, together with the tags that describe cycling on
+     * the way. Everything else - lane counts, surface, maxspeed, sidewalks, parking,
+     * turn restrictions, sources - may differ freely: OSM splits a street on any of
+     * them, and those splits are what this is here to undo.
+     *
+     * The way type stays in, because it decides which branch draws the way at all: a
+     * street and a cycleway of the same name are not one line. So does ref, which on a
+     * route relation is the route number - two different routes must not become one.
      */
     private const RENDERED = [
-        'highway', 'cycleway', 'bicycle', 'foot', 'oneway', 'segregated', 'surface',
-        'lcn', 'name', 'ref', 'railway', 'embedded_rails', 'sidewalk', 'parking',
-        'maxspeed', 'access', 'motor_vehicle', 'tracktype', 'footway', 'path',
-        'width', 'lanes', 'bridge', 'tunnel', 'incline', 'area', 'state', 'complete',
+        'name',
+        'highway', 'footway', 'path', 'railway', 'embedded_rails',
+        'cycleway', 'bicycle', 'segregated', 'foot', 'oneway',
+        'lcn', 'lcn_ref', 'rcn_ref', 'ncn_ref', 'ref', 'network', 'route',
+        'state', 'complete',
     ];
 
     /**
@@ -112,27 +121,51 @@ class PathJoiner
     private function merge(array $chain): array
     {
         $merged = $chain[0];
+        $base = $this->tags($chain[0]);
         $members = [];
+        $parts = [];
         foreach ($chain as $index => $path) {
             $members[] = $path['id'];
-            if ($index == 0) {
-                continue;
+            if ($index > 0) {
+                // the first node repeats the previous way's last one
+                $nodes = $path['nodes'];
+                array_shift($nodes);
+                $merged['nodes'] = array_merge($merged['nodes'], $nodes);
             }
-            // the first node repeats the previous way's last one
-            $nodes = $path['nodes'];
-            array_shift($nodes);
-            $merged['nodes'] = array_merge($merged['nodes'], $nodes);
+            /*
+                The joined way is drawn from the first member's tags, so anything the
+                other members say differently would otherwise be lost. Only what differs
+                is kept - the rest is already in the way's own tag list.
+            */
+            $different = [];
+            foreach ($this->tags($path) as $key => $value) {
+                if (! isset($base[$key]) or $base[$key] !== $value) {
+                    $different[$key] = $value;
+                }
+            }
+            if ($different) {
+                $parts[] = ['id' => $path['id'], 'tags' => $different];
+            }
         }
         // every member id keeps resolving, so links shared before the join still open
         $merged['members'] = $members;
+        if ($parts) {
+            $merged['parts'] = $parts;
+        }
 
         return $merged;
+    }
+
+    /** A way's whole tag set, with the keys moved onto its side features put back. */
+    private function tags(array $path): array
+    {
+        return ($path['info'] ?? []) + ($path['side_tags'] ?? []);
     }
 
     /** Everything about a way that would make it draw differently. */
     private function signature(array $path): string
     {
-        $tags = ($path['info'] ?? []) + ($path['side_tags'] ?? []);
+        $tags = $this->tags($path);
         $relevant = [];
         foreach ($tags as $key => $value) {
             foreach (self::RENDERED as $prefix) {

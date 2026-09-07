@@ -91,6 +91,7 @@ translation = {
         "Cycle crossing": "Priechod pre cyklistov",
         "Pedestrian crossing": "Priechod pre chodcov",
         "Tram line": "Električková trať",
+        "Differing sections": "Odlišné úseky",
         // administration
         "Login": "Prihlásenie / login",
         "Administration": "Administrácia",

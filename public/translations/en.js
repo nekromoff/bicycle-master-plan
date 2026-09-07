@@ -91,6 +91,7 @@ translation = {
         "Cycle crossing": "Cycle crossing",
         "Pedestrian crossing": "Pedestrian crossing",
         "Tram line": "Tram line",
+        "Differing sections": "Differing sections",
         // administration
         "Login": "Login",
         "Administration": "Administration",

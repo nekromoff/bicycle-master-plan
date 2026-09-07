@@ -900,7 +900,7 @@ function buildPathContent(path) {
         tag set, and reads it from the copy the server keeps.
     */
     if (path.tags != undefined) {
-        path = {id: path.id, nodes: path.nodes, sides: path.sides, tags: path.tags, info: path.tags};
+        path = {id: path.id, nodes: path.nodes, sides: path.sides, tags: path.tags, info: path.tags, parts: path.parts};
     }
     if (path.info != undefined) {
         if (path.info.name != undefined && path.info.name) {
@@ -996,6 +996,21 @@ function buildPathContent(path) {
             content = content + detail_key + '=' + path.info[detail_key] + '<br>';
         }
         if (Object.keys(path.info).length) {
+            content = content + '</p>';
+        }
+        /*
+            A joined way is drawn from the first of the ways it was built from, so what
+            the others say differently is listed here rather than lost. Only the tags
+            that differ are shown; everything they share is in the list above.
+        */
+        if (path.parts != undefined && path.parts.length) {
+            content = content + '<p class="text-secondary parts mt-0"><strong>' + i18n('Differing sections') + '</strong><br>';
+            path.parts.forEach(function(part) {
+                content = content + '<span class="part-id">' + escapeHtml(part.id) + '</span><br>';
+                for (var part_key in part.tags) {
+                    content = content + escapeHtml(part_key) + '=' + escapeHtml(part.tags[part_key]) + '<br>';
+                }
+            });
             content = content + '</p>';
         }
     }

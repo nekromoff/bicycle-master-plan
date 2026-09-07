@@ -300,3 +300,15 @@ svg.crosssection {
         display: none;
     }
 }
+
+/* the tags that differ between the ways a joined path was built from */
+#sidebar-content .parts {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 8px;
+    font-size: 0.85rem;
+}
+#sidebar-content .parts .part-id {
+    display: inline-block;
+    margin-top: 6px;
+    font-weight: bold;
+}
