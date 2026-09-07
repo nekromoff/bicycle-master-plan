@@ -103,8 +103,12 @@ class CyclewayNormalizer
      */
     public function isDrawable(array $tags): bool
     {
-        // a route is a fact about the way, not about the infrastructure on it
-        if (isset($tags['lcn']) or isset($tags['ref'])) {
+        /*
+            A cycle route is a fact about the way rather than about the infrastructure on
+            it, so it keeps the way. Only cycle references count: a bare ref on a highway
+            is the road number - Račianska is ref=502 - and says nothing about cycling.
+        */
+        if (isset($tags['lcn']) or isset($tags['lcn_ref']) or isset($tags['rcn_ref']) or isset($tags['ncn_ref'])) {
             return true;
         }
         $highway = $tags['highway'] ?? '';
