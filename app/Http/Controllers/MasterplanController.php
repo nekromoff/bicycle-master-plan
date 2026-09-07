@@ -438,6 +438,105 @@ class MasterplanController extends Controller
         return $sheets;
     }
 
+    /**
+     * Markers from an OSM extract.
+     *
+     * Bicycle parking is mapped as a point where it is a stand or two, and as an area
+     * where it is a shed, a building or a fenced compound - which arrives as a way, or
+     * as a multipolygon relation. An area is placed at the centre of its outline, the
+     * closest a pin can get to a shape.
+     *
+     * The nodes making up those outlines come back untagged, because the query asks for
+     * the geometry as well. They are corners, not places, and are skipped.
+     */
+    private function markersFromOsm(string $filename, int|string $layer_id, int|string $type): void
+    {
+        $result = json_decode(Storage::get($filename));
+        $nodes = [];
+        $ways = [];
+        foreach ($result->elements as $item) {
+            if ($item->type == 'node') {
+                $nodes[$item->id] = [$item->lat, $item->lon];
+            } elseif ($item->type == 'way') {
+                $ways[$item->id] = $item->nodes;
+            }
+        }
+        foreach ($result->elements as $item) {
+            if ($item->type == 'node') {
+                if (! isset($item->tags)) {
+                    continue;
+                }
+                $this->addOsmMarker($layer_id, $type, $item->id, $item->lat, $item->lon, (array) $item->tags);
+            } elseif ($item->type == 'way' and isset($item->tags)) {
+                $centre = $this->centre($this->coordinates($item->nodes, $nodes));
+                if ($centre) {
+                    // a way and a node can share an id, so an area keeps its own prefix
+                    $this->addOsmMarker($layer_id, $type, 'w'.$item->id, $centre[0], $centre[1], (array) $item->tags);
+                }
+            } elseif ($item->type == 'relation' and isset($item->tags)) {
+                $coordinates = [];
+                foreach ($item->members as $member) {
+                    if ($member->type == 'way' and isset($ways[$member->ref])) {
+                        $coordinates = array_merge($coordinates, $this->coordinates($ways[$member->ref], $nodes));
+                    } elseif ($member->type == 'node' and isset($nodes[$member->ref])) {
+                        $coordinates[] = $nodes[$member->ref];
+                    }
+                }
+                $centre = $this->centre($coordinates);
+                if ($centre) {
+                    $this->addOsmMarker($layer_id, $type, 'r'.$item->id, $centre[0], $centre[1], (array) $item->tags);
+                }
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $tags */
+    private function addOsmMarker(int|string $layer_id, int|string $type, int|string $osm_id, float $lat, float $lon, array $tags): void
+    {
+        $marker_new_id = $layer_id.'-'.$osm_id;
+        $marker = ['id' => $marker_new_id, 'lat' => $lat, 'lon' => $lon, 'name' => '', 'description' => '', 'type' => $type, 'layer_id' => $layer_id];
+        if ($tags) {
+            $marker['info'] = $tags;
+        }
+        $this->markers_new[$marker_new_id] = (object) $marker;
+    }
+
+    /**
+     * @param  list<int|string>  $node_ids
+     * @param  array<int|string, array{0: float, 1: float}>  $nodes
+     * @return list<array{0: float, 1: float}>
+     */
+    private function coordinates(array $node_ids, array $nodes): array
+    {
+        $coordinates = [];
+        foreach ($node_ids as $node_id) {
+            if (isset($nodes[$node_id])) {
+                $coordinates[] = $nodes[$node_id];
+            }
+        }
+
+        return $coordinates;
+    }
+
+    /**
+     * @param  list<array{0: float, 1: float}>  $coordinates
+     * @return array{0: float, 1: float}|null
+     */
+    private function centre(array $coordinates): ?array
+    {
+        if (! $coordinates) {
+            return null;
+        }
+        $lat = 0.0;
+        $lon = 0.0;
+        foreach ($coordinates as $coordinate) {
+            $lat += $coordinate[0];
+            $lon += $coordinate[1];
+        }
+
+        return [$lat / count($coordinates), $lon / count($coordinates)];
+    }
+
     private function processMapFeatures($layer, $layer_id, $type): void
     {
         $i = count($this->paths);
@@ -526,36 +625,10 @@ class MasterplanController extends Controller
             }
         } elseif ($layer['type'] == 'marker') {
             if (isset($layer['file'])) {
-                $filename = 'osm/'.$layer['file'];
-                $content = Storage::get($filename);
-                $result = json_decode($content);
-                $data = $result->elements;
-                foreach ($data as $item) {
-                    if ($item->type == 'node') {
-                        $marker_new_id = $layer_id.'-'.$item->id;
-                        $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => 999, 'layer_id' => $layer_id];
-                        if (isset($item->tags)) {
-                            $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
-                        }
-                        $this->markers_new[$marker_new_id] = (object) $this->markers_new[$marker_new_id];
-                    }
-                }
+                $this->markersFromOsm('osm/'.$layer['file'], $layer_id, 999);
             } elseif (isset($layer['types']) and is_array($layer['types'][$type])) {
                 if (isset($layer['types'][$type]['file'])) {
-                    $filename = 'osm/'.$layer['types'][$type]['file'];
-                    $content = Storage::get($filename);
-                    $result = json_decode($content);
-                    $data = $result->elements;
-                    foreach ($data as $item) {
-                        if ($item->type == 'node') {
-                            $marker_new_id = $layer_id.'-'.$item->id;
-                            $this->markers_new[$marker_new_id] = ['id' => $marker_new_id, 'lat' => $item->lat, 'lon' => $item->lon, 'name' => '', 'description' => '', 'type' => $type, 'layer_id' => $layer_id];
-                            if (isset($item->tags)) {
-                                $this->markers_new[$marker_new_id]['info'] = (array) $item->tags;
-                            }
-                            $this->markers_new[$marker_new_id] = (object) $this->markers_new[$marker_new_id];
-                        }
-                    }
+                    $this->markersFromOsm('osm/'.$layer['types'][$type]['file'], $layer_id, $type);
                 }
             }
         } elseif ($layer['type'] == 'combined') {

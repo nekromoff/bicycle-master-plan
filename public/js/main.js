@@ -1017,6 +1017,23 @@ function buildPathContent(path) {
     return content;
 }
 
+/*
+    An exact number below ten, and the round number it has passed above that: 9 stays 9,
+    45 becomes 40, 118 becomes 100.
+*/
+function capacityTier(capacity) {
+    if (capacity < 10) {
+        return capacity;
+    }
+    if (capacity < 100) {
+        return Math.floor(capacity / 10) * 10;
+    }
+    if (capacity < 1000) {
+        return Math.floor(capacity / 100) * 100;
+    }
+    return 1000;
+}
+
 function parseMarkers(data, layer_id, type) {
     for (var marker_key in data.markers) {
         var marker = data.markers[marker_key];
@@ -1029,6 +1046,16 @@ function parseMarkers(data, layer_id, type) {
             for (var info_key in marker.info) {
                 // keep numbers for "ref" key content
                 marker_content = marker_content + normalize(info_key) + '-' + normalize(marker.info[info_key], /[^A-Za-z0-9_-]/g) + ' ';
+            }
+        }
+        /*
+            The capacity badge is chosen from the number itself. Matching on how the
+            digits look cannot tell 11 from 118, and read both as ten or more.
+        */
+        if (marker.info != undefined && marker.info.capacity != undefined) {
+            var capacity = parseInt(marker.info.capacity, 10);
+            if (!isNaN(capacity) && capacity > 0) {
+                marker_content = marker_content + 'capacity-tier-' + capacityTier(capacity) + ' ';
             }
         }
         if (marker.description != undefined && marker.description) {
@@ -1368,7 +1395,10 @@ function buildMarkerContent(marker, layer_id, signs) {
             content = content + i18n('U type');
         } else if (marker.info.bicycle_parking == 'rack' || marker.info.bicycle_parking == 'racks') {
             content = content + i18n('A type');
-        } else if (marker.info.bicycle_parking == 'shed' || marker.info.bicycle_parking == 'building') {
+        } else if (marker.info.bicycle_parking == 'building') {
+            // a building of its own, rather than a shed or a cage
+            content = content + i18n('enclosed building');
+        } else if (marker.info.bicycle_parking == 'shed') {
             content = content + i18n('enclosed');
         } else if (marker.info.bicycle_parking == 'informal') {
             content = content + i18n('informal');

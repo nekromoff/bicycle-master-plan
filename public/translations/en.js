@@ -5,6 +5,7 @@ translation = {
         "U type": "U type or similar",
         "A type": "A type or similar",
         "enclosed": "enclosed (shed etc.)",
+        "enclosed building": "enclosed (building)",
         "informal": "informal (railing etc.)",
         "not suitable": "not suitable",
         "Bicycle repair stand": "Bicycle repair stand",

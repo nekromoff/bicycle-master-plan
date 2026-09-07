@@ -78,14 +78,63 @@
 .parking.capacity-9::before {
     content: "9";
 }
-.parking[class*=" capacity-1"]:not([class*="capacity-1 "])::before {
+/* the tier is worked out from the number in main.js, so these are exact matches */
+.parking.capacity-tier-10::before {
     content: "10+";
 }
-.parking[class*=" capacity-2"]:not([class*="capacity-2 "])::before {
+.parking.capacity-tier-20::before {
     content: "20+";
 }
-.parking[class*=" capacity-3"]:not([class*="capacity-3 "])::before {
+.parking.capacity-tier-30::before {
     content: "30+";
+}
+.parking.capacity-tier-40::before {
+    content: "40+";
+}
+.parking.capacity-tier-50::before {
+    content: "50+";
+}
+.parking.capacity-tier-60::before {
+    content: "60+";
+}
+.parking.capacity-tier-70::before {
+    content: "70+";
+}
+.parking.capacity-tier-80::before {
+    content: "80+";
+}
+.parking.capacity-tier-90::before {
+    content: "90+";
+}
+.parking.capacity-tier-100::before {
+    content: "100+";
+}
+.parking.capacity-tier-200::before {
+    content: "200+";
+}
+.parking.capacity-tier-300::before {
+    content: "300+";
+}
+.parking.capacity-tier-400::before {
+    content: "400+";
+}
+.parking.capacity-tier-500::before {
+    content: "500+";
+}
+.parking.capacity-tier-600::before {
+    content: "600+";
+}
+.parking.capacity-tier-700::before {
+    content: "700+";
+}
+.parking.capacity-tier-800::before {
+    content: "800+";
+}
+.parking.capacity-tier-900::before {
+    content: "900+";
+}
+.parking.capacity-tier-1000::before {
+    content: "1000+";
 }
 
 /* signs */
@@ -396,4 +445,27 @@
 .path.form-lane.lane-advisory {
     color: #33a02c;
     stroke: #33a02c;
+}
+
+/* ground and earth are dirt by another name, and ride the same way */
+.path.surface-ground,
+.path.surface-earth {
+    color: #aa5500;
+    stroke: #aa5500;
+}
+/*
+    A recommended route stays green whatever it is surfaced with. The route is the
+    reason the way is on the map, and 16 of them run over dirt or ground - without
+    this they would take the unpaved colour and stop reading as a recommendation.
+*/
+.path.lcn-yes,
+.path.lcn-proposed,
+.path.lcn-provisional {
+    color: #33a02c;
+    stroke: #33a02c !important;
+}
+
+/* a bicycle parking mapped as a building of its own, rather than a stand or a shelter */
+.parking.bicycle_parking-building::after {
+    content: "\25A1";
 }

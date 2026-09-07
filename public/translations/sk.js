@@ -5,6 +5,7 @@ translation = {
         "U type": "typ U alebo podobný",
         "A type": "typ A alebo podobný",
         "enclosed": "uzavretý (klietka a pod.)",
+        "enclosed building": "uzavretý (budova)",
         "informal": "neformálny (zábradlie a pod.)",
         "not suitable": "nevhodný",
         "Bicycle repair stand": "Stojan na opravu bicyklov",
