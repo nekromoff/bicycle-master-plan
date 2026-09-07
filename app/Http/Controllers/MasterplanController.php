@@ -481,6 +481,17 @@ class MasterplanController extends Controller
                     if (isset($this->paths[$i]['info'])) {
                         $normalizer = new CyclewayNormalizer;
                         $tags = $this->paths[$i]['info'];
+                        /*
+                            A way that says it carries no cycling infrastructure has
+                            nothing to draw. A member of a route relation is drawn for
+                            belonging to that route, whatever its own tags say, so the
+                            planned network is never thinned by this.
+                        */
+                        if (! isset($this->parents[$item->id]) and ! $normalizer->isDrawable($tags)) {
+                            unset($this->paths[$i]);
+
+                            continue;
+                        }
                         $sides = $normalizer->sides($tags);
                         if ($sides) {
                             $this->paths[$i]['sides'] = $sides;

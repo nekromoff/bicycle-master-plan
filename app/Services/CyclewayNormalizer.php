@@ -92,6 +92,45 @@ class CyclewayNormalizer
     }
 
     /**
+     * Whether a way belongs on a cycling map at all.
+     *
+     * The Overpass query matches a way for having a cycleway key, not for having any
+     * infrastructure - cycleway:both=no says the opposite. Such a way would otherwise be
+     * drawn with no styling rule to match it, which leaves a default-coloured line and,
+     * worse, an invisible one that still answers the pointer.
+     *
+     * @param  array<string, string>  $tags
+     */
+    public function isDrawable(array $tags): bool
+    {
+        // a route is a fact about the way, not about the infrastructure on it
+        if (isset($tags['lcn']) or isset($tags['ref'])) {
+            return true;
+        }
+        $highway = $tags['highway'] ?? '';
+        if ($highway == 'cycleway') {
+            return true;
+        }
+        $bicycle = $tags['bicycle'] ?? '';
+        if ($bicycle == 'no' or $bicycle == 'dismount') {
+            return false;
+        }
+        if ($highway == 'pedestrian' or $highway == 'footway' or $highway == 'path') {
+            return true;
+        }
+        if (($tags['railway'] ?? '') == 'tram') {
+            return true;
+        }
+        foreach (['left', 'right'] as $side) {
+            if ($this->isInfrastructure($this->form($tags, $side))) {
+                return true;
+            }
+        }
+
+        return $bicycle == 'yes' or $bicycle == 'designated' or $bicycle == 'official' or $bicycle == 'permissive';
+    }
+
+    /**
      * Tags for the centre feature: the originals minus the cycleway keys already
      * expressed by a side feature, so the two do not draw the same thing twice.
      *

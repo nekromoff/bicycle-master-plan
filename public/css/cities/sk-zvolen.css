@@ -376,3 +376,13 @@
 .path.has-sides:not([class*="lcn-"]):not(.state-proposed) {
     stroke: transparent !important;
 }
+
+/*
+    An advisory (ochranný) lane is not a mandatory one - the rider shares it with motor
+    traffic when the lane narrows - so it keeps the in-traffic colour, as it did when it
+    was styled from the raw cycleway:lane=advisory tag.
+*/
+.path.form-lane.lane-advisory {
+    color: #33a02c;
+    stroke: #33a02c;
+}
