@@ -617,6 +617,7 @@ var crossSection = (function() {
         */
         var slabs = [];
         var marks = [];
+        var prev = null;
         var rail_centre = rail_bed ? (rail_bed.from + rail_bed.to) / 2 : 0;
         var gauge = rail_bed ? Math.min(40, Math.max(20, (rail_bed.to - rail_bed.from) * 0.3)) : 0;
 
@@ -693,11 +694,33 @@ var crossSection = (function() {
                 // the painted line that keeps the two users apart on a segregated path
                 marks.push('<line x1="' + x.toFixed(1) + '" y1="' + y + '" x2="' + x.toFixed(1) + '" y2="' + (y + h) + '" stroke="var(--xs-cycle)" stroke-width="2.4"/>');
             } else if (is_cycle && slot.sep == 'kerb') {
-                marks.push('<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + w.toFixed(1) + '" height="5" fill="var(--xs-cycle)"/>');
+                // a kerb-separated track: a firm edge on both sides, nothing on top
+                marks.push('<line x1="' + x.toFixed(1) + '" y1="' + y + '" x2="' + x.toFixed(1) + '" y2="' + (y + h) + '" stroke="var(--xs-cycle)" stroke-width="2.4"/>');
+                marks.push('<line x1="' + (x + w).toFixed(1) + '" y1="' + y + '" x2="' + (x + w).toFixed(1) + '" y2="' + (y + h) + '" stroke="var(--xs-cycle)" stroke-width="2.4"/>');
             } else if (is_cycle && (slot.sep == 'paint' || slot.sep == 'buffer')) {
                 var dash = slot.lane == 'advisory' ? ' stroke-dasharray="7 5"' : '';
                 marks.push('<line x1="' + x.toFixed(1) + '" y1="' + y + '" x2="' + x.toFixed(1) + '" y2="' + (y + h) + '" stroke="var(--xs-cycle)" stroke-width="2"' + dash + '/>');
                 marks.push('<line x1="' + (x + w).toFixed(1) + '" y1="' + y + '" x2="' + (x + w).toFixed(1) + '" y2="' + (y + h) + '" stroke="var(--xs-cycle)" stroke-width="2"' + dash + '/>');
+            }
+
+            /*
+                The boundary with the slot to the left. Two motor lanes meet on a broken
+                lane line, the way they are painted; anything else meets on a thin solid
+                edge. A cycle slot that already drew its own edges above needs nothing.
+            */
+            if (prev) {
+                var owns_edge = function(s) {
+                    return s.kind == 'cycle' && (s.sep == 'kerb' || s.sep == 'paint' || s.sep == 'buffer');
+                };
+                if (!owns_edge(slot) && !owns_edge(prev)) {
+                    var drives = function(s) { return s.kind == 'motor' || s.kind == 'busway' || s.kind == 'tramway'; };
+                    var by = Math.min(y, prev.kind == 'footway' || prev.kind == 'unknown' ? top - 6 : top);
+                    if (drives(slot) && drives(prev)) {
+                        marks.push('<line x1="' + x.toFixed(1) + '" y1="' + top + '" x2="' + x.toFixed(1) + '" y2="' + (top + body) + '" stroke="var(--xs-label)" stroke-width="1.5" stroke-opacity="0.6" stroke-dasharray="10 8"/>');
+                    } else {
+                        marks.push('<line x1="' + x.toFixed(1) + '" y1="' + by + '" x2="' + x.toFixed(1) + '" y2="' + (top + body) + '" stroke="var(--xs-label)" stroke-width="1" stroke-opacity="0.45"/>');
+                    }
+                }
             }
 
             var dir = is_cycle ? slot.dir : (slot.bike ? slot.bike_dir : slot.dir);
@@ -756,6 +779,7 @@ var crossSection = (function() {
                 }
             }
             x = x + w;
+            prev = slot;
         });
 
         parts = parts.concat(slabs);
