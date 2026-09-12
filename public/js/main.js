@@ -912,6 +912,8 @@ function buildPathContent(path) {
         if (path.info.name != undefined && path.info.name) {
             content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button>';
             content = content + '</h2>';
+        } else {
+            content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button>';
         }
         if (path.info.name == undefined) {
             content = content + '<strong>';
@@ -990,7 +992,7 @@ function buildPathContent(path) {
             content = content + i18n('State') + ': ' + i18n(path.info.state) + '<br>';
         }
         if (Object.keys(path.info).length) {
-            content = content + '<hr class="my-2"><p class="text-secondary mt-0">';
+            content = content + '<hr class="my-2">' + describeWikimediaCommons(path.info.wikimedia_commons) + '<p class="text-secondary mt-0">';
         }
         for (detail_key in path.info) {
             content = content + detail_key + '=' + path.info[detail_key] + '<br>';
@@ -1271,6 +1273,33 @@ function escapeHtml(text) {
     return element.innerHTML;
 }
 
+/*
+    @value string wikimedia_commons tag, e.g. "File:Foo.jpg" or "Category:Bar", several separated by ";"
+    Files are shown as thumbnails through Special:FilePath (no API call needed),
+    categories cannot be previewed that way, so they are only linked.
+*/
+function describeWikimediaCommons(value) {
+    var content = '';
+    if (value == undefined || !value) {
+        return content;
+    }
+    String(value).split(';').forEach(function(item) {
+        var title = item.trim().replace(/ /g, '_');
+        if (!title) {
+            return;
+        }
+        var page = 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(title).replace(/%3A/gi, ':');
+        var name = title.replace(/^[^:]+:/, '');
+        if (/^file:/i.test(title)) {
+            var thumbnail = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(name) + '?width=400';
+            content = content + '<a href="' + page + '" target="_blank" rel="noopener"><img src="' + thumbnail + '" alt="' + escapeHtml(name.replace(/_/g, ' ')).replace(/"/g, '&quot;') + '" class="img-fluid mb-2" loading="lazy"></a><br>';
+        } else {
+            content = content + '<a href="' + page + '" target="_blank" rel="noopener">Wikimedia Commons: ' + escapeHtml(title.replace(/_/g, ' ')) + '</a><br>';
+        }
+    });
+    return content;
+}
+
 // a tap that landed near an object rather than on it
 function openNearestObject(e) {
     if (e.layer == undefined || e.layer.options == undefined) {
@@ -1363,6 +1392,8 @@ function buildMarkerContent(marker, layer_id, signs) {
     }
     if (has_name) {
         content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button></h2>';
+    } else {
+        content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button>';
     }
     if (marker.url != undefined && marker.url) {
         content = content + '<a href="' + marker.url + '">' + i18n('Link') + '</a><br>';
@@ -1478,7 +1509,7 @@ function buildMarkerContent(marker, layer_id, signs) {
     }
     if (marker.info != undefined) {
         if (Object.keys(marker.info).length) {
-            content = content + '<hr class="my-2"><p class="text-secondary mt-0">';
+            content = content + '<hr class="my-2">' + describeWikimediaCommons(marker.info.wikimedia_commons) + '<p class="text-secondary mt-0">';
         }
         for (var detail_key in marker.info) {
             content = content + detail_key + ' = ' + marker.info[detail_key] + '<br>';
