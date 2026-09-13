@@ -9,6 +9,7 @@ use App\Models\MarkersRelation;
 use App\Models\Path;
 use App\Models\Relation;
 use App\Services\CyclewayNormalizer;
+use App\Services\NavigationSupport;
 use App\Services\PathJoiner;
 use Google\Client as GoogleClient;
 use Google\Service\Sheets as GoogleServiceSheets;
@@ -124,6 +125,20 @@ class MasterplanController extends Controller
         return response()->json($content);
     }
 
+    /**
+     * The ordinary roads navigation routes over between the paths of its layer,
+     * in the compact form NavigationSupport builds.
+     */
+    public function getNavigationSupport()
+    {
+        $content = (new NavigationSupport)->content();
+        if ($content === null) {
+            return response()->json(['points' => [], 'ways' => []]);
+        }
+
+        return response($content)->header('Content-Type', 'application/json');
+    }
+
     public function saveData(Request $request)
     {
         DB::beginTransaction();
@@ -229,6 +244,8 @@ class MasterplanController extends Controller
                 }
             }
         }
+        // built here, so that the first visitor to start navigating does not wait for it
+        (new NavigationSupport)->content();
     }
 
     public function fetchAndSaveOverpassData($filename, $data): void

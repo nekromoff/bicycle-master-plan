@@ -11,15 +11,18 @@
         <link rel="stylesheet" href="{{asset('css/easy-button.css')}}" />
         <link rel="stylesheet" href="{{asset('css/main.css')}}">
         <link rel="stylesheet" href="{{asset(config('map.stylesheet'))}}">
+        @if (config('map.navigation'))
+            <link rel="stylesheet" href="{{asset('css/navigation.css')}}">
+        @endif
         <link rel="canonical" href="{{secure_url('/')}}" />
-        <meta name="description" content="{{substr(strip_tags(config('map.intro')),0,300)}}">
+        <meta name="description" content="{{substr(strip_tags(Helper::intro()),0,300)}}">
         <meta property="og:title" content="{{config('map.name')}}">
-        <meta property="og:description" content="{{substr(strip_tags(config('map.intro')),0,255)}}">
+        <meta property="og:description" content="{{substr(strip_tags(Helper::intro()),0,255)}}">
         <meta property="og:image" content="{{asset('images/'.config('map.image'))}}">
         <meta property="og:url" content="{{secure_url('/')}}">
         <meta property="og:type" content="website">
         <meta name="twitter:title" content="{{config('map.name')}}">
-        <meta name="twitter:description" content="{{substr(strip_tags(config('map.intro')),0,150)}}">
+        <meta name="twitter:description" content="{{substr(strip_tags(Helper::intro()),0,150)}}">
         <meta name="twitter:image" content="{{ asset('images/'.config('map.image')) }}">
         <meta name="twitter:card" content="summary_large_image">
     </head>
@@ -49,13 +52,19 @@
         <script src="{{asset('js/leaflet.polylineoffset.js')}}"></script>
         <script src="{{asset('js/i18n.min.js')}}"></script>
         <script src="{{asset('translations/'.config('map.language').'.js')}}"></script>
+        <script src="{{asset('js/waynames.js')}}"></script>
         <script src="{{asset('js/crosssection.js')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
+        @if (config('map.navigation'))
+            <script src="{{asset('js/navigation.js')}}"></script>
+        @endif
         <script>
         i18n.translator.add(translation);
         core.config={!! json_encode(config('map')) !!};
         core.editable_layer_id=getEditableLayerId();
         core.storage_path='{{asset('...')}}'.replace('...','');
+        {{-- every translation file there is can be switched to, see switchLanguage() --}}
+        core.languages={!! json_encode(array_values(array_map(function ($file) { return basename($file, '.js'); }, glob(public_path('translations/*.js'))))) !!};
         @foreach (config('map.layers') as $layer_id=>$layer)
             @if ($layer['type']=='base')
                 var base = L.tileLayer('{{$layer['url']}}', {
@@ -92,6 +101,8 @@
         var map = L.map('map', {
             center: core.options.center,
             zoom: core.options.zoom,
+            // added bottom right further down, together with the location button
+            zoomControl: false,
             zoomSnap: 0.5,
             zoomDelta: 0.5,
             tap: false, // fixes Safari issues with popups
@@ -123,19 +134,37 @@
         var overlays = {
             {!!Helper::jsGetOverlays()!!}
         };
-        L.control.layers(baselayers, overlays, {
+        core.layers_control = L.control.layers(baselayers, overlays, {
             hideSingleBase: true
         }).addTo(map);
-        // added after the layers control, so that it sits right under its icon
-        L.easyButton('<span class="locate" data-toggle="tooltip" data-placement="left" title="'+ i18n("My location")+'">◎</span>', locateUser, {
-            position: 'topright'
+        /*
+            Bottom corners stack upwards: a control added later sits above the ones added
+            before it, so the zoom goes first and the location button lands right above it.
+        */
+        var zoom_control = L.control.zoom({
+            position: 'bottomright',
+            zoomInTitle: i18n('Zoom in'),
+            zoomOutTitle: i18n('Zoom out')
+        }).addTo(map);
+        // the page's own tooltips instead of the browser's delayed ones
+        zoom_control.getContainer().querySelectorAll('a').forEach(function(button) {
+            button.setAttribute('data-toggle', 'tooltip');
+            button.setAttribute('data-i18n-title', button.classList.contains('leaflet-control-zoom-in') ? 'Zoom in' : 'Zoom out');
+            button.setAttribute('data-placement', 'left');
+        });
+        L.easyButton('<span class="locate" data-toggle="tooltip" data-placement="left" data-i18n-title="My location" title="'+ i18n("My location")+'">◎</span>', locateUser, {
+            position: 'bottomright'
         }).addTo(map);
         L.control.scale({imperial: false}).addTo(map);
         if (!getCookie('intro_off')) {
-            openSidebar('{!! addslashes(config('map.intro')) !!}')
+            openHelp(introContent());
             map.setView([core.options.center[0], core.options.center[1]], core.options.zoom);
         }
         {!!Helper::jsSetupClusters()!!}
+        {{-- before the UI buttons: top corners stack downwards, so navigation lands above help --}}
+        @if (config('map.navigation'))
+            navigation.init(map, core.config.navigation);
+        @endif
         {!!Helper::jsSetupUI()!!}
     </script>
     <div id="form" class="d-none">

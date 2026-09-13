@@ -13,6 +13,8 @@ html, body {
 #map {
     width: auto;
     height: 100vh;
+    /* on phones 100vh reaches under the browser's bars; dvh is the screen actually visible */
+    height: 100dvh;
     font-size: 0.9em;
 }
 #sidebar {
@@ -32,17 +34,151 @@ html, body {
         bottom: 0;
         left: 0;
         height: 40vh;
+        height: 40dvh;
         width: 100vw;
         overflow-y: auto;
         overflow-x: hidden;
-        z-index: 999;
+        /* above the map's control corners (1000, the layers corner 1001), below the right-click menu (2000) */
+        z-index: 1002;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+    }
+    /* the close arrow stays at the top of the panel while its content scrolls */
+    #sidebar > .row:first-child {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    /* the open sidebar covers the bottom of the map, so zoom, location, login and the attribution move up above it */
+    #sidebar[style*="block"] ~ #map .leaflet-bottom {
+        bottom: 40vh;
+        bottom: 40dvh;
     }
 }
 #sidebar>div {
     position: relative;
 }
+/* faded out on phones after the first touch or a few seconds, see hideAttributionOnMobile() */
+.leaflet-control-attribution {
+    transition: opacity 0.4s, visibility 0.4s;
+}
+.leaflet-control-attribution.attribution-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+.leaflet-control-attribution.attribution-gone {
+    display: none;
+}
+/* the opened layers list reaches down over the bottom corner, so its corner draws above the location and zoom buttons */
+.leaflet-top.leaflet-right {
+    z-index: 1001;
+}
+/* a layer's whole row switches it on or off */
+.leaflet-control-layers-toggle,
+.leaflet-control-layers label,
+.leaflet-control-layers-selector {
+    cursor: pointer;
+}
+/* closes the opened layers list, see initLayersClose(); stays in the corner while the list scrolls */
+.layers-close {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    float: right;
+    width: 44px;
+    height: 44px;
+    margin: -6px -6px 0 6px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    color: #212529;
+    font-size: 36px;
+    font-weight: 300;
+    line-height: 42px;
+    text-align: center;
+    cursor: pointer;
+}
+.layers-close:hover,
+.layers-close:focus {
+    background: #f4f4f4;
+    outline: none;
+}
 #close {
     cursor: pointer;
+}
+/*
+    The language button stands beside help instead of under it, see Helper::jsSetupUI(), and the two
+    make one bar the way the zoom buttons do: no gap, no border or rounded corners where they meet,
+    and a thin line between them.
+*/
+.leaflet-left .leaflet-control.language-control {
+    clear: none;
+    margin-left: 0;
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    /* its shadow would fall across help */
+    clip-path: inset(-10px -10px -10px 0);
+}
+.leaflet-left .leaflet-control.language-joined {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    clip-path: inset(-10px 0 -10px -10px);
+}
+.leaflet-bar.language-joined button,
+.leaflet-bar.language-joined button:hover {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.leaflet-bar.language-control button,
+.leaflet-bar.language-control button:hover {
+    border-left: 1px solid #ccc;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.easy-button-button .language-code {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* right-click menu on the map */
+.context-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2000;
+}
+/* catches the click outside the menu that closes it */
+.context-menu-backdrop {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: transparent;
+}
+/* placed at the pointer by positionContextMenu() */
+.context-menu-dialog {
+    position: absolute;
+    min-width: 220px;
+    max-width: 90vw;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 0.3rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+}
+/* no focus ring for mouse and touch, keyboard focus is shown as a hover instead */
+.context-menu .list-group-item:focus {
+    outline: none;
+    box-shadow: none;
+}
+.context-menu .list-group-item:focus-visible {
+    background-color: #f8f9fa;
 }
 
 a.notuptodate:link, a.notuptodate:hover {

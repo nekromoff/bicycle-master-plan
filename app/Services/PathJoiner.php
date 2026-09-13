@@ -31,10 +31,14 @@ class PathJoiner
      * The way type stays in, because it decides which branch draws the way at all: a
      * street and a cycleway of the same name are not one line. So does ref, which on a
      * route relation is the route number - two different routes must not become one.
+     *
+     * Bridges and tunnels stay separate ways as well, so that where they start and end
+     * is still known - navigation may only step on and off them at their ends.
      */
     private const RENDERED = [
         'name',
         'highway', 'footway', 'path', 'railway', 'embedded_rails',
+        'bridge', 'tunnel',
         'cycleway', 'bicycle', 'segregated', 'foot', 'oneway',
         'lcn', 'lcn_ref', 'rcn_ref', 'ncn_ref', 'ref', 'network', 'route',
         'state', 'complete',

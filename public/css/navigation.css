@@ -1,0 +1,440 @@
+/* A to B navigation, loaded only when map.navigation is configured */
+
+#map.navigating,
+#map.navigating .leaflet-grab,
+#map.navigating .leaflet-interactive {
+    cursor: crosshair;
+}
+
+/* wider than the other buttons, to fit the bicycle, the dotted line and the pin, and as tall as the layers control's toggle */
+.leaflet-bar button.easy-button-button.navigation-button {
+    width: 60px;
+    height: 36px;
+    line-height: 36px;
+}
+
+.leaflet-touch .leaflet-bar button.easy-button-button.navigation-button {
+    height: 44px;
+    line-height: 44px;
+}
+
+.navigation-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #000;
+}
+
+.navigation-icon {
+    display: block;
+    flex: 0 0 auto;
+}
+
+/* specific enough to beat easy-button's light hover background, which would hide the white icon */
+.leaflet-bar button.easy-button-button.navigation-active {
+    background-color: #0d6efd;
+}
+
+.leaflet-bar button.easy-button-button.navigation-active:hover {
+    background-color: #0b5ed7;
+}
+
+.easy-button-button.navigation-active .navigation-toggle {
+    color: #fff;
+}
+
+.navigation-casing {
+    stroke: #fff;
+    stroke-width: 9px;
+    stroke-opacity: 0.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.navigation-line {
+    stroke-width: 5px;
+    stroke-opacity: 0.95;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* blue on separated cycle routes and footways, orange wherever the route is in traffic */
+.navigation-path {
+    stroke: #0d6efd;
+}
+
+.navigation-traffic {
+    stroke: #fd7e14;
+}
+
+/* the step picked in the turn by turn list */
+.navigation-step-highlight {
+    stroke: #ffc107;
+    stroke-width: 12px;
+    stroke-opacity: 0.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.navigation-steps {
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.navigation-step {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    padding: 0.3rem 0.25rem 0.3rem 1.2rem;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+}
+
+.navigation-step:hover,
+.navigation-step.active {
+    background-color: #f8f9fa;
+}
+
+.navigation-step-icon {
+    flex: 0 0 1.6em;
+    text-align: center;
+    color: #212529;
+}
+
+.navigation-step-icon svg {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+}
+
+/*
+    What a step mostly is, as a line down the side of the list, coloured by the legend's class.
+    It runs the whole height of the step and over its bottom border, so it joins the next one.
+*/
+.navigation-step-bar {
+    position: absolute;
+    top: 0;
+    bottom: -1px;
+    left: 0.35rem;
+    width: 0;
+    border-left: 4px solid currentColor;
+}
+
+.navigation-step-bar-dotted {
+    border-left-style: dotted;
+}
+
+/* orange has no entry in the layer's legend; the others only stand in when the legend lacks theirs */
+.navigation-swatch-none {
+    color: #fd7e14;
+}
+
+.navigation-swatch-separated {
+    color: #1f78b4;
+}
+
+.navigation-swatch-traffic,
+.navigation-swatch-recommended {
+    color: #33a02c;
+}
+
+.navigation-swatch-footway {
+    color: #a6cee3;
+}
+
+.navigation-swatch-mtb {
+    color: #aa5500;
+}
+
+.navigation-step-text {
+    flex: 1 1 auto;
+}
+
+.navigation-step-distance {
+    flex: 0 0 auto;
+    margin-left: 0.5rem;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+/* invisible, wide enough to hover a road stretch of the route for its cross-section */
+.navigation-hover {
+    stroke: transparent;
+    stroke-width: 16px;
+    fill: none;
+}
+
+/* a gap in the network is orange like a road, and dashed */
+.navigation-gap {
+    stroke-dasharray: 8 8;
+    stroke-linecap: butt;
+}
+
+.navigation-access {
+    stroke: #6c757d;
+    stroke-width: 2px;
+    stroke-dasharray: 3 5;
+    fill: none;
+}
+
+.navigation-marker {
+    width: 26px;
+    height: 26px;
+    line-height: 22px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.navigation-marker.navigation-from {
+    background: #198754;
+}
+
+.navigation-marker.navigation-to {
+    background: #dc3545;
+}
+
+/* A and B in the turn by turn list, smaller copies of the markers on the map */
+.navigation-step-marker {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    line-height: calc(1.5em - 2px);
+    border-width: 1px;
+    font-size: 0.75em;
+    vertical-align: 0.1em;
+    box-shadow: none;
+}
+
+/* the route summed up in the panel: the words of the layer's legend, and how much of the route each is */
+.navigation-legend-table {
+    margin: 0 0 1rem;
+}
+
+/*
+    Lined up with the turn by turn steps below: the border sits where their bar does (0.35rem in)
+    and the words start where theirs do (1.2rem in).
+*/
+.navigation-legend-row {
+    display: flex;
+    align-items: baseline;
+    margin: 0 0 0.2rem 0.35rem;
+    padding: 0.1rem 0.25rem 0.1rem calc(1.2rem - 0.35rem - 4px);
+    border-left: 4px solid transparent;
+}
+
+/* the colours the route is drawn in: blue on separated routes and footways, orange in traffic */
+.navigation-legend-separated,
+.navigation-legend-footway {
+    border-left-color: #0d6efd;
+}
+
+.navigation-legend-traffic {
+    border-left-color: #fd7e14;
+}
+
+.navigation-legend-label {
+    flex: 1 1 auto;
+}
+
+.navigation-legend-share {
+    flex: 0 0 auto;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+}
+
+/* dots flying over the map while the route is being found, see renderLoading() */
+#navigation-loading {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 800;
+    overflow: hidden;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* sits at the start of a flight, as long as the flight and turned towards its end */
+.navigation-flight {
+    position: absolute;
+    height: 0;
+    transform-origin: 0 0;
+}
+
+/* as wide as its parent, so moving it by its own width takes the dot to the end */
+.navigation-flight-x {
+    width: 100%;
+    height: 0;
+    animation-name: navigation-flight-x;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+.navigation-flight-y {
+    width: 0;
+    height: 0;
+    animation-iteration-count: infinite;
+}
+
+.navigation-flight-dot {
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0d6efd;
+    box-shadow: 0 0 0 2px #fff;
+    animation-name: navigation-flight-fade;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+/* placed by renderLoading() in the middle of the flights, centred on that point */
+.navigation-loading-label {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    padding: 0.6rem 1.5rem;
+    border-radius: 2rem;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    font-size: 1.6rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes navigation-flight-x {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+/* the arc off the straight line: out to its height by half way, back by the end */
+.navigation-arc-1 {
+    animation-name: navigation-arc-1;
+}
+
+.navigation-arc-2 {
+    animation-name: navigation-arc-2;
+}
+
+.navigation-arc-3 {
+    animation-name: navigation-arc-3;
+}
+
+.navigation-arc-4 {
+    animation-name: navigation-arc-4;
+}
+
+@keyframes navigation-arc-1 {
+    0% {
+        transform: translateY(0);
+        animation-timing-function: ease-out;
+    }
+    50% {
+        transform: translateY(-40px);
+        animation-timing-function: ease-in;
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes navigation-arc-2 {
+    0% {
+        transform: translateY(0);
+        animation-timing-function: ease-out;
+    }
+    50% {
+        transform: translateY(-16px);
+        animation-timing-function: ease-in;
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes navigation-arc-3 {
+    0% {
+        transform: translateY(0);
+        animation-timing-function: ease-out;
+    }
+    50% {
+        transform: translateY(20px);
+        animation-timing-function: ease-in;
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes navigation-arc-4 {
+    0% {
+        transform: translateY(0);
+        animation-timing-function: ease-out;
+    }
+    50% {
+        transform: translateY(44px);
+        animation-timing-function: ease-in;
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes navigation-flight-fade {
+    0% {
+        opacity: 0;
+    }
+    15% {
+        opacity: 1;
+    }
+    85% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/*
+    Phones, once a route is fitted: the panel takes the bottom half, the route is fitted into the top half,
+    and the zoom, location and login buttons are hidden until the map is touched (see update() and init()).
+*/
+@media (max-width: 767.98px) {
+    body.navigation-half #sidebar {
+        height: 50vh;
+        height: 50dvh;
+    }
+
+    body.navigation-half #sidebar[style*="block"] ~ #map .leaflet-bottom {
+        bottom: 50vh;
+        bottom: 50dvh;
+    }
+
+    body.navigation-controls-hidden #sidebar[style*="block"] ~ #map .leaflet-bottom {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navigation-flight {
+        display: none;
+    }
+}

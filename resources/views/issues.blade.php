@@ -11,14 +11,14 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.Default.css" integrity="sha256-LWhzWaQGZRsWFrrJxg+6Zn8TT84k0/trtiHBc6qcGpY=" crossorigin="anonymous" />
         <link rel="stylesheet" href="{{ asset('css/main.css') }}">
         <link rel="canonical" href="{{secure_url('/')}}" />
-        <meta name="description" content="{{substr(strip_tags(config('map.intro')),0,300)}}">
+        <meta name="description" content="{{substr(strip_tags(Helper::intro()),0,300)}}">
         <meta property="og:title" content="{{config('map.name')}}">
-        <meta property="og:description" content="{{substr(strip_tags(config('map.intro')),0,255)}}">
+        <meta property="og:description" content="{{substr(strip_tags(Helper::intro()),0,255)}}">
         <meta property="og:image" content="{{asset('images/'.config('map.image'))}}">
         <meta property="og:url" content="{{secure_url('/')}}">
         <meta property="og:type" content="website">
         <meta name="twitter:title" content="{{config('map.name')}}">
-        <meta name="twitter:description" content="{{substr(strip_tags(config('map.intro')),0,150)}}">
+        <meta name="twitter:description" content="{{substr(strip_tags(Helper::intro()),0,150)}}">
         <meta name="twitter:image" content="{{ asset('images/'.config('map.image')) }}">
         <meta name="twitter:card" content="summary_large_image">
     </head>

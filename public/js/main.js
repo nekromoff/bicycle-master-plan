@@ -51,6 +51,27 @@ core.crosssection_latlng = null;
 core.crosssection_frame = null;
 // way ids that were joined into a longer path, pointing at the path that replaced them
 core.path_aliases = {};
+/*
+    What a right-click on the map offers: {label, order, run(latlng)}, label a text or a function
+    returning one, so it follows a change of language. Optional features register their own.
+    A handler in context_handlers is asked first and may take the click for itself by returning
+    true, e.g. navigation placing its destination.
+*/
+core.context_actions = [];
+// the languages there is a translation for, set by the page, see switchLanguage()
+core.languages = [];
+/*
+    Called with the language code once another language is loaded, so that a feature redraws its
+    own words. A handler that redrew the sidebar returns true, and the sidebar is left to it.
+*/
+core.language_handlers = [];
+core.context_handlers = [];
+core.context_menu = null;
+/*
+    Extra parameters for the location fragment, as functions returning "key=value" or
+    nothing. Optional features keep their own state in the link this way, e.g. a route.
+*/
+core.fragment_params = [];
 
 /*
     Small DOM helpers, so that the rest of the file reads the way it did while it was
@@ -139,15 +160,11 @@ if (window.L != undefined && L.Handler != undefined && L.Handler.AlmostOver != u
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // do form translations
-    qsa('#form form label').forEach(function(element) {
-        element.textContent = i18n(element.textContent.trim());
-    });
-    qsa('#form form small').forEach(function(element) {
-        element.textContent = i18n(element.textContent.trim());
-    });
-    qsa('#form form button').forEach(function(element) {
-        element.textContent = i18n(element.textContent.trim());
+    // form translations; the key is kept, so another language can write them again (refreshTranslations)
+    qsa('#form form label, #form form small, #form form button').forEach(function(element) {
+        var key = element.textContent.trim();
+        element.setAttribute('data-i18n', key);
+        element.textContent = i18n(key);
     });
     initSidebarButtons();
     initTooltips();
@@ -188,11 +205,135 @@ document.addEventListener('DOMContentLoaded', function() {
     map.on('overlayadd', scheduleFragmentRewrite);
     map.on('overlayremove', scheduleFragmentRewrite);
     if (core.editable_layer_id) {
-        map.on('contextmenu', createMarker);
+        core.context_actions.push({
+            label: function() {
+                return i18n('Add point');
+            },
+            order: 10,
+            run: function(latlng) {
+                createMarker({latlng: latlng});
+            }
+        });
     }
+    map.on('contextmenu', openContextMenu);
+    /*
+        A marker keeps its right-click to itself and the map never hears of it, so the menu is
+        opened for it here - at the marker, which makes it a start, an end or a place to add
+        a point just like the map around it. Draggable markers and clusters are left alone.
+    */
+    map.getContainer().addEventListener('contextmenu', function(event) {
+        var icon = event.target != undefined && typeof event.target.closest == 'function' ? event.target.closest('.leaflet-marker-icon') : null;
+        if (icon == null || icon.closest('.marker-cluster') || icon.classList.contains('leaflet-marker-draggable')) {
+            return;
+        }
+        var latlng = null;
+        map.eachLayer(function(layer) {
+            if (latlng == null && layer._icon === icon && typeof layer.getLatLng == 'function') {
+                latlng = layer.getLatLng();
+            }
+        });
+        if (latlng == null) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        openContextMenu({latlng: latlng, originalEvent: event});
+    }, true);
+    document.addEventListener('keydown', function(e) {
+        if (e.key == 'Escape') {
+            closeContextMenu();
+        }
+    });
     map.on('locationfound', showLocation);
     map.on('locationerror', showLocationError);
+    hideAttributionOnMobile();
+    initLayersClose();
+    initLanguage();
 });
+
+/*
+    Leaflet closes the opened layers list when the mouse leaves it or the map is tapped, but on
+    a phone the list covers nearly all of the map. It gets a close button of its own, and a tap
+    anywhere outside it closes it too.
+*/
+function initLayersClose() {
+    var control = core.layers_control;
+    if (control == undefined) {
+        return;
+    }
+    var container = control.getContainer();
+    var list = container.querySelector('.leaflet-control-layers-list');
+    if (list == null) {
+        return;
+    }
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'layers-close';
+    button.setAttribute('aria-label', i18n('Close'));
+    button.innerHTML = '×';
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        control.collapse();
+    });
+    list.insertBefore(button, list.firstChild);
+    // on a phone the list and the bottom sidebar would cover each other, so opening the list closes the sidebar
+    if (typeof MutationObserver != 'undefined') {
+        var expanded = false;
+        new MutationObserver(function() {
+            var now = container.classList.contains('leaflet-control-layers-expanded');
+            if (now && !expanded && window.matchMedia('(max-width: 767.98px)').matches) {
+                closeSidebar();
+            }
+            expanded = now;
+        }).observe(container, {attributes: true, attributeFilter: ['class']});
+    }
+    document.addEventListener('pointerdown', function(e) {
+        if (container.classList.contains('leaflet-control-layers-expanded') && !container.contains(e.target)) {
+            control.collapse();
+        }
+    }, true);
+}
+
+/*
+    On a phone the attribution takes a row of the little screen there is, so it is shown when
+    the map loads and fades out on the visitor's first touch, scroll or key, or after 5 seconds.
+    The map moving on its own, such as fitting a shared route, does not count.
+*/
+function hideAttributionOnMobile() {
+    if (map.attributionControl == undefined || !window.matchMedia('(max-width: 767.98px)').matches) {
+        return;
+    }
+    var container = map.attributionControl.getContainer();
+    // the attribution sits under zoom in the right corner, so the left corner is raised as much, keeping login and admin level with zoom
+    var left = qs('.leaflet-bottom.leaflet-left');
+    if (left != null) {
+        left.style.paddingBottom = container.offsetHeight + 'px';
+    }
+    var events = ['pointerdown', 'touchstart', 'wheel', 'keydown'];
+    var timer = null;
+    var hide = function() {
+        window.clearTimeout(timer);
+        events.forEach(function(name) {
+            document.removeEventListener(name, hide, true);
+        });
+        if (container.classList.contains('attribution-hidden')) {
+            return;
+        }
+        container.classList.add('attribution-hidden');
+        // once faded it leaves the corner, and both sides drop down together
+        window.setTimeout(function() {
+            container.classList.add('attribution-gone');
+            if (left != null) {
+                left.style.paddingBottom = '';
+            }
+        }, 400);
+    };
+    timer = window.setTimeout(hide, 5000);
+    events.forEach(function(name) {
+        document.addEventListener(name, hide, {capture: true, passive: true});
+    });
+}
 
 /*
     The intro is written into the sidebar by the inline script on the page, and the
@@ -231,6 +372,10 @@ function initTooltips() {
     });
     document.addEventListener('mouseout', function(e) {
         var trigger = getTooltipTrigger(e.target);
+        // moving between a button and the icon inside it stays within the same tooltip
+        if (trigger && getTooltipTrigger(e.relatedTarget) == trigger) {
+            return;
+        }
         if (trigger && core.tooltip != null && core.tooltip.trigger == trigger) {
             hideTooltip();
         }
@@ -244,11 +389,22 @@ function initTooltips() {
     window.addEventListener('scroll', hideTooltip, true);
 }
 
+/*
+    Map buttons carry their tooltip on the icon inside, which leaves the rest of the
+    button without one, so the whole button counts as the icon's trigger.
+*/
 function getTooltipTrigger(target) {
     if (target == undefined || typeof target.closest != 'function') {
         return null;
     }
-    return target.closest('[data-toggle="tooltip"]');
+    var trigger = target.closest('[data-toggle="tooltip"]');
+    if (trigger == null) {
+        var button = target.closest('.easy-button-button');
+        if (button != null) {
+            trigger = button.querySelector('[data-toggle="tooltip"]');
+        }
+    }
+    return trigger;
 }
 
 function showTooltip(trigger) {
@@ -279,7 +435,8 @@ function showTooltip(trigger) {
 }
 
 function positionTooltip(tooltip, trigger, placement) {
-    var rect = trigger.getBoundingClientRect();
+    // placed against the whole map button, not the icon in it, so it does not cover the button's edge
+    var rect = (trigger.closest('.easy-button-button') || trigger).getBoundingClientRect();
     var width = tooltip.offsetWidth;
     var height = tooltip.offsetHeight;
     var scroll_x = window.pageXOffset;
@@ -466,6 +623,12 @@ function rewriteFragment() {
     if (core.options.marker_id) {
         fragment = fragment + '&m=' + core.options.marker_id;
     }
+    core.fragment_params.forEach(function(param) {
+        var part = param();
+        if (part) {
+            fragment = fragment + '&' + part;
+        }
+    });
     // replaceState, so that panning the map does not fill up the browser history
     if (window.history && window.history.replaceState) {
         window.history.replaceState(null, '', '#' + fragment);
@@ -925,30 +1088,14 @@ function buildPathContent(path) {
             content = content + i18n('Bridge') + '<br>';
         }
         /*
-            A crossing is named for who may use it, so it is decided once in
-            crosssection.js and printed here, rather than falling through to the rules
-            for the path types it is tagged on.
+            What the way as a whole is - a crossing, a pedestrian zone, a cycle path, ... - named by
+            waynames.js, so the sidebar, the cross-section and the navigation say the same thing.
+            A plain footway or tram line is not marked for cycling, so it is not listed.
         */
-        var is_crossing = typeof crossSection != 'undefined' && crossSection.isCrossing(path.info);
-        if (is_crossing) {
-            content = content + i18n('Marking') + ': ' + crossSection.crossingLabel(path.info) + '<br>';
-        }
-        if (!is_crossing && path.info.highway != undefined && path.info.highway == 'cycleway') {
-            content = content + i18n('Marking') + ': ' + i18n('Segregated bike lane') + '<br>';
-        }
-        if (path.info.railway != undefined && path.info.railway == 'tram' && path.info.bicycle != undefined && path.info.bicycle) {
-            content = content + i18n('Marking') + ': ' + i18n('Tram & bicycle access') + '<br>';
-        }
-        // highway=pedestrian is a pedestrian zone, whether or not cycling is allowed in it
-        if (!is_crossing && path.info.highway != undefined && path.info.highway == 'pedestrian') {
-            content = content + i18n('Marking') + ': ' + i18n('Pedestrian zone') + '<br>';
-        }
-        if (!is_crossing && path.info.highway != undefined && path.info.highway != 'pedestrian' && path.info.cycleway == undefined && (path.info.highway == 'footway' || path.info.highway == 'path') && path.info.bicycle != undefined && path.info.bicycle) {
-            if ((path.info.motorcar != undefined && path.info.motorcar == 'no') || (path.info['motor_vehicle'] != undefined && path.info['motor_vehicle'] == 'no') && path.info.bicycle == 'yes') {
-                content = content + i18n('Marking') + ': ' + i18n('No motor vehicles') + '<br>';
-            } else if (path.info.bicycle == 'yes' || path.info.bicycle == 'designated') {
-                content = content + i18n('Marking') + ': ' + i18n('Shared-use path') + '<br>';
-            }
+        var way_kind = wayNames.kind(path.info);
+        var is_crossing = way_kind.indexOf('crossing_') == 0;
+        if (wayNames.isWholeWay(way_kind) && way_kind != 'footway' && way_kind != 'tram' && way_kind != 'steps') {
+            content = content + i18n('Marking') + ': ' + wayNames.label(way_kind) + '<br>';
         }
         if (!is_crossing && path.info['cycleway:lane'] != undefined && path.info['cycleway:lane']) {
             content = content + i18n('Marking') + ': ';
@@ -1710,6 +1857,113 @@ function removeLocation() {
     }
 }
 
+/*
+    A right-click on the map. A single action runs straight away, as the right-click did
+    before there was anything to choose from; more of them are offered in a small modal.
+*/
+function openContextMenu(e) {
+    closeContextMenu();
+    var latlng = e.latlng;
+    for (var i = 0; i < core.context_handlers.length; i++) {
+        if (core.context_handlers[i](latlng)) {
+            return;
+        }
+    }
+    var actions = core.context_actions.slice().sort(function(a, b) {
+        return (a.order || 0) - (b.order || 0);
+    });
+    if (!actions.length) {
+        return;
+    }
+    if (actions.length == 1) {
+        actions[0].run(latlng);
+        return;
+    }
+    showMenu(actions.map(function(action) {
+        return {
+            // in the language the page is in when the menu opens
+            label: typeof action.label == 'function' ? action.label() : action.label,
+            run: function() {
+                action.run(latlng);
+            }
+        };
+    }), e);
+}
+
+/*
+    A small menu of choices at the pointer: the right-click menu, the language selection.
+    @items [{label, active, run()}]
+    @e a map event with latlng, or anything with originalEvent.clientX and clientY
+*/
+function showMenu(items, e) {
+    closeContextMenu();
+    hideTooltip();
+    var menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.innerHTML = '<div class="context-menu-backdrop"></div><div class="context-menu-dialog" role="dialog" aria-modal="true"><div class="list-group list-group-flush"></div></div>';
+    items.forEach(function(item) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'list-group-item list-group-item-action' + (item.active ? ' active' : '');
+        if (item.active) {
+            button.setAttribute('aria-current', 'true');
+        }
+        button.textContent = item.label;
+        button.addEventListener('click', function() {
+            closeContextMenu();
+            item.run();
+        });
+        qs('.list-group', menu).appendChild(button);
+    });
+    var backdrop = qs('.context-menu-backdrop', menu);
+    backdrop.addEventListener('click', closeContextMenu);
+    backdrop.addEventListener('contextmenu', function(event) {
+        event.preventDefault();
+        closeContextMenu();
+    });
+    document.body.appendChild(menu);
+    core.context_menu = menu;
+    positionContextMenu(qs('.context-menu-dialog', menu), e);
+}
+
+/*
+    Opens where the map was right-clicked, like any context menu, and flips to the other
+    side of the pointer when there is not enough room left in the window.
+*/
+function positionContextMenu(dialog, e) {
+    var x;
+    var y;
+    if (e.originalEvent != undefined && e.originalEvent.clientX != undefined) {
+        x = e.originalEvent.clientX;
+        y = e.originalEvent.clientY;
+    } else {
+        var rect = map.getContainer().getBoundingClientRect();
+        var point = map.latLngToContainerPoint(e.latlng);
+        x = rect.left + point.x;
+        y = rect.top + point.y;
+    }
+    var margin = 8;
+    var width = dialog.offsetWidth;
+    var height = dialog.offsetHeight;
+    var left = x;
+    var top = y;
+    if (left + width > window.innerWidth - margin) {
+        left = x - width;
+    }
+    if (top + height > window.innerHeight - margin) {
+        top = y - height;
+    }
+    dialog.style.left = Math.max(margin, left) + 'px';
+    dialog.style.top = Math.max(margin, top) + 'px';
+}
+
+function closeContextMenu() {
+    if (core.context_menu != null && core.context_menu.parentNode) {
+        core.context_menu.parentNode.removeChild(core.context_menu);
+    }
+    core.context_menu = null;
+}
+
 // e or force @array options lat, lng
 function createMarker(e, options) {
     if (core.editable_marker) {
@@ -1734,6 +1988,10 @@ function createMarker(e, options) {
     if (form == null) {
         return;
     }
+    // the types are the config's names, so they follow the page's language like the legend
+    qsa('select[name=type] option', form).forEach(function(option) {
+        option.textContent = translateConfigText(option.textContent);
+    });
     setFieldValue(form, 'input[name=lat]', lat);
     setFieldValue(form, 'input[name=lon]', lng);
     if (orig_id) {
@@ -1837,23 +2095,9 @@ function toggleSidebarCheck(id, type) {
     });
 }
 
+// the words for a cycling tag value, shared with the cross-section and the navigation (waynames.js)
 function describeBicycleInfrastructure(infrastructure_type) {
-    if (infrastructure_type.indexOf('advisory') != -1) {
-        return i18n('Advisory');
-    } else if (infrastructure_type.indexOf('shared_lane') != -1) {
-        return i18n('Sharrows');
-    } else if (infrastructure_type.indexOf('share_busway') != -1) {
-        return i18n('Bus & bike lane');
-    } else if (infrastructure_type.indexOf('lane') != -1) {
-        return i18n('Bike lane');
-    } else if (infrastructure_type.indexOf('track') != -1) {
-        return i18n('Bike track');
-    } else if (infrastructure_type.indexOf('opposite') != -1 || infrastructure_type.indexOf('opposite_lane') != -1) {
-        return i18n('Contraflow');
-    } else if (infrastructure_type.indexOf('crossing') != -1) {
-        return i18n('Crossing');
-    }
-    return '';
+    return wayNames.markingLabel(infrastructure_type);
 }
 
 function setCookie(cname, cvalue, exdays) {
@@ -1927,6 +2171,205 @@ function openSidebar(content) {
         map.removeLayer(core.editable_marker);
     }
     map.invalidateSize();
+}
+
+/*
+    Languages. The page loads the translation of the configured language; another one is loaded
+    on demand from public/translations/, and every word on the page that came from a translation
+    is written again: button titles (data-i18n-title), texts (data-i18n), the open sidebar and
+    whatever a feature redraws through core.language_handlers. Texts from the map config, like
+    the intro and the layer names, are the city's own and stay as they are.
+*/
+function initLanguage() {
+    // the config's own texts may have a translation for the configured language too
+    translateLayersControl();
+    var stored = null;
+    try {
+        stored = window.localStorage.getItem('language');
+    } catch (error) {
+        stored = null;
+    }
+    if (stored && stored != core.config.language) {
+        switchLanguage(stored, false);
+    }
+}
+
+// @remember keeps the choice for the next visit
+function switchLanguage(code, remember) {
+    if (core.languages.indexOf(code) == -1) {
+        return;
+    }
+    if (remember) {
+        try {
+            window.localStorage.setItem('language', code);
+        } catch (error) {
+            // private windows and blocked storage: the switch still happens, just not remembered
+        }
+    }
+    if (code == core.config.language) {
+        return;
+    }
+    if (core.default_language == undefined) {
+        core.default_language = core.config.language;
+    }
+    var script = document.createElement('script');
+    script.src = core.storage_path + 'translations/' + code + '.js';
+    script.onload = function() {
+        script.parentNode.removeChild(script);
+        i18n.translator.reset();
+        i18n.translator.add(translation);
+        core.config.language = code;
+        document.documentElement.setAttribute('lang', code);
+        refreshTranslations();
+    };
+    document.head.appendChild(script);
+}
+
+function refreshTranslations() {
+    hideTooltip();
+    closeContextMenu();
+    if (typeof hideCrossSection == 'function') {
+        hideCrossSection();
+    }
+    // dates are formatted in the page's language
+    core.date_formatter = undefined;
+    qsa('[data-i18n-title]').forEach(function(element) {
+        element.setAttribute('title', i18n(element.getAttribute('data-i18n-title')));
+        element.removeAttribute('data-original-title');
+    });
+    qsa('[data-i18n]').forEach(function(element) {
+        element.textContent = i18n(element.getAttribute('data-i18n'));
+    });
+    qsa('.language-code').forEach(function(element) {
+        element.textContent = core.config.language.toUpperCase();
+    });
+    // the sidebar texts of markers and paths are kept once built, in the language they were built in
+    [core.markers, core.paths].forEach(function(objects) {
+        for (var id in objects) {
+            if (objects[id] != undefined && objects[id].options != undefined) {
+                delete objects[id].options.content;
+            }
+        }
+    });
+    var redrawn = false;
+    core.language_handlers.forEach(function(handler) {
+        if (handler(core.config.language)) {
+            redrawn = true;
+        }
+    });
+    translateLayersControl();
+    // an open marker form: its types are the config's names, the template keeps them as the config writes them
+    var template_options = qsa('#form select[name=type] option');
+    qsa('#sidebar-content select[name=type] option').forEach(function(option) {
+        template_options.forEach(function(original) {
+            if (original.value == option.value) {
+                option.textContent = translateConfigText(original.textContent);
+            }
+        });
+    });
+    if (!redrawn && qs('#sidebar').style.display == 'block' && qs('#sidebar-content .help-content') != null) {
+        openHelp(introContent());
+        return;
+    }
+    // a marker or path open in the sidebar is written again
+    if (!redrawn && qs('#sidebar').style.display == 'block' && qs('#sidebar-content .share') != null) {
+        if (core.options.marker_id != undefined && core.markers[core.options.marker_id] != undefined) {
+            qs('#sidebar-content').innerHTML = getMarkerContent(core.options.marker_id);
+        } else if (core.options.path_id != undefined && getPathContent(core.options.path_id)) {
+            qs('#sidebar-content').innerHTML = getPathContent(core.options.path_id);
+        }
+    }
+}
+
+/*
+    The city's own texts - layer names with their legend, type names - in the language the page is
+    in, from the config's translations (map.translations.<language>, keyed by the text as the config
+    writes it). Only the words between the markup are looked up, so swatches, images and line breaks
+    stay; a text without a translation stays as the config has it.
+*/
+function translateConfigText(html) {
+    if (html == undefined) {
+        return html;
+    }
+    var all = core.config.translations;
+    var words = all != undefined && all[core.config.language] != undefined ? all[core.config.language] : {};
+    return String(html).split(/(<[^>]*>)/).map(function(part) {
+        if (part.charAt(0) == '<') {
+            return part;
+        }
+        var text = part.trim();
+        if (!text || words[text] == undefined) {
+            return part;
+        }
+        return part.replace(text, words[text]);
+    }).join('');
+}
+
+// the intro in the language the page is in; map.intro is one text, or one per language
+function introContent() {
+    var intro = core.config.intro;
+    if (intro == undefined || typeof intro != 'object') {
+        return intro || '';
+    }
+    var keys = Object.keys(intro);
+    return intro[core.config.language] || intro[core.default_language] || (keys.length ? intro[keys[0]] : '');
+}
+
+// the layers control's names written again in the page's language, keeping its state and close button
+function translateLayersControl() {
+    var control = core.layers_control;
+    if (control == undefined || !Array.isArray(control._layers) || typeof control._update != 'function') {
+        return;
+    }
+    control._layers.forEach(function(entry) {
+        if (entry.original_name == undefined) {
+            entry.original_name = entry.name;
+        }
+        entry.name = translateConfigText(entry.original_name);
+    });
+    control._update();
+}
+
+// the language's own name for itself, "Slovenčina", from the browser; the code where it does not know
+function languageName(code) {
+    try {
+        if (typeof Intl != 'undefined' && Intl.DisplayNames != undefined) {
+            var name = new Intl.DisplayNames([code], {type: 'language'}).of(code);
+            if (name && name != code) {
+                return name.charAt(0).toLocaleUpperCase(code) + name.slice(1);
+            }
+        }
+    } catch (error) {
+        // an unknown code
+    }
+    return code.toUpperCase();
+}
+
+// the language button's menu, opened beside the button like the right-click menu
+function openLanguageMenu(button) {
+    var rect = button.getBoundingClientRect();
+    showMenu(core.languages.map(function(code) {
+        return {
+            label: languageName(code) + ' (' + code.toUpperCase() + ')',
+            active: code == core.config.language,
+            run: function() {
+                switchLanguage(code, true);
+            }
+        };
+    }), {originalEvent: {clientX: rect.right, clientY: rect.top}});
+}
+
+// the intro and the help button show the same text, marked so the button can tell it is already open
+function openHelp(content) {
+    openSidebar('<div class="help-content">' + content + '</div>');
+}
+
+function toggleHelp(content) {
+    if (qs('#sidebar').style.display == 'block' && qs('#sidebar-content .help-content') != null) {
+        closeSidebar();
+        return;
+    }
+    openHelp(content);
 }
 
 function closeSidebar() {

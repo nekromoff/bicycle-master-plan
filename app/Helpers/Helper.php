@@ -115,17 +115,34 @@ class Helper
         }
     }
 
+    /**
+     * The intro in the map's own language. map.intro is one text, or one per language
+     * (['sk' => '...', 'en' => '...']); the page switches between them with introContent().
+     */
+    public static function intro(?string $language = null): string
+    {
+        $intro = config('map.intro');
+        if (! is_array($intro)) {
+            return (string) $intro;
+        }
+        $language = $language ?? config('map.language');
+
+        return (string) ($intro[$language] ?? reset($intro));
+    }
+
     public static function jsSetupUI()
     {
-        $code = 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Help")+"\">❓</span>", function() { openSidebar("' . addslashes(config('map.intro')) . '"); }).addTo(map); ';
+        $code = 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"right\" data-i18n-title=\"Help\" title=\""+ i18n("Help")+"\">❓</span>", function() { toggleHelp(introContent()); }).addTo(map); ';
+        // beside help, the language the page is in, when there is more than one to choose from
+        $code .= 'if (core.languages.length > 1) { var language_button = L.easyButton("<span class=\"language-code\" data-toggle=\"tooltip\" data-placement=\"right\" data-i18n-title=\"Language\" title=\""+ i18n("Language")+"\">"+ core.config.language.toUpperCase() +"</span>", function(control) { openLanguageMenu(control.button); }).addTo(map); var language_bar = language_button.button.parentNode; language_bar.classList.add("language-control"); if (language_bar.previousElementSibling) { language_bar.previousElementSibling.classList.add("language-joined"); } } ';
         if (config('map.admins')) {
             $user = Auth::user();
             if (!$user) {
-                $code .= 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Login")+"\">🔑</span>", function() { window.location.assign("' . route('login', ['provider' => 'google']) . '") }).addTo(map);';
+                $code .= 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"right\" data-i18n-title=\"Login\" title=\""+ i18n("Login")+"\">🔑</span>", function() { window.location.assign("' . route('login', ['provider' => 'google']) . '") }, {position: "bottomleft"}).addTo(map);';
             } elseif ($user and in_array($user->email, config('map.admins')) === true) {
-                $code .= 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\""+ i18n("Administration")+"\">🖉</span>", function() { window.location.assign("' . route('admin') . '") }).addTo(map);';
+                $code .= 'L.easyButton("<span data-toggle=\"tooltip\" data-placement=\"right\" data-i18n-title=\"Administration\" title=\""+ i18n("Administration")+"\">🖉</span>", function() { window.location.assign("' . route('admin') . '") }, {position: "bottomleft"}).addTo(map);';
             }
-            echo $code;
         }
+        echo $code;
     }
 }

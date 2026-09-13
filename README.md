@@ -9,6 +9,12 @@ It supports the following sources of data:
 - custom data (from rows in Google Sheets; markers only)
 - data provided by users via form (if editable layer enabled; markers)
 
+Features on the map:
+- layers with legends, clustering and CSS styling generated from OSM tags
+- street cross-sections drawn from OSM tags when hovering a path
+- *optional* A to B navigation for bicycles over the map's paths, with turn by turn directions and share links (see [Navigation](#navigation-a-to-b))
+- interface in several languages, switchable on the map without reloading (see [Languages and translations](#languages-and-translations))
+
 Built with:
 - Laravel (PHP)
 - Leaflet (JS)
@@ -24,31 +30,35 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
 5. check/set `storage/app/` permissions, if necessary (755 for writing)
 6. create `storage/app/public/uploads/` directory (755), if an editable layer is enabled
 7. create `storage/app/osm/` directory (755), if OSM layer download is enabled (see below)
-8. symlink `public/storage/` (TARGET) to `storage/app/public/uploads/` (SOURCE), if an editable layer is enabled (see https://laravel.com/docs/7.x/filesystem#the-public-disk)
+8. symlink `public/storage/` (TARGET) to `storage/app/public/uploads/` (SOURCE), if an editable layer is enabled (see https://laravel.com/docs/7.x/filesystem#the-public-disk)
 
 ## Configuration
 1. Edit `config/map.php`
     - Set basic info such as map name, language, bounding box, center and zoom
+        - `language` = the language the map opens in (two letter code, a file in `public/translations/`)
+        - `intro` = the help text shown on first visit and by the help button; one text, or one per language, e.g. `['sk' => '<h1>...</h1>', 'en' => '<h1>...</h1>']`
+        - *optional* `translations` = the map's own texts (layer names, legends, type names) in other languages, see [Languages and translations](#languages-and-translations)
     - Configure `layers`:
         - a base layer (usually a background map tile layer) is always `0` in config file
         - `type` = `path`, `marker`, `combined`
         - `name` = name of a layer (can contain HTML tags)
         - `class` = CSS class to be used to mark up layer items (markers / paths)
-        - `icon` = layer item icon (markers only) will be created from either `name` or `filename` in database
-        - *optional* `file` = OSM JSON file containing layer content (markers or paths/ways downloaded from OSM)
+        - `icon` = layer item icon (markers only) will be created from either `name` or `filename` in database
+        - *optional* `file` = OSM JSON file containing layer content (markers or paths/ways downloaded from OSM)
         - *optional* `cluster` = `true` for layers to group/cluster items/markers
         - *optional* `editable` = `true` for the user editable layer (user submitted items require admin approval, see below)
         - *optional* `types` = *array* a layer can contain multiple types of items such as different sets of markers etc.
-    - *optional* Configure OSM data/layers to download:
-        - `osm_server` = `https://lz4.overpass-api.de/api/interpreter` (use any OSM server)
+    - *optional* Configure OSM data/layers to download:
+        - `osm_server` = *array* of Overpass API servers, tried in order when one times out or fails, e.g. `['https://lz4.overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']`
         - `osm_data` = *array* of map layers with `file` parameter:
             - `file` = filename to save the file
             - `data` = overpass query to download OSM data, e.g. `[out:json]; (relation[network=lcn]({{bbox}}); ); out body; >; out skel qt;`, see https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_API_by_Example
+    - *optional* Configure `navigation` to enable A to B navigation, see [Navigation](#navigation-a-to-b)
     - *optional* Configure admin emails (see below on how to enable admin functionality):
         - `admins` = *array* of admin emails, e.g. ['someone@example.com', 'other@example.com']
 2. *optional* If you enable an editable layer, user submitted items require admin approval to be displayed. Set `approved` column to `1` in database. If user marked an item as `outdated` (`1` in database), set `deleted` to `1` in database to hide it from a map.
 3. *optional* If you want to display bikeshare data on your map, see file `config/bikeshare.example.php` for details on how to enable data download (public bikeshare API endpoint required)
-4. *optional* If you want to display additional custom data/markers on your map from **Google Sheets**, see `config/google.example.php` file on how to configure it (you will need to create a project with service access with `client_id` and JSON `keyfile` at https://console.developers.google.com)
+4. *optional* If you want to display additional custom data/markers on your map from **Google Sheets**, see `config/google.example.php` file on how to configure it (you will need to create a project with service access with `client_id` and JSON `keyfile` at https://console.developers.google.com)
 5. *optional* If you require admin functionality, you will need to obtain client ID + client secret from OAuth2 credentials at https://console.developers.google.com. Once you have these, edit `config/services.php` and add the following lines:
 ```
 'google'    => [
@@ -61,7 +71,7 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
 ## Customization / map style
 All standard map tiles providers are supported.
 
-Open `public/css/main.css` to customize layer markers or styles of paths etc. SVG properties (`fill`, `stroke` etc.) need to be used for styling paths/OSM ways, see https://css-tricks.com/svg-properties-and-css/.
+Open `public/css/main.css` to customize layer markers or styles of paths etc. SVG properties (`fill`, `stroke` etc.) need to be used for styling paths/OSM ways, see https://css-tricks.com/svg-properties-and-css/.
 
 Example of path classes created from OpenStreetMap data (bicycle lane):
 ```
@@ -75,13 +85,159 @@ class="marker access-private amenity-bicycle_parking covered-yes surveillance-ye
 
 Any combinations of keys / values can be easily styled for your purposes by using standardized CSS.
 
+City specific styles go to the stylesheet set by `stylesheet` in `config/map.php` (e.g. `public/css/cities/your-city.css`). Navigation has its own `public/css/navigation.css`, loaded only when navigation is enabled.
+
+## Languages and translations
+The interface texts live in `public/translations/<code>.js`, one file per language (e.g. `en.js`, `sk.js`). The map opens in `language` from `config/map.php`.
+
+- **Switching language:** when there is more than one translation file, a button next to the help button shows the current language code. Clicking it lists the available languages, and the choice is applied immediately without reloading: buttons, tooltips, menus, the open sidebar and the navigation. The choice is remembered in the visitor's browser.
+- **Adding a language:** copy `public/translations/en.js` to `public/translations/<code>.js` and translate the values. The language appears in the language menu automatically. Keep the keys the same in every file.
+- **The map's own texts:** layer names, legends and type names are written in `config/map.php` in the map's language, so they are translated in the config, keyed by the text exactly as the config writes it. Only the words between the markup are translated, so swatches, images and line breaks stay. A text without a translation stays as it is.
+```
+'translations' => [
+    'en' => [
+        'Existujúce cyklotrasy' => 'Existing cycle routes',
+        'Oddelené' => 'Separated',
+        'V premávke' => 'In traffic',
+    ],
+],
+```
+- **The intro:** give one text per language, e.g. `'intro' => ['sk' => '<h1>...</h1>', 'en' => '<h1>...</h1>']`. A single text is shown in every language.
+
+What a way is called (e.g. *Pedestrian zone*, *Segregated bike lane*, *Pedestrian crossing*) is decided in one place, `public/js/waynames.js`, and shared by the sidebar, the street cross-section and the navigation's directions, so they always use the same words.
+
+## Navigation (A to B)
+*Optional.* Routes a bicycle from A to B over the paths of one path layer, helped by ordinary roads and footpaths where the layer has none. The map runs as before when navigation is not configured.
+
+### Enabling
+Add a `navigation` block to `config/map.php`. `config/map.example.php` contains a complete, commented setup that can be uncommented and adjusted. In short:
+1. A path layer to route over, e.g. layer `5` with `'file' => 'ways.json'`. `navigation.layer` is its id.
+2. *optional, recommended* Ordinary roads and footpaths between the paths: an `osm_data` entry with `'file' => 'roads.json'` (the Overpass query is in the example config) and `'support' => 'roads.json'` in `navigation`. These roads are only used for routing, never drawn. With them, set `gap_distance` to about `20`; without them, about `60`.
+3. Run `/refresh/osm` (see [Automatic data update](#automatic-data-update)) so that the files are downloaded.
+
+### Using it
+- Click the navigation button (top left) and click the map twice for A and B, or right-click the map and choose *Navigate from here*; the next right-click sets B.
+- Existing markers can be clicked to be used as A or B.
+- Drag A or B to change the route; it is recalculated while dragging.
+- The panel shows the length and time, how much of the route is on separated cycle routes, in traffic and on footways, and turn by turn directions. Clicking a step zooms to it.
+- The route is kept in the address bar (`n=` parameter), so copying the address or using the share button shares the route.
+
+### Configuration reference
+Every key is optional; missing keys take the defaults in `public/js/navigation.js` (`DEFAULTS`). Rules are evaluated in the visitor's browser, so after changing them only reload the map (run `php artisan config:clear` if the config is cached). `/refresh/osm` is needed only when the downloaded data or the `support` file changes.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `layer` | `5` | id of the path layer to route over |
+| `speed` | `13` | riding speed in km/h, for the time estimate |
+| `walking_speed` | `4` | speed in km/h on ways marked `walk` |
+| `respect_oneway` | `true` | follow one-way streets (see [Direction](#direction-of-travel)) |
+| `snap_distance` | `250` | how many metres from the nearest way a clicked point may be; further away, "too far from the paths" is shown |
+| `support` | none | `osm_data` file with ordinary roads and footpaths, e.g. `'roads.json'` |
+| `gap_distance` | `60` | unconnected ways closer than this (metres) are linked by a straight line; about `20` with `support`, about `60` without |
+| `gap_factor` | `4` | cost factor of such a link, and of getting from a clicked point to the nearest way |
+| `no_gaps` | bridges | ways that may only be linked at their first and last point (see [Gaps](#gaps-and-clicked-points)) |
+| `default_factor` | `1.5` | factor of a way that no rule matches |
+| `legend` | see example | which entry of the layer's legend (its swatch class) marks each kind of route stretch in the directions |
+| `rules`, `modifiers` | see example | score the ways of the navigation layer |
+| `support_rules`, `support_modifiers` | see example | score the roads and footpaths from `support` |
+| `cell` | `50` | spatial index cell size in metres, no need to change |
+
+### How a way is scored
+Every way gets a **cost per metre**, and the route with the lowest total cost wins.
+
+1. The rules are tried **from top to bottom**. The **first rule whose `match` holds** sets the `factor` (and `walk` / `infrastructure`). Later rules are not looked at. When no rule matches, `default_factor` is used.
+2. Then **every** modifier whose `match` holds multiplies the factor. Modifiers do not stop at the first match, so several can apply.
+3. A way is left out of the network (**impassable**) when the rule's factor is `false`, or when any matching modifier has `factor => false`.
+4. Cost of the way = its length × the final factor.
+
+What the factor means: `1` is ideal. A factor of `2` makes a way count twice its length, so the route will take a detour of up to twice the length to avoid it. Factors below `1` are allowed but make the route prefer such ways even over a shorter, ideal one.
+
+**Worked example.** A 200 m residential road with `surface=gravel`, scored by the support rules: the first matching rule is `highway=residential` → factor `2`; the surface modifier matches → `2 × 1.5 = 3`; cost `200 × 3 = 600`. A 450 m cycle path (`highway=cycleway`, factor `1`) costs `450`, so the route takes the longer cycle path.
+
+A rule or modifier:
+```
+['match' => ['highway' => ['footway', 'path'], 'bicycle' => false], 'factor' => 1.7, 'walk' => true, 'infrastructure' => false]
+```
+- `match` - the conditions, **all** of which must hold. `[]` (empty) always matches, which makes a catch-all last rule.
+- `factor` - a number greater than `0`, or `false` for impassable.
+- `walk` - `true` counts the way at `walking_speed` (steps, dismount zones, footways where cycling is not allowed). A modifier with `walk => true` makes the way walked as well.
+- `infrastructure` - `true` counts the way as cycling infrastructure (rules only).
+
+### Match conditions
+Each key of `match` is an OSM tag of the way, or a `side:` channel. Values:
+
+| Written as | Holds when | Example |
+|---|---|---|
+| `'value'` | the tag has exactly this value | `'highway' => 'cycleway'` |
+| `['a', 'b']` | the tag has any of these values | `'surface' => ['gravel', 'dirt']` |
+| `true` | the tag is present, whatever its value | `'lcn' => true` |
+| `false` | the tag is **absent** | `'bicycle' => false` (no bicycle tag at all) |
+
+- Values are compared as **text**: write `'maxspeed' => ['60', '70']`, not numbers. A value like `50 mph` or `RO:urban` matches only if listed exactly.
+- `false` in `match` (tag absent) is not the same as `'factor' => false` (impassable).
+- **Order matters.** Put impassable rules first, specific rules before general ones, and the catch-all `['match' => [], ...]` last. For example, `highway=cycleway` has to come before `bicycle=dismount`, or cycle paths tagged `bicycle=dismount` would be walked.
+
+**Side channels** (`side:form`, `side:direction`, `side:separation`, ...) match the cycling infrastructure the server resolves for each side of a street from its `cycleway*` tags (`app/Services/CyclewayNormalizer.php`). A side condition holds when **either side** of the street (or the path itself) has one of the values. The values are:
+
+| Channel | Values |
+|---|---|
+| `side:form` | `lane`, `track`, `shared_lane`, `share_busway`, `shoulder`, `sidepath`, `asl`, `crossing` on streets; `track` (a `highway=cycleway`) or `tolerated` (a footway, path or pedestrian zone with `bicycle=yes/designated/official`) on standalone paths. Old values are normalized: `opposite_lane` and `opposite` → `lane`, `opposite_track` → `track`, `shared_busway` → `share_busway`, `yes` → `lane` |
+| `side:direction` | `forward`, `backward`, `two_way` (relative to the way's direction) |
+| `side:separation` | `kerb`, `buffer`, `paint` (`none` never matches) |
+| `side:lane` | the `cycleway:*:lane` value, e.g. `advisory`, `exclusive` |
+| `side:transit` | `bus`, `tram` (on `share_busway`) |
+| `side:surface`, `side:width` | the cycleway's own `surface` / `width` |
+
+**Which tags a rule can see**
+- Ways of the navigation layer: all their OSM tags, plus side channels.
+- Roads and footpaths from `support`: **only** these tags are kept (`app/Services/NavigationSupport.php`): `highway`, `name`, `ref`, `service`, `oneway`, `oneway:bicycle`, `junction`, `access`, `vehicle`, `bicycle`, `foot`, `footway`, `segregated`, `motor_vehicle`, `motorcar`, `motorroad`, `surface`, `maxspeed`, `bridge`, `tunnel`, `railway`, `embedded_rails`, and every key starting with `lanes`, `sidewalk`, `parking` or `cycleway`. A support rule on any other tag never matches. **Side channels are not resolved for support roads**, so `side:` conditions never match in `support_rules` - match the `cycleway*` tags directly there.
+- Ways the navigation layer already contains are left out of `support`, so every way is scored once, by `rules`.
+
+**Recommended structure of `support_rules`** (as in `config/map.example.php`):
+1. what a bicycle may not use at all: motorways and trunk roads, `motorroad=yes`, `bicycle=no|use_sidepath|private`, `access`/`vehicle` `private|no` without a `bicycle` tag, fast arterials (`maxspeed` 60 and more, or `foot=no`);
+2. what is walked: `bicycle=dismount`, steps, footways without cycling allowed;
+3. ordinary roads, cheapest to dearest: `living_street`, `residential`, `service`/`unclassified`/`track`, `tertiary`, `secondary`, `primary`;
+4. a catch-all.
+
+Road factors should stay above the factors of the layer's cycle infrastructure, otherwise the route leaves the cycle paths for roads.
+
+### Direction of travel
+With `respect_oneway` a way is ridden only in its allowed direction:
+- `oneway=yes|1|true` - forward only; `oneway=-1|reverse` - backward only; `junction=roundabout` without `oneway` counts as `oneway=yes`;
+- `oneway:bicycle=no` - both directions, whatever else is tagged; `oneway:bicycle=yes` - forward only;
+- a side channel with `direction` `backward` or `two_way` (a contraflow lane) opens that direction again.
+
+### Gaps and clicked points
+- **Gaps.** OSM ways often end a few metres from each other. After the network is built, each point is linked by a straight line to the nearest point of every *other disconnected part* of the network within `gap_distance`, and a dead end is also linked to the nearest point of another way close by. A link costs its length × `gap_factor`, is drawn dashed and counted as *In traffic*. Only the nearest point of each part is linked, so a parallel path does not get a ladder of links.
+- **`no_gaps`** uses the same `match` syntax. A matching way (by default bridges) accepts links only at its first and last point, so a route cannot jump between a bridge and the street below it.
+- **Clicked points** join the network at the nearest way within `snap_distance`, and also at other ways up to 30 m further (up to 8 of them), so a click between two parallel ways can use either. Getting from the click to the way costs the distance × `gap_factor`.
+
+### How a route is shown
+- The route on the map is **blue** on separated cycle routes and footways, **orange** in traffic (roads without cycle infrastructure, tram lines and gaps).
+- The panel sums the route up in three lines: *Separated cycle routes* (including paths for mountain bikes), *In traffic*, *Usable (footways)*.
+- Each turn by turn step has a bar in the colour of the layer's legend entry it mostly is, picked by `legend`:
+    - `separated` - cycle paths and crossings, cycle tracks
+    - `traffic` - cycling in traffic on a way of the layer: advisory lanes, lanes on 50 km/h streets without a track, shared and bus lanes
+    - `recommended` - `lcn=provisional|proposed`
+    - `footway` - footways and walked ways
+    - `mtb` - `mtb:scale`, unpaved cycle paths, tracks with cycling allowed
+    - Ways with nothing for cycling get an orange bar.
+- Consecutive straight-on steps on the same street that differ only in the kind of way are merged into one, e.g. **Mlynská** (*Road*, *Bike lane*). The names are the same ones the sidebar and the cross-section use (`public/js/waynames.js`).
+
+### Tips
+- To avoid a way completely, use `'factor' => false`. To avoid it only when there is a reasonable alternative, use a high factor such as `5`.
+- To check a rule, open the way on the map: the sidebar lists all its tags, which is what `match` compares against.
+- To see how rules change a route, reload the map after editing the config and drag A or B; the route is recalculated while dragging.
+
+The graph is built in the browser. With roads and footpaths for a whole city the roads file is large (Bratislava: about 13 MB, 3 MB compressed), so the first route takes a few seconds on slower phones.
+
 ## Automatic data update
 Setup cron to call refresh URLs daily (or other interval), e.g.:
 ```
 15 0 * * * /usr/bin/curl --silent https://example.com/public/refresh/osm >/dev/null 2>&1
 ```
 Update endpoints are:
-- OSM data: `/refresh/osm`
+- OSM data: `/refresh/osm` (also rebuilds the compact roads file for navigation, served at `/data/navigation`)
 - Bikeshare feed data: `/refresh/bikeshare`
 - Google sheets data: `/refresh/googlesheet`
 - Feed data: `/refresh/feed`
@@ -119,8 +275,8 @@ Update endpoints are:
 ```
 2. Add OSM instructions for fetching data in `config/map.php`. Change `network` operator name to your city's one (e.g. `Slovnaft BAjk` for Bratislava):
 ```
-// OSM data to fetch
-'osm_server'     => 'https://lz4.overpass-api.de/api/interpreter',
+// OSM data to fetch
+'osm_server'     => ['https://lz4.overpass-api.de/api/interpreter'],
 'osm_data'       => [
     [
         'file' => 'ways.json',
@@ -133,7 +289,7 @@ Update endpoints are:
 ],
 ```
 
-### Bicycle parking stands from OpenStreeMap
+### Bicycle parking stands from OpenStreetMap
 1. Edit `config/map.php` and add a layer (change number `2` to suit your purposes) to the `layers`:
 ```
 2   => [
@@ -145,7 +301,7 @@ Update endpoints are:
 ```
 2. Add OSM instructions for fetching data in `config/map.php`:
 ```
-'osm_server'     => 'https://lz4.overpass-api.de/api/interpreter',
+'osm_server'     => ['https://lz4.overpass-api.de/api/interpreter'],
 'osm_data'       => [
     [
         'file' => 'parking.json',

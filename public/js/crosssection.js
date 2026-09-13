@@ -22,72 +22,18 @@ var crossSection = (function() {
         unknown: 'url(#xs-hatch)'
     };
 
-    /*
-        A crossing is tagged on the way that carries it rather than as a value of its
-        own, and in several places at once - footway=crossing, cycleway=crossing, or
-        path=crossing - so all of them are checked.
-    */
-    function isCrossing(tags) {
-        return tags.footway == 'crossing'
-            || tags.cycleway == 'crossing'
-            || tags.path == 'crossing'
-            || tags['cycleway:left'] == 'crossing'
-            || tags['cycleway:right'] == 'crossing'
-            || tags['cycleway:both'] == 'crossing';
-    }
-
-    /* who the crossing is for, which is what its Slovak name turns on */
-    function crossingUsers(tags) {
-        var bicycle = tags.bicycle;
-        var foot = tags.foot;
-        var rides = bicycle == 'designated' || bicycle == 'yes' || tags.cycleway == 'crossing'
-            || tags['cycleway:left'] == 'crossing' || tags['cycleway:right'] == 'crossing'
-            || tags['cycleway:both'] == 'crossing' || tags.highway == 'cycleway';
-        var walks = foot == 'designated' || foot == 'yes' || tags.footway == 'crossing'
-            || tags.highway == 'footway' || tags.highway == 'path' || tags.highway == 'pedestrian';
-        if (foot == 'no') {
-            walks = false;
-        }
-        if (bicycle == 'no' || bicycle == 'dismount') {
-            rides = false;
-        }
-        return {rides: rides, walks: walks};
-    }
-
-    function crossingLabel(tags) {
-        var users = crossingUsers(tags);
-        if (users.rides && users.walks) {
-            return i18n('Pedestrian and cycle crossing');
-        }
-        if (users.rides) {
-            return i18n('Cycle crossing');
-        }
-        return i18n('Pedestrian crossing');
-    }
+    // what a way is called is shared with the map's sidebar and the navigation, see waynames.js
+    var isCrossing = wayNames.isCrossing;
+    var crossingUsers = wayNames.crossingUsers;
+    var crossingLabel = wayNames.crossingLabel;
+    var formLabel = wayNames.formLabel;
 
     /*
         What a way that is itself the infrastructure is called. Shared by the heading and
         by the slot labels, so the two always say the same thing.
     */
     function pathLabel(tags) {
-        if (isCrossing(tags)) {
-            return crossingLabel(tags);
-        }
-        if (tags.railway == 'tram') {
-            return (tags.bicycle == 'yes' || tags.bicycle == 'designated')
-                ? i18n('Tram & bicycle access') : i18n('Tram line');
-        }
-        if (tags.highway == 'pedestrian') {
-            return i18n('Pedestrian zone');
-        }
-        var riders = tags.bicycle == 'yes' || tags.bicycle == 'designated';
-        if (tags.highway == 'cycleway') {
-            return i18n('Segregated bike lane');
-        }
-        if (riders && (tags.motorcar == 'no' || (tags['motor_vehicle'] == 'no' && tags.bicycle == 'yes'))) {
-            return i18n('No motor vehicles');
-        }
-        return riders ? i18n('Shared-use path') : i18n('Footway');
+        return wayNames.label(wayNames.kind(tags));
     }
 
     /*
@@ -413,25 +359,6 @@ var crossSection = (function() {
             return undefined;
         }
         return side.channels[name];
-    }
-
-    /*
-        The same words the sidebar already uses for these tags, so the drawing and the
-        description below it never call the same thing two different names.
-    */
-    function formLabel(form) {
-        var labels = {
-            lane: i18n('Bike lane'),
-            track: i18n('Segregated bike lane'),
-            shared_lane: i18n('Road'),
-            share_busway: i18n('Bus & bike lane'),
-            shoulder: i18n('Shoulder'),
-            asl: i18n('Advanced stop line'),
-            crossing: i18n('Crossing'),
-            sidepath: i18n('Parallel path'),
-            tolerated: i18n('Cycling allowed')
-        };
-        return labels[form] || form;
     }
 
     /*
@@ -822,13 +749,8 @@ var crossSection = (function() {
         if (tags.ref) {
             return i18n('Route') + ' ' + tags.ref;
         }
-        var by_highway = {
-            service: i18n('Service road'),
-            track: i18n('Track'),
-            steps: i18n('Steps')
-        };
-        if (by_highway[tags.highway]) {
-            return by_highway[tags.highway];
+        if (tags.highway == 'service' || tags.highway == 'track' || tags.highway == 'steps') {
+            return wayNames.label(tags.highway);
         }
         return i18n('Unnamed street');
     }

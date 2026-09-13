@@ -130,7 +130,7 @@
                     }
                 });
             });
-            L.easyButton('<span data-toggle="tooltip" data-placement="top" title="'+ i18n("Map")+'">↑</span>', function() { window.location.assign("{{route('map')}}") }).addTo(map);
+            L.easyButton('<span data-toggle="tooltip" data-placement="right" title="'+ i18n("Map")+'">↑</span>', function() { window.location.assign("{{route('map')}}") }).addTo(map);
         </script>
     </body>
 </html>

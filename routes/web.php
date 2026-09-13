@@ -9,6 +9,7 @@ Route::get('/issues', [MasterplanController::class, 'issues'])->name('issues');
 
 Route::prefix('data')->middleware('cache.headers:public;max_age=86400;immutable;etag')->group(function () {
     Route::get('layer/{id}/{type?}', [MasterplanController::class, 'getLayer'])->name('data.layer');
+    Route::get('navigation', [MasterplanController::class, 'getNavigationSupport'])->name('data.navigation');
     Route::post('save', [MasterplanController::class, 'saveData'])->name('data.save');
     Route::post('edit', [MasterplanController::class, 'editData'])->name('data.edit');
 });
