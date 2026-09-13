@@ -106,7 +106,7 @@ return [
 
         5 => [
             'type' => 'path',
-            'name' => 'Cycle routes<br><span class="cycleway-lane">━━━</span> Separated<br><span class="cycleway-shared_lane">━━━</span> In traffic<br><span class="lcn-provisional">• • • •</span> Recommended (unsigned)<br><span class="highway-pedestrian">━━━</span> Usable (footways)<br><span class="mtb-scale">━━━</span> Mountain bike',
+            'name' => 'Cycle routes<br><span class="cycleway-lane">━━━</span> Segregated<br><span class="cycleway-shared_lane">━━━</span> In traffic<br><span class="lcn-provisional">• • • •</span> Recommended (unsigned)<br><span class="highway-pedestrian">━━━</span> Usable (footways)<br><span class="mtb-scale">━━━</span> Mountain bike',
             'file' => 'ways.json',
         ],
 

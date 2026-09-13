@@ -108,7 +108,7 @@ translation = {
         "The start is too far from the paths": "The start is too far from the paths",
         "The destination is too far from the paths": "The destination is too far from the paths",
         "No route found": "No route found",
-        "Separated cycle routes": "Separated cycle routes",
+        "Separated cycle routes": "Segregated cycle routes",
         "In traffic": "In traffic",
         "Usable (footways)": "Usable (footways)",
         "Drag A or B to change the route": "Drag A or B to change the route",

@@ -97,7 +97,7 @@ The interface texts live in `public/translations/<code>.js`, one file per langua
 'translations' => [
     'en' => [
         'Existujúce cyklotrasy' => 'Existing cycle routes',
-        'Oddelené' => 'Separated',
+        'Oddelené' => 'Segregated',
         'V premávke' => 'In traffic',
     ],
 ],
@@ -119,7 +119,7 @@ Add a `navigation` block to `config/map.php`. `config/map.example.php` contains 
 - Click the navigation button (top left) and click the map twice for A and B, or right-click the map and choose *Navigate from here*; the next right-click sets B.
 - Existing markers can be clicked to be used as A or B.
 - Drag A or B to change the route; it is recalculated while dragging.
-- The panel shows the length and time, how much of the route is on separated cycle routes, in traffic and on footways, and turn by turn directions. Clicking a step zooms to it.
+- The panel shows the length and time, how much of the route is on segregated cycle routes, in traffic and on footways, and turn by turn directions. Clicking a step zooms to it.
 - The route is kept in the address bar (`n=` parameter), so copying the address or using the share button shares the route.
 
 ### How the route is found
@@ -229,8 +229,8 @@ With `respect_oneway` a way is ridden only in its allowed direction:
 - **Clicked points** join the network at the nearest way within `snap_distance`, and also at other ways up to 30 m further (up to 8 of them), so a click between two parallel ways can use either. Getting from the click to the way costs the distance × `gap_factor`.
 
 ### How a route is shown
-- The route on the map is **blue** on separated cycle routes and footways, **orange** in traffic (roads without cycle infrastructure, tram lines and gaps).
-- The panel sums the route up in three lines: *Separated cycle routes* (including paths for mountain bikes), *In traffic*, *Usable (footways)*.
+- The route on the map is **blue** on segregated cycle routes and footways, **orange** in traffic (roads without cycle infrastructure, tram lines and gaps).
+- The panel sums the route up in three lines: *Segregated cycle routes* (including paths for mountain bikes), *In traffic*, *Usable (footways)*.
 - Each turn by turn step has a bar in the colour of the layer's legend entry it mostly is, picked by `legend`:
     - `separated` - cycle paths and crossings, cycle tracks
     - `traffic` - cycling in traffic on a way of the layer: advisory lanes, lanes on 50 km/h streets without a track, shared and bus lanes
