@@ -122,6 +122,22 @@ Add a `navigation` block to `config/map.php`. `config/map.example.php` contains 
 - The panel shows the length and time, how much of the route is on separated cycle routes, in traffic and on footways, and turn by turn directions. Clicking a step zooms to it.
 - The route is kept in the address bar (`n=` parameter), so copying the address or using the share button shares the route.
 
+### How the route is found
+Everything runs in the visitor's browser (`public/js/navigation.js`); the server only serves the data. The router has no Leaflet dependency, so `buildGraph()` and `route()` can be run and tested in Node.
+
+1. **Loading.** When navigation is first switched on, the navigation layer's paths (`/data/layer/{id}`, the same cached file the map uses) and, with `support`, the compact roads file (`/data/navigation`) are downloaded. The roads file stores every point once and lets ways refer to it by index, and leaves out ways the layer already contains.
+2. **Building the graph** (`buildGraph()`, once per page):
+    - Every OSM point becomes a vertex. Points are identified by their coordinates rounded to 7 decimals, so a junction shared by a layer path and a road is one vertex and connects them.
+    - Every piece of a way between two points becomes an edge with its length and cost (length × factor, see [How a way is scored](#how-a-way-is-scored)). Impassable ways are left out. One-way ways get an edge in their allowed direction only ([Direction of travel](#direction-of-travel)).
+    - Coordinates are projected to metres around the map's first point, and edges and vertices are put in a grid of `cell` × `cell` metres, so nearby things are found without scanning the whole network.
+    - **Gaps** are bridged: connected parts of the network are found with a union-find, and nearby disconnected parts and dead ends get straight links costing length × `gap_factor` ([Gaps](#gaps-and-clicked-points)).
+3. **Joining A and B to the network** (`snap()`): the nearest edge within `snap_distance` is found in the grid, together with every other edge up to 30 m further (at most 8). A and B become two temporary vertices linked to the point on each of those edges, at a cost of the distance × `gap_factor`. Several candidates matter: when the nearest edge is a one-way street or a cut-off stretch, the route simply joins at the next one.
+4. **Searching** (`route()`): **A\*** (a Dijkstra search guided towards B) with a binary heap. The estimate of the remaining cost is the straight-line distance to B × the lowest factor in the network. It never overestimates, so the route found is the cheapest one, not just a good one, while far fewer vertices are explored than by plain Dijkstra. When B cannot be reached, *No route found* is shown.
+5. **Describing the route:**
+    - Each stretch is classified for the map colour (blue / orange), the three summary lines and the legend category of the steps ([How a route is shown](#how-a-route-is-shown)); length and time (`speed`, or `walking_speed` on walked ways) are summed.
+    - **Turn by turn steps**: consecutive stretches of the same street, or of the same kind of way where it has no name, become one step. Pieces under 15 m (gaps under 30 m) are folded into the step before, except crossings, steps and roundabouts; a crossing between two pieces of the same way disappears into it; straight-on steps differing only in the kind of way are merged. The turn is measured from the direction of travel 20 m before and 20 m after the junction: under 25° straight, under 60° slight, otherwise left or right. A roundabout counts its exits.
+6. **Recalculating.** Dragging A or B searches again in the already built graph, at most every 100 ms while moving and at least every 300 ms, so the route follows the pointer. The route is written to the address bar as a compact code of both points (relative to the map's `bounding_box`), which is read back when the link is opened.
+
 ### Configuration reference
 Every key is optional; missing keys take the defaults in `public/js/navigation.js` (`DEFAULTS`). Rules are evaluated in the visitor's browser, so after changing them only reload the map (run `php artisan config:clear` if the config is cached). `/refresh/osm` is needed only when the downloaded data or the `support` file changes.
 
