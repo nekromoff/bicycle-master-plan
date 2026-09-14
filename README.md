@@ -249,9 +249,9 @@ With `respect_oneway` a way is ridden only in its allowed direction:
 The graph is built in the browser. With roads and footpaths for a whole city the roads file is large (Bratislava: about 13 MB, 3 MB compressed), so the first route takes a few seconds on slower phones.
 
 ## Automatic data update
-Setup cron to call refresh URLs daily (or other interval), e.g.:
+The refresh URLs are protected: set a random secret as `MAP_REFRESH_TOKEN` in `.env` and pass it as `?token=`; a logged in administrator can open them without it. Then setup cron to call them daily (or other interval), e.g.:
 ```
-15 0 * * * /usr/bin/curl --silent https://example.com/public/refresh/osm >/dev/null 2>&1
+15 0 * * * /usr/bin/curl --silent "https://example.com/public/refresh/osm?token=YOUR_SECRET" >/dev/null 2>&1
 ```
 Update endpoints are:
 - OSM data: `/refresh/osm` (also rebuilds the compact roads file for navigation, served at `/data/navigation`)

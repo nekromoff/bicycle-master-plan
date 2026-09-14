@@ -16,6 +16,9 @@ class LoginController extends Controller
      */
     public function redirectToProvider(Request $request)
     {
+        // google is the only provider configured (config/services.php)
+        abort_unless($request->provider == 'google', 404);
+
         return Socialite::driver($request->provider)->redirect();
     }
 
@@ -24,6 +27,7 @@ class LoginController extends Controller
      */
     public function handleProviderCallback(Request $request)
     {
+        abort_unless($request->provider == 'google', 404);
         $user = Socialite::driver($request->provider)->user();
         if ($user and isset($user->token)) {
             $user_local = User::where('email', $user->getEmail())->first();
@@ -36,8 +40,8 @@ class LoginController extends Controller
                 $user_local->save();
             }
             Auth::login($user_local);
-
-            return redirect()->route('map');
         }
+
+        return redirect()->route('map');
     }
 }

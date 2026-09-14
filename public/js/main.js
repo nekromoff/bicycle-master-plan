@@ -1242,7 +1242,7 @@ function buildPathContent(path) {
             content = content + '<h2>';
         }
         if (path.info.name != undefined && path.info.name) {
-            content = content + path.info.name;
+            content = content + escapeHtml(path.info.name);
         }
         if (path.info.name != undefined && path.info.name) {
             content = content + '<button class="btn btn-lg btn-outline-dark float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">' + SHARE_ICON + ' <span data-i18n="Share">' + i18n('Share') + '</span></button>';
@@ -1296,25 +1296,25 @@ function buildPathContent(path) {
         }
         // include incline only where incline specified in %
         if (path.info.incline != undefined && path.info.incline != 'up' && path.info.incline != 'down' && path.info.incline != '0%' && path.info.incline != '0') {
-            content = content + i18n('Incline') + ': ' + i18n(path.info.incline) + '<br>';
+            content = content + i18n('Incline') + ': ' + escapeHtml(i18n(path.info.incline)) + '<br>';
         }
         if (path.info.name == undefined) {
             content = content + '</strong>';
         }
         if (path.info.ref != undefined && path.info.ref) {
-            content = content + i18n('Path number') + ': ' + path.info.ref + '<br>';
+            content = content + i18n('Path number') + ': ' + escapeHtml(path.info.ref) + '<br>';
         }
         if (path.info.operator != undefined && path.info.operator) {
-            content = content + i18n('Operator') + ': ' + path.info.operator + '<br>';
+            content = content + i18n('Operator') + ': ' + escapeHtml(path.info.operator) + '<br>';
         }
         if (path.info.state != undefined && path.info.state) {
-            content = content + i18n('State') + ': ' + i18n(path.info.state) + '<br>';
+            content = content + i18n('State') + ': ' + escapeHtml(i18n(path.info.state)) + '<br>';
         }
         if (Object.keys(path.info).length) {
             content = content + '<hr class="my-2">' + describeWikimediaCommons(path.info.wikimedia_commons) + '<p class="text-secondary mt-0">';
         }
-        for (detail_key in path.info) {
-            content = content + detail_key + '=' + path.info[detail_key] + '<br>';
+        for (var detail_key in path.info) {
+            content = content + escapeHtml(detail_key) + '=' + escapeHtml(path.info[detail_key]) + '<br>';
         }
         if (Object.keys(path.info).length) {
             content = content + '</p>';
@@ -1388,9 +1388,9 @@ function parseMarkers(data, layer_id, type) {
         }
         marker_content = marker_content + normalize(marker_style.class) + '">';
         if (marker_style.icon == 'name' && marker.name) {
-            marker_content = marker_content + marker.name;
+            marker_content = marker_content + escapeHtml(marker.name);
         } else if (marker_style.icon == 'filename' && marker.filename) {
-            marker_content = marker_content + '<img src="' + getFilename(layer_id, marker.filename) + '" alt="' + (marker.name ? marker.name : '') + '" class="img-fluid">';
+            marker_content = marker_content + '<img src="' + safeUrl(getFilename(layer_id, marker.filename)) + '" alt="' + escapeHtml(marker.name ? marker.name : '') + '" class="img-fluid">';
         }
         marker_content = marker_content + '</div>';
         // resolved here, so that the sidebar builder does not have to keep the whole payload
@@ -1586,10 +1586,34 @@ function hideCrossSection() {
     }
 }
 
+// safe in text and in a quoted attribute alike
 function escapeHtml(text) {
-    var element = document.createElement('div');
-    element.textContent = text;
-    return element.innerHTML;
+    if (text === undefined || text === null) {
+        return '';
+    }
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// a link target from data: only http(s) and relative addresses, never javascript: or data:
+function safeUrl(url) {
+    if (url === undefined || url === null) {
+        return '';
+    }
+    url = String(url).trim();
+    if (/^(https?:)?\/\//i.test(url) || /^[^:]*$/.test(url)) {
+        return escapeHtml(url);
+    }
+    return '';
+}
+
+// a visitor's own text: escaped, its line breaks kept
+function userText(text) {
+    return escapeHtml(text).replace(/\r?\n/g, '<br>');
 }
 
 /*
@@ -1611,7 +1635,7 @@ function describeWikimediaCommons(value) {
         var name = title.replace(/^[^:]+:/, '');
         if (/^file:/i.test(title)) {
             var thumbnail = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(name) + '?width=400';
-            content = content + '<a href="' + page + '" target="_blank" rel="noopener"><img src="' + thumbnail + '" alt="' + escapeHtml(name.replace(/_/g, ' ')).replace(/"/g, '&quot;') + '" class="img-fluid mb-2" loading="lazy"></a><br>';
+            content = content + '<a href="' + page + '" target="_blank" rel="noopener"><img src="' + thumbnail + '" alt="' + escapeHtml(name.replace(/_/g, ' ')) + '" class="img-fluid mb-2" loading="lazy"></a><br>';
         } else {
             content = content + '<a href="' + page + '" target="_blank" rel="noopener">Wikimedia Commons: ' + escapeHtml(title.replace(/_/g, ' ')) + '</a><br>';
         }
@@ -1697,33 +1721,39 @@ function getDateFormatter() {
     @marker object marker as received from the server
     @signs array path signs of the cycleways this marker belongs to
 */
+/*
+    Names and OSM tags are shown escaped, whatever layer they come from. A description is a
+    visitor's own text on the editable layer, escaped; on the other layers it is built by the
+    server from the city's own sheets and feeds, with their markup.
+*/
 function buildMarkerContent(marker, layer_id, signs) {
     var content = '';
+    var user_layer = layer_id == core.editable_layer_id;
     var has_name = (marker.name != undefined && marker.name) || (marker.info != undefined && marker.info.name != undefined && marker.info.name);
     var has_description = (marker.description != undefined && marker.description) || (marker.info != undefined && marker.info.description != undefined && marker.info.description);
     if (has_name) {
         content = content + '<h2>';
     }
     if (marker.name != undefined && marker.name) {
-        content = content + marker.name;
+        content = content + escapeHtml(marker.name);
     } else if (marker.info != undefined && marker.info.name) {
-        content = content + marker.info.name;
+        content = content + escapeHtml(marker.info.name);
     }
     if (has_name) {
         content = content + '<button class="btn btn-lg btn-outline-dark float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">' + SHARE_ICON + ' <span data-i18n="Share">' + i18n('Share') + '</span></button></h2>';
     } else {
         content = content + '<button class="btn btn-lg btn-outline-dark float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">' + SHARE_ICON + ' <span data-i18n="Share">' + i18n('Share') + '</span></button>';
     }
-    if (marker.url != undefined && marker.url) {
-        content = content + '<a href="' + marker.url + '">' + i18n('Link') + '</a><br>';
+    if (marker.url != undefined && marker.url && safeUrl(marker.url)) {
+        content = content + '<a href="' + safeUrl(marker.url) + '">' + i18n('Link') + '</a><br>';
     }
     if (has_description) {
         content = content + '<p>';
     }
     if (marker.description != undefined && marker.description) {
-        content = content + marker.description;
+        content = content + (user_layer ? userText(marker.description) : marker.description);
     } else if (marker.info != undefined && marker.info.description) {
-        content = content + marker.info.description;
+        content = content + escapeHtml(marker.info.description);
     }
     if (has_description) {
         content = content + '</p>';
@@ -1789,35 +1819,36 @@ function buildMarkerContent(marker, layer_id, signs) {
         }
     }
     if (marker.info != undefined && marker.info.operator != undefined) {
-        content = content + i18n('Operator') + ': ' + marker.info.operator + '<br>';
+        content = content + i18n('Operator') + ': ' + escapeHtml(marker.info.operator) + '<br>';
     }
     if (marker.info != undefined && marker.info.capacity != undefined) {
-        content = content + i18n('Capacity') + ': ' + marker.info.capacity + '<br>';
+        content = content + i18n('Capacity') + ': ' + escapeHtml(marker.info.capacity) + '<br>';
     }
     if (marker.filename != undefined && marker.filename) {
-        content = content + '<a href="' + getFilename(layer_id, marker.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.filename) + '" alt="' + marker.filename + '" class="img-fluid"></a><br>';
+        content = content + '<a href="' + safeUrl(getFilename(layer_id, marker.filename, false)) + '" target="_blank"><img src="' + safeUrl(getFilename(layer_id, marker.filename)) + '" alt="' + escapeHtml(marker.filename) + '" class="img-fluid"></a><br>';
     }
     if (signs != undefined && signs.length) {
-        content = content + i18n('Path number') + ': ' + signs.join(', ') + '<br>';
+        content = content + i18n('Path number') + ': ' + signs.map(escapeHtml).join(', ') + '<br>';
     }
+    // the history is made of the visitors' own updates
     var history = '';
     if (marker.marker_relations != undefined && marker.marker_relations.length) {
         for (var i = 0; i < marker.marker_relations.length; i++) {
             if (marker.marker_relations[i].child != undefined) {
-                var child_description = marker.marker_relations[i].child.description ? marker.marker_relations[i].child.description.replace(/["]+/g, '') : '';
-                history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + child_description + '"><td width="20%">' + getDateFormatter().format(new Date(marker.marker_relations[i].child.created_at)) + '</td><td width="40%">' + marker.marker_relations[i].child.name;
-                if (marker.marker_relations[i].url) {
-                    history = history + '<br><a href="' + marker.marker_relations[i].url + '">' + i18n('Link') + '</a>';
+                var child = marker.marker_relations[i].child;
+                history = history + '<tr data-toggle="tooltip" data-placement="bottom" title="' + escapeHtml(child.description || '') + '"><td width="20%">' + getDateFormatter().format(new Date(child.created_at)) + '</td><td width="40%">' + escapeHtml(child.name);
+                if (marker.marker_relations[i].url && safeUrl(marker.marker_relations[i].url)) {
+                    history = history + '<br><a href="' + safeUrl(marker.marker_relations[i].url) + '">' + i18n('Link') + '</a>';
                 }
                 history = history + '</td><td width="40%">';
-                if (marker.marker_relations[i].child.url) {
-                    history = history + '<a href="' + marker.marker_relations[i].child.url + '">' + i18n('Link') + '</a>';
+                if (child.url && safeUrl(child.url)) {
+                    history = history + '<a href="' + safeUrl(child.url) + '">' + i18n('Link') + '</a>';
                 }
-                if (marker.marker_relations[i].child.url && marker.marker_relations[i].child.filename) {
+                if (child.url && child.filename) {
                     history = history + '<br>';
                 }
-                if (marker.marker_relations[i].child.filename) {
-                    history = history + '<a href="' + getFilename(layer_id, marker.marker_relations[i].child.filename, false) + '" target="_blank"><img src="' + getFilename(layer_id, marker.marker_relations[i].child.filename) + '" alt="' + marker.marker_relations[i].child.name + '" class="img-fluid"></a>';
+                if (child.filename) {
+                    history = history + '<a href="' + safeUrl(getFilename(layer_id, child.filename, false)) + '" target="_blank"><img src="' + safeUrl(getFilename(layer_id, child.filename)) + '" alt="' + escapeHtml(child.name) + '" class="img-fluid"></a>';
                 }
                 history = history + '</td></tr>';
             }
@@ -1831,7 +1862,7 @@ function buildMarkerContent(marker, layer_id, signs) {
             content = content + '<hr class="my-2">' + describeWikimediaCommons(marker.info.wikimedia_commons) + '<p class="text-secondary mt-0">';
         }
         for (var detail_key in marker.info) {
-            content = content + detail_key + ' = ' + marker.info[detail_key] + '<br>';
+            content = content + escapeHtml(detail_key) + ' = ' + escapeHtml(marker.info[detail_key]) + '<br>';
         }
         if (Object.keys(marker.info).length) {
             content = content + '</p>';

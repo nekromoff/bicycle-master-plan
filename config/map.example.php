@@ -225,5 +225,7 @@ return [
     */
     // map administrators - array of emails (login via oauth2 / google)
     'admins'         => ['somebody@example.com'],
+    // the /refresh/* routes need ?token= matching this (MAP_REFRESH_TOKEN in .env), or a logged in admin
+    'refresh_token'  => env('MAP_REFRESH_TOKEN'),
 
 ];

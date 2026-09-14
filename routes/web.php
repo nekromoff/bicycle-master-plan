@@ -14,7 +14,7 @@ Route::prefix('data')->middleware('cache.headers:public;max_age=86400;immutable;
     Route::post('edit', [MasterplanController::class, 'editData'])->name('data.edit');
 });
 
-Route::prefix('refresh')->group(function () {
+Route::prefix('refresh')->middleware(\App\Http\Middleware\RefreshAccess::class)->group(function () {
     Route::get('osm/{force?}', [MasterplanController::class, 'refreshOSMData'])->name('refresh.osm');
     Route::get('googlesheet/{force?}', [MasterplanController::class, 'refreshGooglesheetData'])->name('refresh.googlesheet');
     Route::get('bikeshare/{force?}', [MasterplanController::class, 'refreshBikeshareData'])->name('refresh.bikeshare');

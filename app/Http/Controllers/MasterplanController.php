@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Kris\LaravelFormBuilder\FormBuilder;
 use Revolution\Google\Sheets\SheetsClient;
 
@@ -96,6 +97,14 @@ class MasterplanController extends Controller
     public function getLayer(Request $request)
     {
         $this->initialize();
+        // only a layer, and a type, the config knows
+        $layers = config('map.layers');
+        if (! ctype_digit((string) $request->id) or ! isset($layers[$request->id]) or $layers[$request->id]['type'] == 'base') {
+            abort(404);
+        }
+        if (isset($request->type) and (! ctype_digit((string) $request->type) or ! isset($layers[$request->id]['types'][$request->type]))) {
+            abort(404);
+        }
         $markers = Marker::with(['relations', 'markerRelations.child'])->select()->where(['approved' => 1, 'deleted' => 0, 'layer_id' => $request->id]);
         if (isset($request->type)) {
             $markers = $markers->where('type', $request->type);
@@ -112,7 +121,7 @@ class MasterplanController extends Controller
         $this->paths_db = $paths_db->get();
         $this->cycleways = Cycleway::get()->keyBy('id');
 
-        $layer = config('map.layers')[$request->id];
+        $layer = $layers[$request->id];
         $this->processMapFeatures($layer, $request->id, $request->type);
         if ($this->markers_new) {
             $this->markers = $this->markers->union(collect($this->markers_new));
@@ -141,17 +150,31 @@ class MasterplanController extends Controller
 
     public function saveData(Request $request)
     {
-        DB::beginTransaction();
         $this->initialize();
-        $user = Auth::user();
         $content['success'] = 0;
+        if (! $this->editable_layer_id) {
+            return response()->json($content);
+        }
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:5000',
+            'email' => 'nullable|email|max:255',
+            'lat' => 'required|numeric|between:-90,90',
+            'lon' => 'required|numeric|between:-180,180',
+            'type' => ['nullable', 'integer', Rule::in(array_keys($this->editable_types ?: []))],
+            'original_id' => 'nullable|integer',
+            // the type is read from the file's content, not from what the browser claims
+            'file' => 'nullable|file|max:10240|mimetypes:'.implode(',', array_keys($this->editable_allowed_filetypes ?: [])),
+        ]);
+        DB::beginTransaction();
+        $user = Auth::user();
         if ($this->editable_layer_id) {
             $file = $request->file('file');
             $filename = '';
             $url = '';
             if ($file and $this->editable_allowed_filetypes) {
                 foreach ($this->editable_allowed_filetypes as $filetype => $db_column) {
-                    if ($file->getClientMimeType() == trim($filetype)) {
+                    if ($file->getMimeType() == trim($filetype)) {
                         $path = Storage::putFile('public/uploads', $file);
                         if ($db_column == 'filename') {
                             $filename = basename($path);
@@ -189,7 +212,8 @@ class MasterplanController extends Controller
                 $marker->deleted = 0;
                 $marker->save();
                 if ($request->original_id) {
-                    $original_marker = Marker::find($request->original_id);
+                    // only a visible marker of the editable layer can be updated
+                    $original_marker = Marker::where(['id' => $request->original_id, 'layer_id' => $this->editable_layer_id, 'approved' => 1, 'deleted' => 0])->first();
                     if ($original_marker and $original_marker->id) {
                         MarkersRelation::where('marker_id', $request->original_id)->update(['marker_id' => $marker->id]);
                         $marker_relation = new MarkersRelation;
@@ -217,8 +241,10 @@ class MasterplanController extends Controller
         $this->initialize();
         $user = Auth::user();
         $content['success'] = 0;
-        if (isset($request->id) and $request->id) {
-            $marker = Marker::find($request->id);
+        $request->validate(['id' => 'required|integer']);
+        // only a visible marker of the editable layer can be reported
+        $marker = $this->editable_layer_id ? Marker::where(['id' => $request->id, 'layer_id' => $this->editable_layer_id, 'approved' => 1, 'deleted' => 0])->first() : null;
+        if ($marker) {
             $marker->outdated = 1;
             // auto delete for admins
             if ($user and in_array($user->email, config('map.admins')) === true) {
