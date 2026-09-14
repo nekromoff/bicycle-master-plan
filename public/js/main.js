@@ -4,6 +4,12 @@ var core = {};
 core.options = {};
 core.layers = {};
 core.clusters = {};
+// layer_key => the markers and paths taken out of a layer while the map is zoomed out past its min_zoom
+core.zoom_hidden = {};
+// parsed key ("6", "3/1") => true for a layer switched on below its min_zoom and not loaded yet
+core.zoom_pending = {};
+// parsed key => true while the layer's data is being downloaded
+core.layers_loading = {};
 core.markers = {};
 core.paths = {};
 core.relations = {};
@@ -60,6 +66,9 @@ core.path_aliases = {};
 core.context_actions = [];
 // the languages there is a translation for, set by the page, see switchLanguage()
 core.languages = [];
+
+// the share buttons' glyph: three joined dots, in the colour of the button's text
+var SHARE_ICON = '<svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>';
 /*
     Called with the language code once another language is loaded, so that a feature redraws its
     own words. A handler that redrew the sidebar returns true, and the sidebar is left to it.
@@ -169,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSidebarButtons();
     initTooltips();
     changeZoomClass();
+    initMinZoom();
     // if location fragment exists on launch
     if (window.location.hash) {
         setupMap();
@@ -202,6 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     map.on('almost:out', hideTapCursor);
     map.on('almost:move', trackCrossSection);
     map.on('zoomend', applyPathOffsets);
+    map.on('zoomend', applyMinZoom);
     map.on('overlayadd', scheduleFragmentRewrite);
     map.on('overlayremove', scheduleFragmentRewrite);
     if (core.editable_layer_id) {
@@ -466,6 +477,15 @@ function positionTooltip(tooltip, trigger, placement) {
     }
     tooltip.style.left = Math.round(left) + 'px';
     tooltip.style.top = Math.round(top) + 'px';
+    // the arrow points at the middle of the trigger, also when the box was moved in from the window's edge
+    var arrow = qs('.arrow', tooltip);
+    if (arrow != null) {
+        if (placement == 'left' || placement == 'right') {
+            arrow.style.top = Math.round(rect.top + scroll_y + rect.height / 2 - top - arrow.offsetHeight / 2) + 'px';
+        } else {
+            arrow.style.left = Math.round(rect.left + scroll_x + rect.width / 2 - left - arrow.offsetWidth / 2) + 'px';
+        }
+    }
 }
 
 function hideTooltip() {
@@ -592,13 +612,16 @@ function scheduleFragmentRewrite() {
 
 function rewriteFragment() {
     core.layers_enabled = [];
-    for (var parsed_key in core.layers_parsed) {
+    // a layer waiting for its min_zoom is switched on too, only not loaded yet
+    var parsed_keys = Object.keys(core.layers_parsed).concat(Object.keys(core.zoom_pending));
+    for (var k = 0; k < parsed_keys.length; k++) {
+        var parsed_key = parsed_keys[k];
         var layer_key = 'layer' + parsed_key;
         if (parsed_key.indexOf('/') != -1) {
             var parts = parsed_key.split('/');
             layer_key = 'layer' + parts[0] + '_type' + parts[1];
         }
-        if (map.hasLayer(core.layers[layer_key])) {
+        if (map.hasLayer(core.layers[layer_key]) && core.layers_enabled.indexOf(parsed_key) == -1) {
             core.layers_enabled.push(parsed_key);
         }
     }
@@ -758,11 +781,25 @@ function fetchLayer(layer_id, type) {
         layer_id = parts[0];
         type = parts[1];
     }
+    // zoomed out past the layer's min_zoom: switched on, but only loaded once the map is zoomed in far enough
+    var min_zoom = getMinZoom(layer_id, type);
+    if (min_zoom != null && map.getZoom() < min_zoom && !core.layers_parsed[getParsedKey(layer_id, type)]) {
+        core.zoom_pending[getParsedKey(layer_id, type)] = true;
+        map.addLayer(core.layers[getLayerKey(layer_id, type)]);
+        applyMinZoom();
+        return;
+    }
     // already downloaded and parsed, only needs to be put back on the map
     if (core.layers_parsed[getParsedKey(layer_id, type)]) {
         showLayer(layer_id, type);
         return;
     }
+    // downloaded once: a layer switched on again, or zoomed in to, while its request is still running waits for it
+    var loading_key = getParsedKey(layer_id, type);
+    if (core.layers_loading[loading_key]) {
+        return;
+    }
+    core.layers_loading[loading_key] = true;
     var url = 'data/layer/' + layer_id;
     if (type) {
         url = url + '/' + type;
@@ -774,8 +811,10 @@ function fetchLayer(layer_id, type) {
     }).then(function(response) {
         return response.json();
     }).then(function(data) {
+        delete core.layers_loading[loading_key];
         parseLayer(data, layer_id, type);
     }).catch(function(error) {
+        delete core.layers_loading[loading_key];
         console.error('Layer ' + layer_id + ' could not be loaded', error);
     });
 }
@@ -785,6 +824,137 @@ function getParsedKey(layer_id, type) {
         return layer_id + '/' + type;
     }
     return layer_id;
+}
+
+function getLayerKey(layer_id, type) {
+    if (type && core.config.layers[layer_id] != undefined && core.config.layers[layer_id].types != undefined) {
+        return 'layer' + layer_id + '_type' + type;
+    }
+    return 'layer' + layer_id;
+}
+
+/*
+    A layer - or one type of a layer - with min_zoom in the config is only drawn from that zoom on.
+    Below it the layer stays switched on, in the layers control and in the link; its markers and
+    paths are only taken out of it, and put back once the map is zoomed in again. A layer switched
+    on below its min_zoom is not loaded until then (fetchLayer). The type's min_zoom wins over the layer's.
+*/
+function getMinZoom(layer_id, type) {
+    var layer = core.config.layers[layer_id];
+    if (layer == undefined) {
+        return null;
+    }
+    if (type && layer.types != undefined && layer.types[type] != undefined && layer.types[type].min_zoom != undefined) {
+        return parseFloat(layer.types[type].min_zoom);
+    }
+    return layer.min_zoom != undefined ? parseFloat(layer.min_zoom) : null;
+}
+
+function initMinZoom() {
+    // the control draws its list again on every change of layers and language, the hints are added again after it
+    var control = core.layers_control;
+    if (control != undefined && typeof control._update == 'function') {
+        var update = control._update;
+        control._update = function() {
+            var result = update.apply(this, arguments);
+            markMinZoomLayers();
+            return result;
+        };
+    }
+    applyMinZoom();
+}
+
+function applyMinZoom() {
+    var zoom = map.getZoom();
+    for (var layer_key in core.layers) {
+        var match = layer_key.match(/^layer(\d+)(?:_type(\d+))?$/);
+        if (!match) {
+            continue;
+        }
+        var min_zoom = getMinZoom(match[1], match[2]);
+        if (min_zoom == null) {
+            continue;
+        }
+        var group = core.layers[layer_key];
+        var parsed_key = getParsedKey(match[1], match[2]);
+        if (zoom < min_zoom) {
+            if (core.zoom_hidden[layer_key] == undefined && core.layers_parsed[parsed_key]) {
+                core.zoom_hidden[layer_key] = group.getLayers();
+                group.clearLayers();
+            }
+            continue;
+        }
+        if (core.zoom_hidden[layer_key] != undefined) {
+            var features = core.zoom_hidden[layer_key];
+            delete core.zoom_hidden[layer_key];
+            features.forEach(function(feature) {
+                group.addLayer(feature);
+            });
+        }
+        if (core.zoom_pending[parsed_key]) {
+            delete core.zoom_pending[parsed_key];
+            // switched off again meanwhile: loaded whenever it is switched on
+            if (map.hasLayer(group)) {
+                fetchLayer(parsed_key);
+            }
+        }
+    }
+    markMinZoomLayers();
+}
+
+// the layers control's names of layers zoomed out past their min_zoom: greyed, with a hint to zoom in
+function markMinZoomLayers() {
+    var control = core.layers_control;
+    if (control == undefined || !Array.isArray(control._layers) || control.getContainer() == undefined) {
+        return;
+    }
+    var zoom = map.getZoom();
+    var inputs = control.getContainer().querySelectorAll('.leaflet-control-layers-overlays input');
+    control._layers.forEach(function(entry) {
+        if (!entry.overlay) {
+            return;
+        }
+        var min_zoom = null;
+        for (var layer_key in core.layers) {
+            var match = layer_key.match(/^layer(\d+)(?:_type(\d+))?$/);
+            if (match && core.layers[layer_key] === entry.layer) {
+                min_zoom = getMinZoom(match[1], match[2]);
+                break;
+            }
+        }
+        var input = null;
+        inputs.forEach(function(candidate) {
+            if (candidate.layerId == L.stamp(entry.layer)) {
+                input = candidate;
+            }
+        });
+        if (input == null) {
+            return;
+        }
+        var label = input.closest('label');
+        var hidden = min_zoom != null && zoom < min_zoom;
+        label.classList.toggle('layer-zoom-hidden', hidden);
+        var hint = label.querySelector('.layer-zoom-hint');
+        if (hidden) {
+            if (hint == null) {
+                // right under the layer's own name, before the legend lines that follow its first <br>
+                hint = document.createElement('span');
+                hint.className = 'layer-zoom-hint';
+                hint.appendChild(document.createElement('br'));
+                hint.appendChild(document.createElement('small'));
+                var name = input.nextElementSibling;
+                var first_break = name != null ? name.querySelector(':scope > br') : null;
+                if (first_break != null) {
+                    name.insertBefore(hint, first_break);
+                } else {
+                    (name || input.parentNode).appendChild(hint);
+                }
+            }
+            hint.querySelector('small').textContent = i18n('Zoom in to see');
+        } else if (hint != null) {
+            hint.parentNode.removeChild(hint);
+        }
+    });
 }
 
 function parseLayer(data, layer_id, type) {
@@ -803,6 +973,8 @@ function showLayer(layer_id, type) {
         layer_key = 'layer' + layer_id + '_type' + type;
     }
     map.addLayer(core.layers[layer_key]);
+    // loaded while the map was zoomed in, and zoomed out again since
+    applyMinZoom();
     addTapLayer(layer_key);
     rewriteFragment();
     core.options.marker_id = resolveMarkerId(core.options.marker_id);
@@ -1073,10 +1245,10 @@ function buildPathContent(path) {
             content = content + path.info.name;
         }
         if (path.info.name != undefined && path.info.name) {
-            content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button>';
+            content = content + '<button class="btn btn-lg btn-outline-dark float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">' + SHARE_ICON + ' <span data-i18n="Share">' + i18n('Share') + '</span></button>';
             content = content + '</h2>';
         } else {
-            content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button>';
+            content = content + '<button class="btn btn-lg btn-outline-dark float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">' + SHARE_ICON + ' <span data-i18n="Share">' + i18n('Share') + '</span></button>';
         }
         if (path.info.name == undefined) {
             content = content + '<strong>';
@@ -1538,9 +1710,9 @@ function buildMarkerContent(marker, layer_id, signs) {
         content = content + marker.info.name;
     }
     if (has_name) {
-        content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button></h2>';
+        content = content + '<button class="btn btn-lg btn-outline-dark float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">' + SHARE_ICON + ' <span data-i18n="Share">' + i18n('Share') + '</span></button></h2>';
     } else {
-        content = content + '<button class="btn btn-lg btn-link float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">🔗</button>';
+        content = content + '<button class="btn btn-lg btn-outline-dark float-right share" data-toggle="tooltip" data-placement="bottom" title="' + i18n('Copy link to clipboard') + '">' + SHARE_ICON + ' <span data-i18n="Share">' + i18n('Share') + '</span></button>';
     }
     if (marker.url != undefined && marker.url) {
         content = content + '<a href="' + marker.url + '">' + i18n('Link') + '</a><br>';
@@ -2189,21 +2361,23 @@ function initLanguage() {
     } catch (error) {
         stored = null;
     }
+    // the server renders the page in the cookie's language; a choice kept only in storage gets the cookie too
     if (stored && stored != core.config.language) {
-        switchLanguage(stored, false);
+        switchLanguage(stored, true);
     }
 }
 
-// @remember keeps the choice for the next visit
+// @remember keeps the choice for the next visit: a cookie for the server, storage as a fallback
 function switchLanguage(code, remember) {
     if (core.languages.indexOf(code) == -1) {
         return;
     }
     if (remember) {
+        document.cookie = 'language=' + encodeURIComponent(code) + '; path=/; max-age=31536000; SameSite=Lax';
         try {
             window.localStorage.setItem('language', code);
         } catch (error) {
-            // private windows and blocked storage: the switch still happens, just not remembered
+            // private windows and blocked storage: the cookie is still there
         }
     }
     if (code == core.config.language) {

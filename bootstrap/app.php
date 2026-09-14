@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // No trusted proxies are configured, matching the previous
         // Fideloper TrustProxies setup where $proxies was null.
+        // the language cookie is written by the page's JavaScript, so it is not encrypted
+        $middleware->encryptCookies(except: ['language']);
+        $middleware->web(append: [\App\Http\Middleware\Language::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

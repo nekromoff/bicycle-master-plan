@@ -22,6 +22,8 @@ translation = {
         "m": "m",
         "min": "min",
         "Copy link to clipboard": "Copy link to clipboard",
+        "Share": "Share",
+        "Zoom in to see": "Zoom in to see",
         "History": "History",
         "Operator": "Operator",
         "Marking": "Marking",

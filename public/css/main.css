@@ -448,3 +448,85 @@ svg.crosssection {
     margin-top: 6px;
     font-weight: bold;
 }
+
+/*
+    Bootstrap 4's blue (#007bff) and red (#dc3545) on white are below AA; these darker ones reach AAA
+    (7:1), on the light grey hover backgrounds too.
+*/
+a,
+.btn-link {
+    color: #0056b3;
+}
+a:hover,
+.btn-link:hover {
+    color: #004a99;
+}
+.btn-primary {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+.btn-primary:hover {
+    background-color: #004a99;
+    border-color: #004a99;
+}
+.btn-outline-primary {
+    color: #0056b3;
+    border-color: #0056b3;
+}
+.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+.btn-outline-danger {
+    color: #a71d2a;
+    border-color: #a71d2a;
+}
+.btn-outline-danger:hover {
+    color: #fff;
+    background-color: #a71d2a;
+    border-color: #a71d2a;
+}
+.text-muted {
+    color: #495057 !important;
+}
+
+/* the share button: glyph and word, outlined dark so it reads as a button (#343a40 on white is 12:1) */
+.share,
+.navigation-share {
+    white-space: nowrap;
+}
+/* hovered it only turns light grey, the dark stays on the outline and the text (#343a40 on #e9ecef is 10:1) */
+.share:hover,
+.share:focus,
+.share:active,
+.navigation-share:hover,
+.navigation-share:focus,
+.navigation-share:active,
+.btn-outline-dark.share:not(:disabled):not(.disabled):active,
+.btn-outline-dark.navigation-share:not(:disabled):not(.disabled):active {
+    color: #343a40;
+    background-color: #e9ecef;
+    border-color: #343a40;
+}
+/* a layer switched on, but zoomed out past its min_zoom: greyed (#495057 is 8:1), with a hint to zoom in */
+.leaflet-control-layers .layer-zoom-hidden {
+    color: #495057;
+}
+/* looks disabled, the checkbox still switches the layer for when the map is zoomed in */
+.leaflet-control-layers .layer-zoom-hidden {
+    cursor: not-allowed;
+}
+.leaflet-control-layers .layer-zoom-hidden img,
+.leaflet-control-layers .layer-zoom-hidden input {
+    opacity: 0.5;
+}
+.leaflet-control-layers .layer-zoom-hint small {
+    font-style: italic;
+}
+.share-icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}

@@ -91,6 +91,9 @@ return [
         3 => [
             'type'  => 'marker',
             'name'  => 'Bikesharing stations',
+            // optional: drawn only from this zoom level on, on a layer or on one of its types (the type's wins);
+            // zoomed out, the layer stays switched on and in links, and its data is loaded once zoomed in
+            'min_zoom' => 14,
             'class' => 'bikeshare',
         ],
     ],

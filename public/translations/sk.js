@@ -22,6 +22,8 @@ translation = {
         "m": "m",
         "min": "min",
         "Copy link to clipboard": "Skopírovať odkaz do schránky",
+        "Share": "Zdieľať",
+        "Zoom in to see": "Zobrazí sa po priblížení",
         "History": "História",
         "Operator": "Správca",
         "Marking": "Značenie",

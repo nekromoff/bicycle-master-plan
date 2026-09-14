@@ -816,7 +816,9 @@ var navigation = (function() {
             }
             group.latlngs.push(latlng(vertices[index + 1]));
             result.length += segment.length;
-            result.time += segment.length / ((segment.walk ? config.walking_speed : config.speed) / 3.6);
+            // seconds, kept on the segment so the steps add up to the same time
+            segment.time = segment.length / ((segment.walk ? config.walking_speed : config.speed) / 3.6);
+            result.time += segment.time;
             categories[kind] += segment.length;
             result.summary[line] += segment.length;
             if (segment.gap) {
@@ -1062,7 +1064,7 @@ var navigation = (function() {
         it has no name - and works out the turn into each from the direction of travel just
         before and just after the junction.
         @segments, @vertices the route, vertices[i] and vertices[i + 1] are the ends of segments[i]
-        @return array of {type, labels, name, walk, turn, exit, length, category, latlngs}, ending with an arrive step;
+        @return array of {type, labels, name, walk, turn, exit, length, time, category, latlngs}, ending with an arrive step;
         labels names every kind of way a step goes along (waynames.js), type is what the step is grouped by
     */
     function buildSteps(graph, segments, vertices, x, y, latlng) {
@@ -1081,6 +1083,7 @@ var navigation = (function() {
             var last = raw[raw.length - 1];
             if (last != undefined && last.key == key) {
                 last.length += segment.length;
+                last.time += segment.time;
                 last.to = index + 1;
                 last.categories[category] = (last.categories[category] || 0) + segment.length;
                 addLabel(last, way_label, segment.length);
@@ -1088,12 +1091,13 @@ var navigation = (function() {
             }
             var categories = {};
             categories[category] = segment.length;
-            var step = {key: key, type: type, name: name, walk: !!segment.walk, length: segment.length, from: index, to: index + 1, categories: categories, labels: [], label_metres: {}};
+            var step = {key: key, type: type, name: name, walk: !!segment.walk, length: segment.length, time: segment.time, from: index, to: index + 1, categories: categories, labels: [], label_metres: {}};
             addLabel(step, way_label, segment.length);
             raw.push(step);
         });
         var absorb = function(into, step) {
             into.length += step.length;
+            into.time += step.time;
             into.to = step.to;
             for (var category in step.categories) {
                 into.categories[category] = (into.categories[category] || 0) + step.categories[category];
@@ -1190,13 +1194,15 @@ var navigation = (function() {
         /*
             Straight on from one kind of way onto another of the same name, or both without one, is
             not an instruction of its own: the steps become one that names every kind it goes along,
-            and is marked with the category most of its length is.
+            and is marked with the category most of its length is. A crossing straight ahead is no
+            instruction either, it goes into the way before it, whatever that is called.
         */
         var merged = [];
         steps.forEach(function(step) {
             var previous = merged[merged.length - 1];
-            if (previous != undefined && step.turn == 'straight' && step.name == previous.name
-                && UNMERGED.indexOf(step.type) == -1 && UNMERGED.indexOf(previous.type) == -1) {
+            var straight_crossing = step.type == 'crossing' && step.turn == 'straight';
+            if (previous != undefined && step.turn == 'straight' && (step.name == previous.name || straight_crossing)
+                && (UNMERGED.indexOf(step.type) == -1 || straight_crossing) && UNMERGED.indexOf(previous.type) == -1) {
                 absorb(previous, step);
                 previous.walk = previous.walk || step.walk;
                 return;
@@ -1239,7 +1245,7 @@ var navigation = (function() {
             delete step.categories;
         });
         if (steps.length) {
-            steps.push({type: 'arrive', labels: [], name: '', walk: false, turn: 'straight', length: 0, latlngs: [latlng(vertices[vertices.length - 1])]});
+            steps.push({type: 'arrive', labels: [], name: '', walk: false, turn: 'straight', length: 0, time: 0, latlngs: [latlng(vertices[vertices.length - 1])]});
         }
         return steps;
     }
@@ -1409,6 +1415,24 @@ var navigation = (function() {
             return (metres / 1000).toLocaleString(language(), {maximumFractionDigits: 1}) + ' ' + t('km');
         }
         return Math.round(metres) + ' ' + t('m');
+    }
+
+    // @seconds in whole minutes, at least one
+    function formatTime(seconds) {
+        return Math.max(1, Math.round(seconds / 60)) + ' ' + t('min');
+    }
+
+    /*
+        How far apart the steps that show a distance are: about 2·√km of them on a route - a couple on a
+        short trip, a dozen at most on a long one - spaced by the round distance nearest to that share.
+    */
+    var DISTANCE_SPACINGS = [100, 250, 500, 1000, 2000, 5000, 10000];
+    function distanceSpacing(total) {
+        var count = Math.min(12, Math.max(2, Math.round(2 * Math.sqrt(total / 1000))));
+        var wanted = total / count;
+        return DISTANCE_SPACINGS.reduce(function(best, spacing) {
+            return Math.abs(Math.log(spacing / wanted)) < Math.abs(Math.log(best / wanted)) ? spacing : best;
+        });
     }
 
     function init(map, config) {
@@ -1974,7 +1998,42 @@ var navigation = (function() {
             return '<span class="navigation-step-bar ' + colour + (entry != undefined && entry.dotted ? ' navigation-step-bar-dotted' : '') + '"></span>';
         };
         var content = '<ol class="navigation-steps">';
+        /*
+            A step shows how long into the ride it comes where that has changed, and now and then how far too: the first step
+            at least one spacing on from the last one that did (distanceSpacing), and the arrival always.
+        */
+        var total = steps.reduce(function(sum, step) {
+            return sum + step.length;
+        }, 0);
+        var spacing = distanceSpacing(total);
+        var travelled = 0;
+        var elapsed = 0;
+        var last_shown = 0;
+        // a time is only shown where it has changed since the last one shown, the arrival always has it
+        var last_time = null;
         steps.forEach(function(step, index) {
+            var at = travelled;
+            var at_time = elapsed;
+            travelled += step.length;
+            elapsed += step.time;
+            // the distance small and before the time, the times in a column of their own so they line up
+            var shown_distance = '';
+            var shown_time = '';
+            if (index > 0) {
+                var time = formatTime(at_time);
+                // not before the first whole minute of the ride
+                if (step.type == 'arrive' || (time != last_time && Math.round(at_time / 60) >= 1)) {
+                    shown_time = escape(time);
+                    last_time = time;
+                }
+                if (step.type == 'arrive' || at - last_shown >= spacing) {
+                    shown_distance = formatDistance(at);
+                    last_shown = at;
+                }
+            }
+            var progress = shown_distance || shown_time
+                ? '<span class="navigation-step-length">' + shown_distance + '</span><span class="navigation-step-time">' + shown_time + '</span>'
+                : '';
             // every kind of way the step goes along, already translated by waynames.js: "Obchodná (Pešia zóna)"
             var label = (step.labels || []).map(escape).join(', ');
             if (step.name) {
@@ -2006,7 +2065,7 @@ var navigation = (function() {
                 + mark(step.category)
                 + '<span class="navigation-step-icon">' + icon + '</span>'
                 + '<span class="navigation-step-text">' + text + '</span>'
-                + (step.length > 0 ? '<span class="navigation-step-distance">' + formatDistance(step.length) + '</span>' : '')
+                + (progress ? '<span class="navigation-step-distance">' + progress + '</span>' : '')
                 + '</li>';
         });
         return content + '</ol>';
@@ -2118,7 +2177,7 @@ var navigation = (function() {
         }
         var content = '<h2>' + escape(t('Navigation'));
         if (state.from != null && state.to != null) {
-            content = content + '<button class="btn btn-lg btn-link float-right navigation-share" data-toggle="tooltip" data-placement="bottom" title="' + escape(t('Copy link to clipboard')) + '">🔗</button>';
+            content = content + '<button class="btn btn-lg btn-outline-dark float-right navigation-share" data-toggle="tooltip" data-placement="bottom" title="' + escape(t('Copy link to clipboard')) + '">' + SHARE_ICON + ' <span data-i18n="Share">' + escape(t('Share')) + '</span></button>';
         }
         content = content + '</h2>';
         var message = null;
@@ -2142,9 +2201,8 @@ var navigation = (function() {
         }
         var result = state.result;
         if (result != null && !result.error) {
-            var minutes = Math.max(1, Math.round(result.time / 60));
-            // how far and how long, "4,0 km (~17 min)"
-            content = content + '<p class="navigation-summary"><strong>' + formatDistance(result.length) + '</strong> (~' + minutes + ' ' + escape(t('min')) + ')</p>';
+            // how long and how far, "~17 min (4,0 km)"
+            content = content + '<p class="navigation-summary"><strong>~' + formatTime(result.time) + '</strong> (' + formatDistance(result.length) + ')</p>';
             // the route summed up in three lines, with how much of the route each is, longest first
             content = content + '<div class="navigation-legend-table">';
             SUMMARY.map(function(line) {

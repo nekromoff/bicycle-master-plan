@@ -156,11 +156,29 @@
     flex: 1 1 auto;
 }
 
+/* how far and how long into the ride, right-aligned; #495057 keeps AAA contrast on the hover background too */
 .navigation-step-distance {
     flex: 0 0 auto;
     margin-left: 0.5rem;
-    color: #6c757d;
+    color: #495057;
     white-space: nowrap;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.navigation-step-length {
+    font-size: 0.8em;
+}
+
+.navigation-step-length:not(:empty) {
+    margin-right: 0.4em;
+}
+
+/* as wide as the longest time, so the minutes stand under each other whether a distance is shown or not */
+.navigation-step-time {
+    display: inline-block;
+    min-width: 4.5em;
+    text-align: right;
 }
 
 /* invisible, wide enough to hover a road stretch of the route for its cross-section */

@@ -46,6 +46,7 @@ https://mapa.cyklokoalicia.sk/bratislava/public/
         - `icon` = layer item icon (markers only) will be created from either `name` or `filename` in database
         - *optional* `file` = OSM JSON file containing layer content (markers or paths/ways downloaded from OSM)
         - *optional* `cluster` = `true` for layers to group/cluster items/markers
+        - *optional* `min_zoom` = zoom level from which the layer's items are drawn, e.g. `16` for bicycle parking; also on one of its `types`, which wins over the layer's. Zoomed out further, the layer stays switched on in the layers control and in shared links, greyed with a "Zoom in to see" hint. Its data is downloaded only once the map is zoomed in that far, and only once: zooming out and in again reuses what was loaded.
         - *optional* `editable` = `true` for the user editable layer (user submitted items require admin approval, see below)
         - *optional* `types` = *array* a layer can contain multiple types of items such as different sets of markers etc.
     - *optional* Configure OSM data/layers to download:

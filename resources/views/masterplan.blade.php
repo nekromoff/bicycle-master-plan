@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{config('map.language')}}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -61,6 +61,7 @@
         <script>
         i18n.translator.add(translation);
         core.config={!! json_encode(config('map')) !!};
+        core.default_language=core.config.default_language;
         core.editable_layer_id=getEditableLayerId();
         core.storage_path='{{asset('...')}}'.replace('...','');
         {{-- every translation file there is can be switched to, see switchLanguage() --}}
