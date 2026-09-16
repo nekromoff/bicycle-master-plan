@@ -213,8 +213,9 @@ Each key of `match` is an OSM tag of the way, or a `side:` channel. Values:
 **Recommended structure of `support_rules`** (as in `config/map.example.php`):
 1. what a bicycle may not use at all: motorways and trunk roads, `motorroad=yes`, `bicycle=no|use_sidepath|private`, `access`/`vehicle` `private|no` without a `bicycle` tag, fast arterials (`maxspeed` 60 and more, or `foot=no`);
 2. what is walked: `bicycle=dismount`, steps, footways without cycling allowed;
-3. ordinary roads, cheapest to dearest: `living_street`, `residential`, `service`/`unclassified`/`track`, `tertiary`, `secondary`, `primary`;
-4. a catch-all.
+3. roads closed to motor vehicles (`motor_vehicle=no`), as cheap as a footway that allows cycling; they are shown and counted as separated cycle routes;
+4. ordinary roads, cheapest to dearest: `living_street`, `residential`, `service`/`unclassified`/`track`, `tertiary`, `secondary`, `primary`;
+5. a catch-all.
 
 Road factors should stay above the factors of the layer's cycle infrastructure, otherwise the route leaves the cycle paths for roads.
 

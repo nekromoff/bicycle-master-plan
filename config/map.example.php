@@ -209,6 +209,8 @@ return [
                 ['match' => ['highway' => ['footway', 'pedestrian', 'path', 'bridleway'], 'bicycle' => ['yes', 'designated', 'permissive']], 'factor' => 1.5],
                 ['match' => ['highway' => 'path'], 'factor' => 2],
                 ['match' => ['highway' => ['footway', 'pedestrian', 'bridleway']], 'factor' => 3.5, 'walk' => true],
+                // a road closed to motor vehicles: no traffic, ridden like a footway that allows cycling
+                ['match' => ['motor_vehicle' => 'no'], 'factor' => 1.5],
                 ['match' => ['highway' => 'living_street'], 'factor' => 1.5],
                 ['match' => ['highway' => 'residential'], 'factor' => 2],
                 ['match' => ['highway' => ['service', 'unclassified', 'track', 'road']], 'factor' => 2.5],

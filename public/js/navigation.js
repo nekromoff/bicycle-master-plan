@@ -92,6 +92,8 @@ var navigation = (function() {
             {match: {highway: ['footway', 'pedestrian', 'path', 'bridleway'], bicycle: ['yes', 'designated', 'permissive']}, factor: 1.5},
             {match: {highway: 'path'}, factor: 2},
             {match: {highway: ['footway', 'pedestrian', 'bridleway']}, factor: 3.5, walk: true},
+            // a road closed to motor vehicles: no traffic, ridden like a footway that allows cycling
+            {match: {motor_vehicle: 'no'}, factor: 1.5},
             {match: {highway: 'living_street'}, factor: 1.5},
             {match: {highway: 'residential'}, factor: 2},
             {match: {highway: ['service', 'unclassified', 'track', 'road', 'tertiary', 'tertiary_link']}, factor: 2.5},
@@ -943,6 +945,10 @@ var navigation = (function() {
             return 'mtb';
         }
         if (tags.highway == 'cycleway' || tags.cycleway == 'crossing') {
+            return 'separated';
+        }
+        // a road closed to motor vehicles is as good as a cycle path, whatever its highway tag says
+        if (ROAD_HIGHWAYS.indexOf(tags.highway) != -1 && tags.motor_vehicle == 'no') {
             return 'separated';
         }
         if (tags.lcn == 'provisional' || tags.lcn == 'proposed') {
