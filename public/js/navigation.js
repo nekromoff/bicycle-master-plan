@@ -49,6 +49,8 @@ var navigation = (function() {
         ],
         // factor for a way no rule matched
         default_factor: 1.5,
+        // what every stretch in traffic (orange) costs extra while separated routes are preferred
+        prefer_separated_factor: 2.5,
         // spatial index cell, metres
         cell: 50,
         rules: [
@@ -265,6 +267,10 @@ var navigation = (function() {
             paths: {},
             keys: new Map(),
             segments: [],
+            // the straight links bridgeGaps() adds, they are in adj only
+            links: [],
+            // whether stretches in traffic currently cost prefer_separated_factor extra, see preferSeparated()
+            prefer_separated: false,
             grid: new Map(),
             vgrid: new Map(),
             cell: config.cell,
@@ -367,11 +373,13 @@ var navigation = (function() {
                     var length = distance(graph, previous, current);
                     var segment = {
                         a: previous, b: current, length: length,
-                        cost: length * scored.factor, factor: scored.factor,
+                        cost: length * scored.factor, factor: scored.factor, base_factor: scored.factor,
                         walk: scored.walk, infrastructure: scored.infrastructure,
                         forward: direction.forward, backward: direction.backward,
                         path: path.id, gap: false, support: source.support
                     };
+                    // which summary line the stretch is on, so preferSeparated() knows what to make dearer
+                    segment.line = summaryLine(segmentClass(segment, path), segment, path);
                     var index = graph.segments.length;
                     graph.segments.push(segment);
                     if (direction.forward) {
@@ -496,11 +504,12 @@ var navigation = (function() {
                 added.add(key);
                 var segment = {
                     a: v, b: best.u, length: best.d,
-                    cost: best.d * config.gap_factor, factor: config.gap_factor,
+                    cost: best.d * config.gap_factor, factor: config.gap_factor, base_factor: config.gap_factor,
                     walk: false, infrastructure: false,
                     forward: true, backward: true,
-                    path: null, gap: true
+                    path: null, gap: true, line: 'traffic'
                 };
+                graph.links.push(segment);
                 graph.adj[v].push({to: best.u, segment: segment});
                 graph.adj[best.u].push({to: v, segment: segment});
             });
@@ -517,6 +526,29 @@ var navigation = (function() {
             }
         }
         return false;
+    }
+
+    /*
+        Makes every stretch in traffic (what the map draws orange) cost prefer_separated_factor
+        more, or puts the costs back, so a route sticks to separated cycle routes and footways
+        (blue) where it can. The factors only grow, so the A* heuristic stays admissible.
+        @return boolean whether anything changed
+    */
+    function preferSeparated(graph, prefer) {
+        prefer = !!prefer;
+        if (graph == null || graph.prefer_separated === prefer) {
+            return false;
+        }
+        var extra = prefer ? graph.config.prefer_separated_factor : 1;
+        if (!(extra > 0)) {
+            extra = 1;
+        }
+        graph.segments.concat(graph.links).forEach(function(segment) {
+            segment.factor = segment.base_factor * (segment.line == 'traffic' ? extra : 1);
+            segment.cost = segment.length * segment.factor;
+        });
+        graph.prefer_separated = prefer;
+        return true;
     }
 
     /* ---------- routing ---------- */
@@ -1237,8 +1269,11 @@ var navigation = (function() {
                     return step.label_metres[kind] > step.label_metres[best] ? kind : best;
                 })];
             }
+            // two kinds with the same words - a lane on each side - are named once
             step.labels = named.map(function(kind) {
                 return names.label(kind);
+            }).filter(function(label, i, labels) {
+                return labels.indexOf(label) == i;
             });
             delete step.label_metres;
             delete step.key;
@@ -1382,6 +1417,8 @@ var navigation = (function() {
         map: null, config: null, graph: null, loading: false, failed: false,
         active: false, from: null, to: null, markers: {},
         routes: null, points: null, button: null, down: null, result: null,
+        // whether routes keep to separated cycle routes, kept in localStorage
+        prefer_separated: false,
         // a shared link without a view zooms to the route once it is known
         fit: false,
         // the animation over the map while a route with both ends is waiting for the network
@@ -1441,6 +1478,7 @@ var navigation = (function() {
         }
         state.map = map;
         state.config = withDefaults(config);
+        state.prefer_separated = readPreference();
         map.createPane('navigation');
         map.getPane('navigation').style.zIndex = 450;
         var renderer = L.svg({pane: 'navigation'});
@@ -1508,6 +1546,45 @@ var navigation = (function() {
         }
         // runs from the page's inline script, before main.js first reads and rewrites the fragment
         readLink();
+    }
+
+    /* ---------- preferring separated routes ---------- */
+
+    var PREFERENCE_KEY = 'navigation.prefer_separated';
+
+    function readPreference() {
+        try {
+            return window.localStorage.getItem(PREFERENCE_KEY) == '1';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function storePreference(prefer) {
+        try {
+            window.localStorage.setItem(PREFERENCE_KEY, prefer ? '1' : '0');
+        } catch (error) {
+            // private windows and blocked storage: the choice lasts for the page
+        }
+    }
+
+    /* the toggle next to the panel's heading, filled blue while it is on */
+    function preferButtonHtml() {
+        var title = t('Prefer segregated cycle routes');
+        return '<button type="button" class="btn btn-sm navigation-prefer' + (state.prefer_separated ? ' btn-primary' : ' btn-outline-primary')
+            + '" aria-pressed="' + (state.prefer_separated ? 'true' : 'false') + '" data-toggle="tooltip" data-placement="bottom" title="' + escape(title) + '">'
+            + (state.prefer_separated ? '&#10003; ' : '') + escape(t('Prefer segregated')) + '</button>';
+    }
+
+    function setPreferSeparated(prefer) {
+        state.prefer_separated = !!prefer;
+        storePreference(state.prefer_separated);
+        if (preferSeparated(state.graph, state.prefer_separated)) {
+            cancelScheduledUpdate();
+            update();
+        } else {
+            showPanel();
+        }
     }
 
     /* starts a new route at latlng, turning navigation on if it is not */
@@ -1580,6 +1657,7 @@ var navigation = (function() {
             var build = function() {
                 try {
                     state.graph = buildGraph(results[0].paths || [], state.config, supportPaths(results[1], state.config.layer));
+                    preferSeparated(state.graph, state.prefer_separated);
                 } catch (error) {
                     console.error('Navigation: the network could not be built', error);
                     state.failed = true;
@@ -1775,7 +1853,9 @@ var navigation = (function() {
         if (e.target == undefined || typeof e.target.closest != 'function') {
             return;
         }
-        if (e.target.closest('.navigation-reverse')) {
+        if (e.target.closest('.navigation-prefer')) {
+            setPreferSeparated(!state.prefer_separated);
+        } else if (e.target.closest('.navigation-reverse')) {
             reverse();
         } else if (e.target.closest('.navigation-end')) {
             deactivate();
@@ -2175,7 +2255,7 @@ var navigation = (function() {
         if (typeof openSidebar != 'function') {
             return;
         }
-        var content = '<h2>' + escape(t('Navigation'));
+        var content = '<h2>' + escape(t('Navigation')) + ' ' + preferButtonHtml();
         if (state.from != null && state.to != null) {
             content = content + '<button class="btn btn-lg btn-outline-dark float-right navigation-share" data-toggle="tooltip" data-placement="bottom" title="' + escape(t('Copy link to clipboard')) + '">' + SHARE_ICON + ' <span data-i18n="Share">' + escape(t('Share')) + '</span></button>';
         }
@@ -2233,6 +2313,7 @@ var navigation = (function() {
         init: init,
         buildGraph: buildGraph,
         route: route,
+        preferSeparated: preferSeparated,
         score: score,
         directions: directions,
         supportPaths: supportPaths,

@@ -115,6 +115,8 @@ translation = {
         "Usable (footways)": "Usable (footways)",
         "Drag A or B to change the route": "Drag A or B to change the route",
         "Reverse": "Reverse",
+        "Prefer segregated": "Prefer segregated",
+        "Prefer segregated cycle routes": "Prefer segregated cycle routes",
         "End navigation": "End navigation",
         "Finding the route…": "Finding the route…",
         "Navigate from here": "Navigate from here",

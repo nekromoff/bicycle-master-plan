@@ -45,6 +45,12 @@
     color: #fff;
 }
 
+/* the switch for preferring separated routes, small, next to the panel's heading */
+.navigation-prefer {
+    vertical-align: middle;
+    font-size: 0.8rem;
+}
+
 .navigation-casing {
     stroke: #fff;
     stroke-width: 9px;

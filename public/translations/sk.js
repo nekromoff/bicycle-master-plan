@@ -115,6 +115,8 @@ translation = {
         "Usable (footways)": "Použiteľné (pešie trasy)",
         "Drag A or B to change the route": "Presunutím bodu A alebo B zmeníte trasu",
         "Reverse": "Otočiť",
+        "Prefer segregated": "Preferuj oddelené",
+        "Prefer segregated cycle routes": "Uprednostniť oddelené cyklotrasy",
         "End navigation": "Ukončiť navigáciu",
         "Finding the route…": "Hľadám trasu…",
         "Navigate from here": "Navigovať odtiaľto",
