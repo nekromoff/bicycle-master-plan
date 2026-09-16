@@ -123,6 +123,13 @@ Add a `navigation` block to `config/map.php`. `config/map.example.php` contains 
 - The panel shows the length and time, how much of the route is on segregated cycle routes, in traffic and on footways, and turn by turn directions. Clicking a step zooms to it.
 - The route is kept in the address bar (`n=` parameter), so copying the address or using the share button shares the route.
 
+### Turn by turn with a voice
+Once a route is shown, *Start navigation* follows the rider along it from the phone's position (the browser asks for permission on the tap). The panel gives way to a bar with the next manoeuvre and the distance to it, the map keeps the rider in view, and every manoeuvre is chimed and spoken through the browser's own voice in the map's language: a chime with a lower note means a left turn, a higher note a right turn, one note a slight turn and two a full one, and a rising three note chime the arrival. A rider who leaves the route gets a new one from where they are. The screen is kept on where the browser allows it; the page has to stay in front, phones stop a page in the background.
+
+`public/js/guidance.js` does the geometry - where on the route the rider is, and what to say when - without the map, so it is tested in Node: `npm test`.
+
+A route can be tried without riding it: `/navigation/demo` takes a shared link and plays a fake position along the route at a chosen speed, logs every announcement, and can send the rider off the route. The map itself does the same with `sim=1` (or another speed multiplier) added to a shared link, e.g. `#n=…&sim=4`.
+
 ### How the route is found
 Everything runs in the visitor's browser (`public/js/navigation.js`); the server only serves the data. The router has no Leaflet dependency, so `buildGraph()` and `route()` can be run and tested in Node.
 

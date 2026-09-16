@@ -462,3 +462,207 @@
         display: none;
     }
 }
+
+/*
+    Following the rider: the panel gives way to a bar over the bottom of the map with the next
+    manoeuvre, see startFollowing() in navigation.js.
+*/
+#navigation-follow {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* above the map's control corners, like the panel on phones */
+    z-index: 1002;
+    background: #fff;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+    padding: 1rem 1.25rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    font-size: 1.25rem;
+}
+
+@media (min-width: 768px) {
+    #navigation-follow {
+        left: auto;
+        right: 1rem;
+        bottom: 1rem;
+        width: 30rem;
+        border-radius: 0.75rem;
+    }
+}
+
+.navigation-follow-main {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 4.5rem;
+}
+
+.navigation-follow-icon {
+    flex: 0 0 4.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    color: #0d6efd;
+}
+
+.navigation-follow-icon svg {
+    width: 64px;
+    height: 64px;
+}
+
+.navigation-follow-icon .navigation-step-marker {
+    width: 3rem;
+    height: 3rem;
+    line-height: 3rem;
+    font-size: 1.6rem;
+}
+
+.navigation-follow-warning {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #dc3545;
+}
+
+.navigation-follow-waiting {
+    font-size: 3rem;
+    color: #212529;
+    animation: navigation-waiting 1.2s ease-in-out infinite;
+}
+
+@keyframes navigation-waiting {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.navigation-follow-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.navigation-follow-distance {
+    font-size: 2.6rem;
+    font-weight: bold;
+    line-height: 1.1;
+}
+
+.navigation-follow-instruction {
+    font-size: 1.4rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.navigation-follow-then {
+    margin: 0.5rem 0 0 5.5rem;
+    /* dark, the bar has to be read in full sun */
+    color: #212529;
+    font-size: 1.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.navigation-follow-then svg {
+    width: 22px;
+    height: 22px;
+    vertical-align: -5px;
+}
+
+.navigation-follow-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.navigation-follow-footer .btn-sm {
+    font-size: 1.1rem;
+    padding: 0.4rem 0.9rem;
+}
+
+/* readable in the sun: dark on white is over the 7:1 of WCAG AAA (the red buttons are darkened in main.css) */
+.navigation-follow-footer .btn-outline-dark {
+    color: #212529;
+    border-color: #212529;
+}
+
+.navigation-follow-footer .btn-outline-dark:hover,
+.navigation-follow-footer .btn-outline-dark:focus,
+.navigation-follow-footer .btn-outline-dark:not(:disabled):not(.disabled):active {
+    color: #fff;
+    background-color: #212529;
+    border-color: #212529;
+}
+
+
+.navigation-follow-remaining {
+    color: #212529;
+    white-space: nowrap;
+    font-size: 1.2rem;
+}
+
+.navigation-follow-buttons {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* the map's bottom corner controls sit above the bar on phones */
+@media (max-width: 767.98px) {
+    body.navigation-follow #map .leaflet-bottom {
+        bottom: 11rem;
+    }
+}
+
+/* the rider: a dot with an arrow turned the way of travel */
+.navigation-rider-icon {
+    background: none;
+    border: none;
+}
+
+.navigation-rider {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #1a73e8;
+    border: 4px solid #fff;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+    position: relative;
+}
+
+.navigation-rider::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -16px;
+    margin-left: -9px;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-bottom: 14px solid #1a73e8;
+}
+
+.navigation-rider-off {
+    background: #dc3545;
+}
+
+.navigation-rider-off::after {
+    border-bottom-color: #dc3545;
+}
+
+/* the map while following: turned so the way ahead is up, see setupRotation() in navigation.js */
+#map.navigation-rotated {
+    transform-origin: center center;
+    transition: transform 0.9s linear;
+    will-change: transform;
+}
+
+/* the map's own controls would turn with it; the bar has what is needed */
+body.navigation-follow .leaflet-control-container {
+    display: none;
+}

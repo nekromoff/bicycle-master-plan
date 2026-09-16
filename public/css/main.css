@@ -530,3 +530,31 @@ a:hover,
     vertical-align: -0.125em;
     fill: currentColor;
 }
+
+/*
+    Red buttons everywhere: Bootstrap's #dc3545 is 4.5:1 on white, AA only. Dark red is 9.3:1 with white
+    on it and as text on white, WCAG AAA, so a button reads in full sun on a phone.
+*/
+.btn-danger {
+    color: #fff;
+    background-color: #8b1a1a;
+    border-color: #8b1a1a;
+}
+.btn-danger:hover,
+.btn-danger:focus,
+.btn-danger:not(:disabled):not(.disabled):active {
+    color: #fff;
+    background-color: #6e1414;
+    border-color: #6e1414;
+}
+.btn-outline-danger {
+    color: #8b1a1a;
+    border-color: #8b1a1a;
+}
+.btn-outline-danger:hover,
+.btn-outline-danger:focus,
+.btn-outline-danger:not(:disabled):not(.disabled):active {
+    color: #fff;
+    background-color: #8b1a1a;
+    border-color: #8b1a1a;
+}

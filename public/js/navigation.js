@@ -876,6 +876,10 @@ var navigation = (function() {
     var STEP_MIN_LENGTH = 15;
     // how far before and after a junction the direction of travel is measured
     var HEADING_DISTANCE = 20;
+    // the turn into a step is the sharpest bend within this many metres of where the step begins, OSM's way boundary is often a little off the corner
+    var TURN_WINDOW = 15;
+    // a bend of at least this (degrees) inside one way is a turn of its own, else a long path could turn a corner without a word
+    var BEND_ANGLE = 60;
     // kinds of step that stay on their own however short they are
     var KEEP_SHORT = ['crossing', 'steps', 'roundabout'];
     // a gap shorter than this is a mapping detail rather than something to tell the rider
@@ -1084,6 +1088,11 @@ var navigation = (function() {
         return segment.support ? 'road' : 'street';
     }
 
+    // rails in the carriageway: embedded_rails=tram (or yes), or the way is the tram line itself
+    function hasRails(tags) {
+        return (tags.embedded_rails != undefined && tags.embedded_rails != 'no') || tags.railway == 'tram';
+    }
+
     function turnOf(delta) {
         var angle = Math.abs(delta);
         var side = delta > 0 ? 'right' : 'left';
@@ -1102,10 +1111,55 @@ var navigation = (function() {
         it has no name - and works out the turn into each from the direction of travel just
         before and just after the junction.
         @segments, @vertices the route, vertices[i] and vertices[i + 1] are the ends of segments[i]
-        @return array of {type, labels, name, walk, turn, exit, length, time, category, latlngs}, ending with an arrive step;
+        @return array of {type, labels, name, walk, turn, exit, length, time, category, rails, rails_at, latlngs}, ending with an arrive step;
+        rails_at is how many metres into the step the rails begin
         labels names every kind of way a step goes along (waynames.js), type is what the step is grouped by
     */
     function buildSteps(graph, segments, vertices, x, y, latlng) {
+        var distance = function(a, b) {
+            var dx = x(vertices[a]) - x(vertices[b]);
+            var dy = y(vertices[a]) - y(vertices[b]);
+            return Math.sqrt(dx * dx + dy * dy);
+        };
+        // index of the route vertex about metres away from index, going back (-1) or forward (1)
+        var along = function(index, metres, direction) {
+            var travelled = 0;
+            var current = index;
+            while (travelled < metres) {
+                var next = current + direction;
+                if (next < 0 || next >= vertices.length) {
+                    break;
+                }
+                travelled += distance(current, next);
+                current = next;
+            }
+            return current;
+        };
+        // compass bearing, 0 north and 90 east
+        var heading = function(a, b) {
+            return Math.atan2(x(vertices[b]) - x(vertices[a]), y(vertices[b]) - y(vertices[a])) * 180 / Math.PI;
+        };
+        // how far the route bends at a vertex, from the direction of travel just before to just after it
+        var bend = function(index) {
+            var before = along(index, HEADING_DISTANCE, -1);
+            var ahead = along(index, HEADING_DISTANCE, 1);
+            if (before == index || ahead == index) {
+                return 0;
+            }
+            var delta = heading(index, ahead) - heading(before, index);
+            return ((delta + 540) % 360) - 180;
+        };
+        // the sharpest bend around a vertex, within TURN_WINDOW metres either side
+        var bendAround = function(index) {
+            var sharpest = 0;
+            for (var i = along(index, TURN_WINDOW, -1); i <= along(index, TURN_WINDOW, 1); i++) {
+                var here = bend(i);
+                if (Math.abs(here) > Math.abs(sharpest)) {
+                    sharpest = here;
+                }
+            }
+            return sharpest;
+        };
         var raw = [];
         segments.forEach(function(segment, index) {
             var path = segment.path != null ? graph.paths[segment.path] : null;
@@ -1118,25 +1172,49 @@ var navigation = (function() {
             var category = segmentClass(segment, path);
             // metres per name of the way, in the words the map and the cross-section use for it
             var way_label = type != 'gap' ? wayLabel(path) : '';
+            // tram rails in the road, a hazard for a bicycle wheel, so the step says so
+            var rails = path != null && type != 'gap' && hasRails(pathTags(path));
             var last = raw[raw.length - 1];
+            /*
+                A sharp bend in the middle of one way is a turn as much as a junction is: the way is
+                cut there into two steps, the second keyed apart so nothing joins them up again. The
+                way's own key is kept as base, so the rest of the way goes on in the second step.
+            */
+            var base = key;
+            var same = last != undefined && last.base == base;
+            var turns = same && last.length >= STEP_MIN_LENGTH && KEEP_SHORT.indexOf(type) == -1 && Math.abs(bend(index)) >= BEND_ANGLE;
+            if (turns) {
+                key = key + '|bend' + index;
+            } else if (same) {
+                key = last.key;
+            }
             if (last != undefined && last.key == key) {
+                if (rails && !last.rails) {
+                    // the rails begin this far into the step
+                    last.rails_at = last.length;
+                }
                 last.length += segment.length;
                 last.time += segment.time;
                 last.to = index + 1;
+                last.rails = last.rails || rails;
                 last.categories[category] = (last.categories[category] || 0) + segment.length;
                 addLabel(last, way_label, segment.length);
                 return;
             }
             var categories = {};
             categories[category] = segment.length;
-            var step = {key: key, type: type, name: name, walk: !!segment.walk, length: segment.length, time: segment.time, from: index, to: index + 1, categories: categories, labels: [], label_metres: {}};
+            var step = {key: key, base: base, type: type, name: name, walk: !!segment.walk, length: segment.length, time: segment.time, from: index, to: index + 1, categories: categories, labels: [], label_metres: {}, rails: rails, rails_at: rails ? 0 : null};
             addLabel(step, way_label, segment.length);
             raw.push(step);
         });
         var absorb = function(into, step) {
+            if (step.rails && !into.rails) {
+                into.rails_at = into.length + step.rails_at;
+            }
             into.length += step.length;
             into.time += step.time;
             into.to = step.to;
+            into.rails = into.rails || step.rails;
             for (var category in step.categories) {
                 into.categories[category] = (into.categories[category] || 0) + step.categories[category];
             }
@@ -1161,14 +1239,16 @@ var navigation = (function() {
         /*
             A crossing between two pieces of the same way is the path crossing a side street,
             not a change of route, so it disappears into that way. One that joins different
-            ways stays, it is where the rider actually crosses over.
+            ways stays, it is where the rider actually crosses over - as does one on a bend,
+            where the rider turns as well as crosses.
         */
         var steps = [];
         for (var s = 0; s < folded.length; s++) {
             var step = folded[s];
             var previous = steps[steps.length - 1];
             var next = folded[s + 1];
-            if (step.type == 'crossing' && previous != undefined && next != undefined && previous.key == next.key && !step.walk) {
+            if (step.type == 'crossing' && previous != undefined && next != undefined && previous.key == next.key && !step.walk
+                && Math.abs(bend(step.from)) < BEND_ANGLE) {
                 absorb(previous, step);
                 absorb(previous, next);
                 s++;
@@ -1180,41 +1260,12 @@ var navigation = (function() {
             }
             steps.push(step);
         }
-        var distance = function(a, b) {
-            var dx = x(vertices[a]) - x(vertices[b]);
-            var dy = y(vertices[a]) - y(vertices[b]);
-            return Math.sqrt(dx * dx + dy * dy);
-        };
-        // index of the route vertex about metres away from index, going back (-1) or forward (1)
-        var along = function(index, metres, direction) {
-            var travelled = 0;
-            var current = index;
-            while (travelled < metres) {
-                var next = current + direction;
-                if (next < 0 || next >= vertices.length) {
-                    break;
-                }
-                travelled += distance(current, next);
-                current = next;
-            }
-            return current;
-        };
-        // compass bearing, 0 north and 90 east
-        var heading = function(a, b) {
-            return Math.atan2(x(vertices[b]) - x(vertices[a]), y(vertices[b]) - y(vertices[a])) * 180 / Math.PI;
-        };
         var count = graph.lat.length;
         var after_roundabout = false;
         steps.forEach(function(step, index) {
             step.turn = 'straight';
             if (index > 0 && !after_roundabout) {
-                var before = along(step.from, HEADING_DISTANCE, -1);
-                var ahead = along(step.from, HEADING_DISTANCE, 1);
-                if (before != step.from && ahead != step.from) {
-                    var delta = heading(step.from, ahead) - heading(before, step.from);
-                    delta = ((delta + 540) % 360) - 180;
-                    step.turn = turnOf(delta);
-                }
+                step.turn = turnOf(bendAround(step.from));
             }
             after_roundabout = step.type == 'roundabout';
             if (step.type == 'roundabout') {
@@ -1283,6 +1334,7 @@ var navigation = (function() {
             });
             delete step.label_metres;
             delete step.key;
+            delete step.base;
             delete step.categories;
         });
         if (steps.length) {
@@ -1428,7 +1480,19 @@ var navigation = (function() {
         // a shared link without a view zooms to the route once it is known
         fit: false,
         // the animation over the map while a route with both ends is waiting for the network
-        loading_overlay: null
+        loading_overlay: null,
+        // following the rider, see startFollowing()
+        follow: null,
+        follow_message: null,
+        muted: false,
+        audio: null,
+        // what is waiting to be said, and what is being said, see speak()
+        speech_queue: [],
+        speaking: null,
+        // a link with sim= plays the route with a fake position once it is found
+        sim_pending: 0,
+        // on(name, handler): route, follow, fix, announce
+        handlers: {}
     };
 
     function t(text) {
@@ -1550,6 +1614,12 @@ var navigation = (function() {
                 return true;
             });
         }
+        // the screen is kept on while following; the lock is lost when the page is hidden, and asked for again
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState == 'visible') {
+                requestWakeLock();
+            }
+        });
         // runs from the page's inline script, before main.js first reads and rewrites the fragment
         readLink();
     }
@@ -1619,6 +1689,8 @@ var navigation = (function() {
 
     function deactivate() {
         state.active = false;
+        state.sim_pending = 0;
+        stopFollowing();
         document.body.classList.remove('navigation-half', 'navigation-controls-hidden');
         state.map.getContainer().classList.remove('navigating');
         setButtonActive(false);
@@ -1778,17 +1850,25 @@ var navigation = (function() {
 
     /* opens the route a shared link carries in its n parameter */
     function readLink() {
-        var hash = window.location.hash.replace(/^#/, '');
+        openHash(window.location.hash.replace(/^#/, ''), true);
+    }
+
+    /*
+        @hash the part of a link after #; n= is the route, sim= (a speed multiplier, 1 for real time)
+        plays it with a fake position once found
+        @on_load whether this is the page's own address, opened as it loads
+    */
+    function openHash(hash, on_load) {
         if (!hash || hash.indexOf('|') != -1 || hash.toLowerCase().indexOf('%7c') != -1) {
-            return;
+            return false;
         }
         var params = new URLSearchParams(hash);
         if (!params.get('n')) {
-            return;
+            return false;
         }
         var points = decodePoints(params.get('n'), boundingBox(), 2);
         if (points == null) {
-            return;
+            return false;
         }
         var from = L.latLng(points[0][0], points[0][1]);
         var to = L.latLng(points[1][0], points[1][1]);
@@ -1798,14 +1878,24 @@ var navigation = (function() {
         };
         focus();
         // main.js sets the view from the link's map= once the page has loaded, which would move it away again
-        if (document.readyState == 'loading') {
+        if (on_load && document.readyState == 'loading') {
             document.addEventListener('DOMContentLoaded', focus);
+        }
+        if (params.get('sim')) {
+            state.sim_pending = Math.max(0.1, parseFloat(params.get('sim')) || 1);
+        }
+        if (state.follow != null) {
+            stopFollowing();
         }
         // and once the route is known, the whole of it
         state.fit = true;
-        activate();
+        if (!state.active) {
+            activate();
+        }
+        clear();
         setPoint('from', from);
         setPoint('to', to);
+        return true;
     }
 
     /*
@@ -1865,6 +1955,14 @@ var navigation = (function() {
             reverse();
         } else if (e.target.closest('.navigation-end')) {
             deactivate();
+        } else if (e.target.closest('.navigation-start')) {
+            startFollowing();
+        } else if (e.target.closest('.navigation-stop')) {
+            stopFollowing();
+        } else if (e.target.closest('.navigation-mute')) {
+            setMuted(!state.muted);
+        } else if (e.target.closest('.navigation-recentre')) {
+            recentre();
         } else if (e.target.closest('.navigation-step')) {
             focusStep(parseInt(e.target.closest('.navigation-step').getAttribute('data-step'), 10));
         } else if (e.target.closest('.navigation-share') && state.from != null && state.to != null) {
@@ -1943,6 +2041,14 @@ var navigation = (function() {
                     document.body.classList.add('navigation-half', 'navigation-controls-hidden');
                 }
                 state.map.fitBounds(bounds, {paddingTopLeft: [40, 40], paddingBottomRight: [40, 40 + coveredBottom()]});
+            }
+            emit('route', state.result);
+            if (state.follow != null) {
+                refollow();
+            } else if (state.sim_pending && !state.result.error) {
+                var multiplier = state.sim_pending;
+                state.sim_pending = 0;
+                startFollowing({fake: true, multiplier: multiplier});
             }
         }
         showPanel();
@@ -2039,7 +2145,8 @@ var navigation = (function() {
         element, and sized with width and height attributes as well as CSS - both of which
         Safari has handled unreliably on inline svg.
     */
-    function stepIcon(name, angle) {
+    // @up the arrow points up the screen, away from the rider, as on the bar while following; else down the list
+    function stepIcon(name, angle, up) {
         var content = STEP_ICONS[name];
         if (name == 'turn') {
             /*
@@ -2051,7 +2158,7 @@ var navigation = (function() {
                 Turned round, as the list reads downwards: straight on points down, and a turn bends the
                 way it does for a rider heading down the list - right to the left of the screen.
             */
-            content = '<g transform="rotate(180 8 8)">'
+            content = '<g transform="rotate(' + (up ? 0 : 180) + ' 8 8)">'
                 + '<path d="M8 14.5V9"' + line + '/>'
                 + '<g transform="rotate(' + (angle || 0) + ' 8 9)">'
                 + '<path d="M8 9V5.5"' + line + '/>'
@@ -2120,41 +2227,50 @@ var navigation = (function() {
             var progress = shown_distance || shown_time
                 ? '<span class="navigation-step-length">' + shown_distance + '</span><span class="navigation-step-time">' + shown_time + '</span>'
                 : '';
-            // every kind of way the step goes along, already translated by waynames.js: "Obchodná (Pešia zóna)"
-            var label = (step.labels || []).map(escape).join(', ');
-            if (step.name) {
-                label = '<strong>' + escape(step.name) + '</strong>' + (label ? ' (' + label + ')' : '');
-            }
-            var icon;
-            var text;
-            if (step.type == 'arrive') {
-                // the same B as the destination marker on the map
-                icon = '<span class="navigation-marker navigation-to navigation-step-marker">B</span>';
-                text = escape(t('Arrive at the destination'));
-            } else if (index == 0) {
-                icon = '<span class="navigation-marker navigation-from navigation-step-marker">A</span>';
-                text = escape(t('Start')) + ': ' + label;
-            } else if (step.type == 'roundabout') {
-                icon = stepIcon('roundabout');
-                text = escape(t('Roundabout')) + ', ' + escape(t('exit')) + ' ' + step.exit;
-            } else if (step.type == 'crossing') {
-                icon = stepIcon('crossing');
-                text = escape(t('Cross'));
-            } else if (step.type == 'gap') {
-                icon = stepIcon('gap');
-                text = escape(t('Continue without a path'));
-            } else {
-                icon = stepIcon('turn', TURN_ANGLE[step.turn]);
-                text = escape(t(TURN_TEXT[step.turn])) + ': ' + label;
-            }
+            var shown = stepPresentation(step, index);
             content = content + '<li class="navigation-step" data-step="' + index + '">'
                 + mark(step.category)
-                + '<span class="navigation-step-icon">' + icon + '</span>'
-                + '<span class="navigation-step-text">' + text + '</span>'
+                + '<span class="navigation-step-icon">' + shown.icon + '</span>'
+                + '<span class="navigation-step-text">' + shown.text + '</span>'
                 + (progress ? '<span class="navigation-step-distance">' + progress + '</span>' : '')
                 + '</li>';
         });
         return content + '</ol>';
+    }
+
+    /* the icon and the words of a step, as HTML, for the list of steps and for the bar while following */
+    function stepPresentation(step, index, up) {
+        if (step == undefined) {
+            return {icon: '', text: ''};
+        }
+        // every kind of way the step goes along, already translated by waynames.js: "Obchodná (Pešia zóna)"
+        var label = (step.labels || []).map(escape).join(', ');
+        if (step.name) {
+            label = '<strong>' + escape(step.name) + '</strong>' + (label ? ' (' + label + ')' : '');
+        }
+        var icon;
+        var text;
+        if (step.type == 'arrive') {
+            // the same B as the destination marker on the map
+            icon = '<span class="navigation-marker navigation-to navigation-step-marker">B</span>';
+            text = escape(t('Arrive at the destination'));
+        } else if (index == 0) {
+            icon = '<span class="navigation-marker navigation-from navigation-step-marker">A</span>';
+            text = escape(t('Start')) + ': ' + label;
+        } else if (step.type == 'roundabout') {
+            icon = stepIcon('roundabout');
+            text = escape(t('Roundabout')) + ', ' + escape(t('exit')) + ' ' + step.exit;
+        } else if (step.type == 'crossing') {
+            icon = stepIcon('crossing');
+            text = escape(t('Cross'));
+        } else if (step.type == 'gap') {
+            icon = stepIcon('gap');
+            text = escape(t('Continue without a path'));
+        } else {
+            icon = stepIcon('turn', TURN_ANGLE[step.turn], up);
+            text = escape(t(TURN_TEXT[step.turn])) + ': ' + label;
+        }
+        return {icon: icon, text: text};
     }
 
     /* zooms to a step and marks it on the route */
@@ -2258,7 +2374,7 @@ var navigation = (function() {
     }
 
     function showPanel() {
-        if (typeof openSidebar != 'function') {
+        if (typeof openSidebar != 'function' || state.follow != null) {
             return;
         }
         var content = '<h2>' + escape(t('Navigation')) + ' ' + preferButtonHtml();
@@ -2305,7 +2421,15 @@ var navigation = (function() {
                     + '<span class="navigation-legend-share">' + share(line.metres, result.length) + '</span>'
                     + '</div>';
             });
-            content = content + '</div>' + stepsHtml(result.steps) + '<p class="text-secondary">' + escape(t('Drag A or B to change the route')) + '</p>';
+            content = content + '</div>';
+            if (typeof guidance != 'undefined') {
+                // turn by turn with a voice, from the phone's position
+                content = content + '<p><button class="btn btn-primary btn-block navigation-start">' + escape(t('Start navigation')) + '</button></p>';
+                if (state.follow_message) {
+                    content = content + '<p class="text-danger">' + escape(state.follow_message) + '</p>';
+                }
+            }
+            content = content + stepsHtml(result.steps) + '<p class="text-secondary">' + escape(t('Drag A or B to change the route')) + '</p>';
         }
         content = content + '<p>';
         if (state.from != null && state.to != null) {
@@ -2315,8 +2439,950 @@ var navigation = (function() {
         openSidebar(content);
     }
 
+    /* ---------- following the rider: turn by turn with a voice ---------- */
+
+    /*
+        Once a route is there, "Start navigation" follows the rider along it: guidance.js says where on
+        the route the rider is and what to say, a source gives the position - the phone's GPS, or
+        guidance.fakeSource on the demo page and with sim= in a link - and the panel gives way to a bar
+        with the next manoeuvre. Announcements are chimed and spoken, and kept short: the manoeuvre,
+        and the street when it changes - never the kind of way. A little xylophone phrase means a manoeuvre,
+        the words say which; three taps on a low bar mean the route was left.
+    */
+
+    var MUTED_KEY = 'navigation.muted';
+    // a reroute at most this often (ms), a rider a little off the line is not sent a new route every second
+    var REROUTE_INTERVAL = 10000;
+    // the map follows the rider again this long after being dragged (ms)
+    var DETACHED_FOR = 15000;
+    var FOLLOW_ZOOM = 19;
+    /*
+        The map is turned when a turn is made - the rider passes onto the next step - and otherwise only
+        when a long bend in one step has swung the way ahead round by more than this (degrees).
+    */
+    var TURN_THRESHOLD = 60;
+    // the language of the voice for the map's language
+    var SPEECH_LANGS = {sk: 'sk-SK', cs: 'cs-CZ', en: 'en-GB', de: 'de-DE', hu: 'hu-HU', pl: 'pl-PL', uk: 'uk-UA'};
+    // the word a manoeuvre is spoken with: "Left onto Obchodná", "Left in 200 metres"
+    var TURN_SPEECH = {
+        straight: 'Straight', slight_right: 'Slightly right', right: 'Right',
+        slight_left: 'Slightly left', left: 'Left'
+    };
+
+    function on(name, handler) {
+        if (state.handlers[name] == undefined) {
+            state.handlers[name] = [];
+        }
+        state.handlers[name].push(handler);
+    }
+
+    function emit(name, a, b) {
+        (state.handlers[name] || []).forEach(function(handler) {
+            try {
+                handler(a, b);
+            } catch (error) {
+                console.error('Navigation: ' + name + ' handler failed', error);
+            }
+        });
+    }
+
+    function readMuted() {
+        try {
+            return window.localStorage != undefined && window.localStorage.getItem(MUTED_KEY) == '1';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function setMuted(muted) {
+        state.muted = !!muted;
+        try {
+            if (window.localStorage != undefined) {
+                window.localStorage.setItem(MUTED_KEY, state.muted ? '1' : '0');
+            }
+        } catch (error) {
+            // private mode: the setting lasts the page
+        }
+        if (state.muted) {
+            state.speech_queue = [];
+            state.speaking = null;
+            if (window.speechSynthesis != undefined) {
+                window.speechSynthesis.cancel();
+            }
+        }
+        renderBar();
+    }
+
+    /* the position from the phone, {start(callback), stop()} like guidance.fakeSource */
+    function gpsSource() {
+        var id = null;
+        return {
+            start: function(callback) {
+                id = navigator.geolocation.watchPosition(function(position) {
+                    callback({
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        heading: position.coords.heading,
+                        speed: position.coords.speed,
+                        time: position.timestamp
+                    });
+                }, function(error) {
+                    followError(error);
+                }, {enableHighAccuracy: true, maximumAge: 1000, timeout: 20000});
+            },
+            stop: function() {
+                if (id != null) {
+                    navigator.geolocation.clearWatch(id);
+                    id = null;
+                }
+            }
+        };
+    }
+
+    function followError(error) {
+        var follow = state.follow;
+        if (follow == null) {
+            return;
+        }
+        // no fix for a while: the bar says so and the watch goes on
+        if (error != null && error.code == 3) {
+            follow.waiting = true;
+            renderBar();
+            return;
+        }
+        console.error('Navigation: location failed', error);
+        stopFollowing();
+        state.follow_message = t('Location is not available');
+        showPanel();
+    }
+
+    /*
+        Speech and sound only start from a tap: the first utterance and the audio context are
+        made in the click handler, before anything asynchronous happens.
+    */
+    function unlockAudio() {
+        if (window.speechSynthesis != undefined) {
+            try {
+                window.speechSynthesis.cancel();
+                var silence = new SpeechSynthesisUtterance('');
+                silence.volume = 0;
+                window.speechSynthesis.speak(silence);
+            } catch (error) {
+                // no voice, the chimes and the bar still work
+            }
+        }
+        var Context = window.AudioContext || window.webkitAudioContext;
+        if (Context != undefined) {
+            try {
+                if (state.audio == null) {
+                    state.audio = new Context();
+                }
+                if (state.audio.state == 'suspended') {
+                    state.audio.resume();
+                }
+            } catch (error) {
+                state.audio = null;
+            }
+        }
+    }
+
+    /*
+        The chimes: a small xylophone, each note struck and left to ring, played as a little
+        arpeggio like a music box. A turn is one note, the arrival a short lullaby
+        phrase, and leaving the route three taps on one low bar. notes are the strokes in turn (a
+        stroke may hit more than one bar), spacing the time between them, decay how long a bar rings.
+    */
+    var C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99, A5 = 880.00, C6 = 1046.50;
+    var D4 = 293.66;
+    var CHIMES = {
+        // any manoeuvre; straight on has no chime, the words alone
+        turn: {notes: [[G5]], decay: 0.9},
+        arrive: {notes: [[G5], [E5], [C5], [D5], [E5], [C5]], spacing: 0.22, decay: 1.1},
+        off_route: {notes: [[D4], [D4], [D4]], spacing: 0.2, decay: 0.5}
+    };
+    /*
+        What a struck bar sounds of: the note, the bar's first overtone about three times higher
+        and a faint one above that, the overtones dying away sooner than the note.
+    */
+    var BAR_PARTIALS = [
+        {ratio: 1, level: 1, ring: 1},
+        {ratio: 3, level: 0.18, ring: 0.35},
+        {ratio: 6.1, level: 0.05, ring: 0.15}
+    ];
+
+    // one stroke on one bar: an instant attack, then the bar rings out on its own
+    function tone(context, destination, frequency, at, decay) {
+        BAR_PARTIALS.forEach(function(partial) {
+            var oscillator = context.createOscillator();
+            var gain = context.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.value = frequency * partial.ratio;
+            var ring = decay * partial.ring;
+            gain.gain.setValueAtTime(0.0001, at);
+            gain.gain.linearRampToValueAtTime(partial.level, at + 0.003);
+            gain.gain.exponentialRampToValueAtTime(0.0001, at + ring);
+            oscillator.connect(gain);
+            gain.connect(destination);
+            oscillator.start(at);
+            oscillator.stop(at + ring + 0.05);
+        });
+    }
+
+    // @return seconds until the chime is out of the way of the words
+    function chime(kind) {
+        var sound = CHIMES[kind];
+        if (sound == undefined || state.audio == null || state.muted) {
+            return 0;
+        }
+        var context = state.audio;
+        var master = context.createGain();
+        // quiet, and quieter still the more notes sound at once, so a chord never overloads
+        var most = sound.notes.reduce(function(max, chord) {
+            return Math.max(max, chord.length);
+        }, 1);
+        master.gain.value = 0.16 / Math.sqrt(most);
+        // a low-pass rounds the stroke off on small speakers
+        var filter = context.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 5000;
+        master.connect(filter);
+        filter.connect(context.destination);
+        var start = context.currentTime + 0.02;
+        var spacing = sound.spacing || 0;
+        sound.notes.forEach(function(stroke, index) {
+            stroke.forEach(function(frequency) {
+                tone(context, master, frequency, start + index * spacing, sound.decay);
+            });
+        });
+        // the words come a second after the last chord is struck
+        return (sound.notes.length - 1) * spacing + 1;
+    }
+
+    function speechLanguage() {
+        var code = language() || 'en';
+        return SPEECH_LANGS[code] || code;
+    }
+
+    function pickVoice(lang) {
+        if (window.speechSynthesis == undefined) {
+            return null;
+        }
+        var voices = window.speechSynthesis.getVoices() || [];
+        var wanted = lang.toLowerCase();
+        var short = wanted.split('-')[0];
+        var same = voices.filter(function(voice) {
+            return (voice.lang || '').replace('_', '-').toLowerCase() == wanted;
+        });
+        var close = voices.filter(function(voice) {
+            return (voice.lang || '').replace('_', '-').toLowerCase().indexOf(short) == 0;
+        });
+        var candidates = same.length ? same : close;
+        if (!candidates.length) {
+            return null;
+        }
+        // the voice on the device answers faster than one fetched from the network
+        return candidates.filter(function(voice) {
+            return voice.localService;
+        })[0] || candidates[0];
+    }
+
+    /*
+        Announcements are said one after another, never over each other: each waits for the one
+        before to finish, and its chime, if it has one, sounds a second before its words. An urgent
+        one - a turn due now, rails, the arrival - throws out whatever is still waiting and cuts
+        short what is being said.
+        @kind the chime before the words, if any
+    */
+    function speak(text, kind, urgent) {
+        emit('announce', text, kind);
+        if (state.muted) {
+            return;
+        }
+        if (urgent) {
+            state.speech_queue = state.speech_queue.filter(function(item) {
+                return item.urgent;
+            });
+            if (state.speaking != null && window.speechSynthesis != undefined) {
+                window.speechSynthesis.cancel();
+            }
+        }
+        state.speech_queue.push({text: text, kind: kind, urgent: urgent});
+        if (state.speaking == null) {
+            nextSpeech();
+        }
+    }
+
+    function nextSpeech() {
+        var item = state.speech_queue.shift();
+        state.speaking = item || null;
+        if (item == undefined) {
+            return;
+        }
+        var done = function() {
+            if (state.speaking === item) {
+                nextSpeech();
+            }
+        };
+        var wait = chime(item.kind);
+        window.setTimeout(function() {
+            if (state.speaking !== item) {
+                return;
+            }
+            if (state.muted || !item.text || window.speechSynthesis == undefined) {
+                done();
+                return;
+            }
+            try {
+                var utterance = new SpeechSynthesisUtterance(item.text);
+                var lang = speechLanguage();
+                utterance.lang = lang;
+                var voice = pickVoice(lang);
+                if (voice != null) {
+                    utterance.voice = voice;
+                }
+                utterance.onend = done;
+                utterance.onerror = done;
+                window.speechSynthesis.speak(utterance);
+                // some browsers never report the end of an utterance; it cannot take longer than this
+                window.setTimeout(done, 2000 + item.text.length * 120);
+            } catch (error) {
+                console.error('Navigation: speech failed', error);
+                done();
+            }
+        }, Math.round(wait * 1000));
+    }
+
+    /* "200 metres", "1 kilometre", "1,2 kilometres" - in words, for the voice */
+    function speechDistance(metres) {
+        if (metres < 1000) {
+            return typeof i18n == 'function' ? i18n('%n metres', metres) : metres + ' metres';
+        }
+        var km = Math.round(metres / 100) / 10;
+        if (km == Math.round(km)) {
+            return typeof i18n == 'function' ? i18n('%n kilometres', km) : km + ' kilometres';
+        }
+        return t('%{n} kilometres').replace('%{n}', km.toLocaleString(language()));
+    }
+
+    /*
+        The street of a step, spoken once: not when it was the last street spoken, whatever unnamed
+        crossing or footway came between. The kinds of way are never spoken.
+    */
+    function newStreet(index) {
+        var steps = state.result != null ? state.result.steps : [];
+        var step = steps[index];
+        if (step == undefined || !step.name || state.follow == null || state.follow.spoken_street == step.name) {
+            return '';
+        }
+        state.follow.spoken_street = step.name;
+        return step.name;
+    }
+
+    /*
+        A manoeuvre in as few words as it takes: "Left", "Roundabout, exit 2", "Destination".
+        @street the street it leads onto, said when it is a new one; @metres how far ahead, said when given
+    */
+    function speechManoeuvre(step, index, metres, lower) {
+        if (step == undefined) {
+            return '';
+        }
+        var words;
+        if (step.type == 'arrive') {
+            words = t('Destination');
+        } else if (step.type == 'roundabout') {
+            words = t('Roundabout, exit %{exit}').replace('%{exit}', step.exit || 1);
+        } else if (step.type == 'crossing' && step.turn == 'straight') {
+            words = t('Cross the road');
+        } else if (step.type == 'gap') {
+            words = t('Without a path');
+        } else {
+            words = t(TURN_SPEECH[step.turn] || 'Straight');
+        }
+        if (lower) {
+            words = words.toLowerCase();
+        }
+        if (metres != undefined) {
+            return t('%{manoeuvre} in %{distance}').replace('%{manoeuvre}', words).replace('%{distance}', speechDistance(metres));
+        }
+        var street = step.type == 'arrive' || step.type == 'crossing' ? '' : newStreet(index);
+        return street ? t('%{manoeuvre} onto %{street}').replace('%{manoeuvre}', words).replace('%{street}', street) : words;
+    }
+
+    function capitalise(text) {
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    // whether a step asks the rider to do anything: a turn, a roundabout, a crossing, a gap, the end
+    function isManoeuvre(step) {
+        return step != undefined && (step.turn != 'straight' || step.type == 'roundabout' || step.type == 'crossing' || step.type == 'gap' || step.type == 'arrive');
+    }
+
+    // the chime of a step: none for straight on, the chord for a turn, a roundabout, a crossing or a gap
+    function chimeKind(step) {
+        if (step == undefined) {
+            return null;
+        }
+        if (step.type == 'arrive') {
+            return 'arrive';
+        }
+        if (step.type == 'roundabout' || step.type == 'crossing' || step.type == 'gap') {
+            return 'turn';
+        }
+        return step.turn == 'straight' ? null : 'turn';
+    }
+
+    // the words and the chime of one announcement from guidance.js
+    function announce(announcement) {
+        var steps = state.result != null ? state.result.steps : [];
+        var step = steps[announcement.step];
+        var text;
+        var kind = null;
+        var urgent = false;
+        switch (announcement.kind) {
+            case 'start':
+            case 'continue':
+                // "Straight on Obchodná" at the start and where the street changes; nothing at all otherwise
+                var street = newStreet(announcement.step);
+                if (!street) {
+                    return;
+                }
+                text = t('%{manoeuvre} onto %{street}').replace('%{manoeuvre}', t('Straight')).replace('%{street}', street);
+                break;
+            case 'prepare':
+                // straight on needs no warning
+                if (!isManoeuvre(step)) {
+                    return;
+                }
+                text = speechManoeuvre(step, announcement.step, announcement.metres);
+                // the arrival's own chime is for arriving, its warning gets the plain one
+                kind = step.type == 'arrive' ? 'turn' : chimeKind(step);
+                break;
+            case 'now':
+                // straight on is only worth words where the street changes: "Rovno na Obchodná"
+                if (isManoeuvre(step)) {
+                    text = speechManoeuvre(step, announcement.step);
+                } else {
+                    var onto = newStreet(announcement.step);
+                    text = onto ? t('%{manoeuvre} onto %{street}').replace('%{manoeuvre}', t('Straight')).replace('%{street}', onto) : '';
+                }
+                var then = steps[announcement.then];
+                if (isManoeuvre(then)) {
+                    // a crossing on a bend is spoken as the turn, so it merges like one
+                    var plain = function(which) {
+                        return which.type != 'roundabout' && which.type != 'gap' && which.type != 'arrive'
+                            && (which.type != 'crossing' || which.turn != 'straight');
+                    };
+                    var side = function(which) {
+                        return which.turn == 'left' || which.turn == 'slight_left' ? 'left' : (which.turn == 'right' || which.turn == 'slight_right' ? 'right' : which.turn);
+                    };
+                    if (plain(step) && plain(then) && side(step) == side(then)) {
+                        // the same way twice in a few metres is one turn, the sharper of the two: "Left onto Záhradnícka"
+                        var sharper = step.turn == side(step) || then.turn == side(then) ? side(step) : then.turn;
+                        text = speechManoeuvre(Object.assign({}, then, {turn: sharper}), announcement.then);
+                    } else {
+                        var then_text = speechManoeuvre(then, announcement.then, undefined, true);
+                        text = text ? text + ', ' + t('then') + ' ' + then_text : capitalise(then_text);
+                    }
+                }
+                if (!text) {
+                    return;
+                }
+                kind = chimeKind(step);
+                urgent = true;
+                break;
+            case 'rails':
+                text = t('Mind the tracks');
+                kind = 'turn';
+                urgent = true;
+                break;
+            case 'arrive':
+                text = t('You have arrived at the destination');
+                kind = 'arrive';
+                urgent = true;
+                break;
+            case 'off_route':
+                text = t('Return to the route');
+                kind = 'off_route';
+                urgent = true;
+                break;
+            default:
+                return;
+        }
+        speak(text, kind, urgent);
+    }
+
+    function requestWakeLock() {
+        if (state.follow == null || navigator.wakeLock == undefined) {
+            return;
+        }
+        navigator.wakeLock.request('screen').then(function(lock) {
+            if (state.follow != null) {
+                state.follow.wake = lock;
+            } else {
+                lock.release();
+            }
+        }).catch(function() {
+            // not granted: the screen goes off as usual
+        });
+    }
+
+    function releaseWakeLock() {
+        if (state.follow != null && state.follow.wake != null) {
+            state.follow.wake.release().catch(function() {});
+            state.follow.wake = null;
+        }
+    }
+
+    function isFollowing() {
+        return state.follow != null;
+    }
+
+    // the rider put back this many metres, on the demo page: the source goes back and the tracker says that stretch again
+    function rewind(metres) {
+        var follow = state.follow;
+        if (follow == null) {
+            return;
+        }
+        if (follow.tracker != null) {
+            follow.tracker.rewind(metres);
+        }
+        if (typeof follow.source.back == 'function') {
+            follow.source.back(metres);
+        }
+        follow.arrived = false;
+        state.speech_queue = [];
+        state.speaking = null;
+        if (window.speechSynthesis != undefined) {
+            window.speechSynthesis.cancel();
+        }
+    }
+
+    /*
+        @options.source a position source, the phone's GPS when left out
+        @options.fake, options.multiplier a fake source made here instead, playing the route this many times faster
+    */
+    function startFollowing(options) {
+        options = options || {};
+        if (state.follow != null || state.result == null || state.result.error || typeof guidance == 'undefined') {
+            return false;
+        }
+        var source = options.source;
+        if (source == null && options.fake) {
+            source = guidance.fakeSource(state.result, {multiplier: options.multiplier || 1});
+        }
+        if (source == null) {
+            if (navigator.geolocation == undefined) {
+                state.follow_message = t('Location is not supported by this browser.');
+                showPanel();
+                return false;
+            }
+            source = gpsSource();
+        }
+        state.follow_message = null;
+        state.muted = readMuted();
+        unlockAudio();
+        state.follow = {
+            source: source,
+            tracker: guidance.create(state.result, state.config.guidance),
+            marker: null,
+            waiting: true,
+            last: null,
+            heading: null,
+            detached_at: 0,
+            rerouted_at: 0,
+            arrived: false,
+            wake: null,
+            // the street last spoken, so it is not said again at the next step along it
+            spoken_street: null,
+            // how far the map is turned (degrees, continuous so it never spins the long way round), see turnMap()
+            rotation: 0,
+            turned: false,
+            // the step the rider was on at the last fix, a change is a turn made
+            step: null,
+            map_styles: null
+        };
+        document.body.classList.add('navigation-follow');
+        document.body.classList.remove('navigation-half', 'navigation-controls-hidden');
+        if (typeof closeSidebar == 'function') {
+            closeSidebar();
+        }
+        if (state.highlight != null) {
+            state.routes.removeLayer(state.highlight);
+            state.highlight = null;
+        }
+        state.map.on('dragstart', onFollowDrag);
+        buildBar();
+        renderBar();
+        setupRotation();
+        requestWakeLock();
+        emit('follow', true, source);
+        source.start(onFix);
+        return true;
+    }
+
+    function stopFollowing() {
+        var follow = state.follow;
+        if (follow == null) {
+            return;
+        }
+        follow.source.stop();
+        releaseWakeLock();
+        teardownRotation();
+        state.map.off('dragstart', onFollowDrag);
+        if (follow.marker != null) {
+            state.points.removeLayer(follow.marker);
+        }
+        state.follow = null;
+        state.speech_queue = [];
+        state.speaking = null;
+        if (window.speechSynthesis != undefined) {
+            window.speechSynthesis.cancel();
+        }
+        document.body.classList.remove('navigation-follow');
+        var bar = document.getElementById('navigation-follow');
+        if (bar != null && bar.parentNode) {
+            bar.parentNode.removeChild(bar);
+        }
+        emit('follow', false);
+        if (state.active) {
+            showPanel();
+        }
+    }
+
+    // a route found while following - after a reroute, or A dragged - is followed from here on
+    function refollow() {
+        var follow = state.follow;
+        if (follow == null) {
+            return;
+        }
+        if (state.result == null || state.result.error) {
+            follow.tracker = null;
+            speak(t('Return to the route'), 'off_route', true);
+            renderBar();
+            return;
+        }
+        follow.tracker = guidance.create(state.result, state.config.guidance);
+        if (typeof follow.source.setRoute == 'function') {
+            follow.source.setRoute(state.result);
+        }
+        // a new route is not spoken of: its first words are what to do on it
+        emit('announce', t('Route recalculated'), null);
+        renderBar();
+    }
+
+    function onFollowDrag() {
+        if (state.follow != null) {
+            state.follow.detached_at = Date.now();
+            renderBar();
+        }
+    }
+
+    function recentre() {
+        if (state.follow != null) {
+            state.follow.detached_at = 0;
+            if (state.follow.last != null) {
+                followMap(state.follow.last.fix, state.follow.last.event);
+            }
+            renderBar();
+        }
+    }
+
+    function onFix(fix) {
+        var follow = state.follow;
+        if (follow == null) {
+            return;
+        }
+        follow.waiting = false;
+        var event = follow.tracker != null ? follow.tracker.update(fix) : null;
+        follow.last = {fix: fix, event: event};
+        placeRider(fix, event);
+        if (event != null) {
+            var announcements = event.announcements;
+            if (event.off_route && !event.done && maybeReroute(fix)) {
+                // "route recalculated" was just said, "return to the route" would be one message too many
+                announcements = announcements.filter(function(announcement) {
+                    return announcement.kind != 'off_route';
+                });
+            }
+            // a turn due now is all that is said on this fix; a start or a warning at the same moment is dropped
+            var urgent = ['now', 'arrive', 'rails'];
+            var pressing = announcements.some(function(announcement) {
+                return urgent.indexOf(announcement.kind) != -1;
+            });
+            if (pressing) {
+                announcements = announcements.filter(function(announcement) {
+                    return urgent.indexOf(announcement.kind) != -1;
+                });
+            }
+            announcements.forEach(announce);
+            if (event.arrived && !follow.arrived) {
+                follow.arrived = true;
+                follow.source.stop();
+                releaseWakeLock();
+            }
+        } else if (follow.tracker == null) {
+            // no route from where the rider was: tried again from here
+            maybeReroute(fix);
+        }
+        renderBar();
+        followMap(fix, event);
+        emit('fix', fix, event);
+    }
+
+    // @return whether a new route was looked for
+    function maybeReroute(fix) {
+        var follow = state.follow;
+        if (follow == null || Date.now() - follow.rerouted_at < REROUTE_INTERVAL || state.graph == null) {
+            return false;
+        }
+        follow.rerouted_at = Date.now();
+        var latlng = L.latLng(fix.lat, fix.lon);
+        state.from = latlng;
+        if (state.markers.from != undefined) {
+            state.markers.from.setLatLng(latlng);
+        }
+        cancelScheduledUpdate();
+        update();
+        return true;
+    }
+
+    // the rider on the map: a dot with an arrow the way the route goes, or the way the phone says
+    function placeRider(fix, event) {
+        var follow = state.follow;
+        var on_route = event != null && event.accepted && !event.off_route && event.snapped != null;
+        var latlng = on_route ? L.latLng(event.snapped[0], event.snapped[1]) : L.latLng(fix.lat, fix.lon);
+        var heading = null;
+        if (typeof fix.heading == 'number' && !isNaN(fix.heading) && (fix.speed == null || fix.speed > 1)) {
+            heading = fix.heading;
+        } else if (on_route) {
+            heading = event.bearing;
+        }
+        if (heading == null && follow.heading != null) {
+            heading = follow.heading;
+        }
+        follow.heading = heading;
+        var html = '<div class="navigation-rider' + (on_route ? '' : ' navigation-rider-off') + '"' + (heading != null ? ' style="transform: rotate(' + Math.round(heading) + 'deg)"' : '') + '></div>';
+        var icon = L.divIcon({className: 'navigation-rider-icon', html: html, iconSize: [40, 40]});
+        if (follow.marker == null) {
+            follow.marker = L.marker(latlng, {
+                icon: icon,
+                interactive: false,
+                keyboard: false,
+                zIndexOffset: 2000
+            }).addTo(state.points);
+        } else {
+            follow.marker.setLatLng(latlng);
+            follow.marker.setIcon(icon);
+        }
+    }
+
+    function barHeight() {
+        var bar = document.getElementById('navigation-follow');
+        return bar != null ? bar.offsetHeight : 0;
+    }
+
+    /*
+        The map is turned so that the way ahead is up. Leaflet does not rotate, so the map's element
+        is made a square as wide as the screen's diagonal, centred, and turned with a CSS transform;
+        it covers the screen at any angle. Dragging it while turned goes the way the screen shows,
+        not the way the finger moves, which is why the map follows again by itself after a moment.
+    */
+    function setupRotation() {
+        var follow = state.follow;
+        var element = state.map.getContainer();
+        var parent = element.parentNode;
+        if (follow == null || parent == null) {
+            return;
+        }
+        follow.map_styles = {
+            element: element.getAttribute('style') || '',
+            parent: parent.getAttribute('style') || ''
+        };
+        if (window.getComputedStyle(parent).position == 'static') {
+            parent.style.position = 'relative';
+        }
+        parent.style.overflow = 'hidden';
+        element.classList.add('navigation-rotated');
+        follow.rotation = 0;
+        follow.turned = false;
+        sizeRotated();
+        window.addEventListener('resize', sizeRotated);
+        state.map.invalidateSize({animate: false});
+    }
+
+    function sizeRotated() {
+        var follow = state.follow;
+        if (follow == null) {
+            return;
+        }
+        var element = state.map.getContainer();
+        var parent = element.parentNode;
+        var width = parent.clientWidth;
+        var height = parent.clientHeight;
+        var side = Math.ceil(Math.sqrt(width * width + height * height));
+        element.style.position = 'absolute';
+        element.style.width = side + 'px';
+        element.style.height = side + 'px';
+        element.style.left = Math.round((width - side) / 2) + 'px';
+        element.style.top = Math.round((height - side) / 2) + 'px';
+        state.map.invalidateSize({animate: false});
+    }
+
+    function teardownRotation() {
+        var follow = state.follow;
+        var element = state.map.getContainer();
+        var parent = element.parentNode;
+        window.removeEventListener('resize', sizeRotated);
+        element.classList.remove('navigation-rotated');
+        if (follow != null && follow.map_styles != null) {
+            element.setAttribute('style', follow.map_styles.element);
+            if (parent != null) {
+                parent.setAttribute('style', follow.map_styles.parent);
+            }
+        }
+        state.map.invalidateSize({animate: false});
+    }
+
+    /*
+        Turns the map so that heading (compass degrees) points up, the short way round from where it is.
+        @force turn now whatever the difference - the rider has just gone round a corner
+    */
+    function turnMap(heading, force) {
+        var follow = state.follow;
+        if (follow == null || heading == null) {
+            return;
+        }
+        var delta = ((heading - follow.rotation + 540) % 360) - 180;
+        if (follow.turned && !force && Math.abs(delta) < TURN_THRESHOLD) {
+            return;
+        }
+        if (Math.abs(delta) < 1) {
+            return;
+        }
+        follow.turned = true;
+        follow.rotation += delta;
+        state.map.getContainer().style.transform = 'rotate(' + (-follow.rotation).toFixed(1) + 'deg)';
+    }
+
+    /*
+        The map keeps the rider in the lower part of what the bar leaves visible, unless it was just
+        dragged away. The map is turned, so the point on screen where the rider should be is turned back
+        into the map's own frame before the map is centred on it.
+    */
+    function followMap(fix, event) {
+        var follow = state.follow;
+        if (follow == null) {
+            return;
+        }
+        if (follow.detached_at && Date.now() - follow.detached_at < DETACHED_FOR) {
+            return;
+        }
+        follow.detached_at = 0;
+        var on_route = event != null && event.accepted && !event.off_route && event.snapped != null;
+        var latlng = on_route ? L.latLng(event.snapped[0], event.snapped[1]) : L.latLng(fix.lat, fix.lon);
+        // the map is turned so the route ahead of the rider points up, at a turn or once the way has really changed
+        var heading = on_route && event.ahead != null ? event.ahead : follow.heading;
+        var turned = event != null && event.accepted && follow.step != null && event.step != follow.step;
+        if (event != null && event.accepted) {
+            follow.step = event.step;
+        }
+        turnMap(heading, turned);
+        var map = state.map;
+        var zoom = Math.max(map.getZoom(), FOLLOW_ZOOM);
+        var parent = map.getContainer().parentNode;
+        var screen = parent != null ? parent.clientHeight : map.getSize().y;
+        var visible = Math.max(100, screen - barHeight());
+        // how far below the screen's centre the rider sits, then that offset turned into the map's frame
+        var down = visible * 0.62 - screen / 2;
+        var radians = follow.rotation * Math.PI / 180;
+        var offset = L.point(-down * Math.sin(radians), down * Math.cos(radians));
+        var point = map.project(latlng, zoom).subtract(offset);
+        map.setView(map.unproject(point, zoom), zoom, {animate: true, duration: 0.9, easeLinearity: 0.5});
+    }
+
+    function buildBar() {
+        var bar = document.getElementById('navigation-follow');
+        if (bar == null) {
+            bar = document.createElement('div');
+            bar.id = 'navigation-follow';
+            document.body.appendChild(bar);
+        }
+        return bar;
+    }
+
+    function renderBar() {
+        var follow = state.follow;
+        var bar = document.getElementById('navigation-follow');
+        if (follow == null || bar == null) {
+            return;
+        }
+        var steps = state.result != null && !state.result.error ? state.result.steps : [];
+        var event = follow.last != null ? follow.last.event : null;
+        var main = '';
+        var then = '';
+        var line = function(icon, text) {
+            return '<span class="navigation-follow-icon">' + icon + '</span>'
+                + '<span class="navigation-follow-text"><span class="navigation-follow-instruction">' + text + '</span></span>';
+        };
+        if (follow.arrived) {
+            main = line('<span class="navigation-marker navigation-to navigation-step-marker">B</span>', escape(t('You have arrived at the destination')));
+        } else if (follow.tracker == null) {
+            main = line('<span class="navigation-follow-warning">!</span>', escape(t('Return to the route')));
+        } else if (follow.waiting || event == null) {
+            main = line('<span class="navigation-follow-waiting">◎</span>', escape(t('Waiting for the location…')));
+        } else if (event.off_route) {
+            main = line('<span class="navigation-follow-warning">!</span>', escape(t('Off the route')));
+        } else {
+            var next = steps[event.next];
+            var shown = stepPresentation(next, event.next, true);
+            main = '<span class="navigation-follow-icon">' + shown.icon.replace('width="16" height="16"', 'width="64" height="64"') + '</span>'
+                + '<span class="navigation-follow-text">'
+                + '<span class="navigation-follow-distance">' + formatDistance(event.distance) + '</span>'
+                + '<span class="navigation-follow-instruction">' + shown.text + '</span>'
+                + '</span>';
+            var after = steps[event.next + 1];
+            if (next != undefined && after != undefined && next.length < guidance.defaults.then_distance) {
+                var after_shown = stepPresentation(after, event.next + 1, true);
+                then = '<div class="navigation-follow-then">' + escape(t('then')) + ' ' + after_shown.icon + ' ' + after_shown.text + '</div>';
+            }
+        }
+        var remaining = '';
+        if (event != null && !follow.arrived && follow.tracker != null) {
+            remaining = '<span class="navigation-follow-remaining">~' + escape(formatTime(event.remaining_time)) + ' · ' + escape(formatDistance(event.remaining)) + '</span>';
+        }
+        var detached = follow.detached_at && Date.now() - follow.detached_at < DETACHED_FOR;
+        bar.innerHTML = '<div class="navigation-follow-main">' + main + '</div>' + then
+            + '<div class="navigation-follow-footer">' + remaining
+            + '<span class="navigation-follow-buttons">'
+            + (detached ? '<button class="btn btn-sm btn-outline-dark navigation-recentre">' + escape(t('Recentre')) + '</button> ' : '')
+            + '<button class="btn btn-sm btn-outline-dark navigation-mute" aria-pressed="' + (state.muted ? 'true' : 'false') + '">' + escape(t(state.muted ? 'Unmute' : 'Mute')) + '</button> '
+            + '<button class="btn btn-sm btn-danger navigation-stop">' + escape(t('Stop')) + '</button>'
+            + '</span></div>';
+    }
+
+    /* a route in a link: "…#n=…" as the share button writes it, or the whole address */
+    function openLink(href) {
+        var at = String(href || '').indexOf('#');
+        if (at == -1) {
+            return false;
+        }
+        return openHash(href.slice(at + 1), false);
+    }
+
     return {
         init: init,
+        on: on,
+        openLink: openLink,
+        startFollowing: startFollowing,
+        stopFollowing: stopFollowing,
+        isFollowing: isFollowing,
+        rewind: rewind,
+        setMuted: setMuted,
+        chime: function(kind) {
+            unlockAudio();
+            return chime(kind);
+        },
         buildGraph: buildGraph,
         route: route,
         preferSeparated: preferSeparated,

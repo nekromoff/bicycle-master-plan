@@ -12,7 +12,7 @@
         <link rel="stylesheet" href="{{asset('css/main.css')}}">
         <link rel="stylesheet" href="{{asset(config('map.stylesheet'))}}">
         @if (config('map.navigation'))
-            <link rel="stylesheet" href="{{asset('css/navigation.css')}}">
+            <link rel="stylesheet" href="{{asset('css/navigation.css')}}?v={{filemtime(public_path('css/navigation.css'))}}">
         @endif
         <link rel="canonical" href="{{secure_url('/')}}" />
         <meta name="description" content="{{substr(strip_tags(Helper::intro()),0,300)}}">
@@ -56,7 +56,8 @@
         <script src="{{asset('js/crosssection.js')}}"></script>
         <script src="{{asset('js/main.js')}}"></script>
         @if (config('map.navigation'))
-            <script src="{{asset('js/navigation.js')}}"></script>
+            <script src="{{asset('js/guidance.js')}}?v={{filemtime(public_path('js/guidance.js'))}}"></script>
+            <script src="{{asset('js/navigation.js')}}?v={{filemtime(public_path('js/navigation.js'))}}"></script>
         @endif
         <script>
         i18n.translator.add(translation);

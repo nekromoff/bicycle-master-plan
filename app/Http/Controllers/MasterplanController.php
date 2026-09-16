@@ -75,6 +75,16 @@ class MasterplanController extends Controller
         return view('masterplan', compact('form'));
     }
 
+    /* plays a shared route with a fake position, to try the turn by turn guidance at a desk; only with navigation configured */
+    public function navigationDemo()
+    {
+        if (!config('map.navigation')) {
+            abort(404);
+        }
+
+        return view('navigation-demo');
+    }
+
     public function issues(Request $request)
     {
         $this->initialize();

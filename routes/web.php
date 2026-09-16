@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [MasterplanController::class, 'map'])->name('map');
 Route::get('/issues', [MasterplanController::class, 'issues'])->name('issues');
+Route::get('/navigation/demo', [MasterplanController::class, 'navigationDemo'])->name('navigation.demo');
 
 Route::prefix('data')->middleware('cache.headers:public;max_age=86400;immutable;etag')->group(function () {
     Route::get('layer/{id}/{type?}', [MasterplanController::class, 'getLayer'])->name('data.layer');
