@@ -34,7 +34,14 @@ var guidance = (function() {
         // how many segments ahead of the current one a fix may land on; a loop further on cannot pull the rider forward
         lookahead: 30,
         // the way ahead is taken over this many metres of route, so the map is not turned by every kink in the line
-        ahead_distance: 40
+        ahead_distance: 40,
+        /*
+            The distances above are for riding at reference_speed (km/h). Faster, they stretch, so a turn is
+            still said the same seconds ahead; slower, they shrink - within pace_range times the distance.
+            A fix without a speed keeps the last pace. continue_distance is about the road, not the rider, and stays.
+        */
+        reference_speed: 13,
+        pace_range: [0.6, 2]
     };
 
     var EARTH_DEGREE = 111320;
@@ -149,6 +156,8 @@ var guidance = (function() {
             done: false,
             off_route: false,
             off_count: 0,
+            // how the announcement distances are stretched for the rider's speed, see pace()
+            pace: 1,
             // per step: which announcements were made
             said: steps.map(function() {
                 return {};
@@ -201,13 +210,32 @@ var guidance = (function() {
         }
 
         /*
+            Sets how far ahead things are said from the speed of a fix (m/s), smoothed so one odd
+            reading does not move the announcements about.
+        */
+        function pace(fix) {
+            if (fix == null || typeof fix.speed != 'number' || !isFinite(fix.speed) || fix.speed < 0) {
+                return;
+            }
+            var reference = (config.reference_speed || 13) / 3.6;
+            var range = config.pace_range || [0.6, 2];
+            var wanted = Math.max(range[0], Math.min(range[1], fix.speed / reference));
+            tracker.pace = tracker.pace + (wanted - tracker.pace) * 0.3;
+        }
+
+        // metres at the reference speed, as they are at the rider's
+        function paced(metres) {
+            return metres * tracker.pace;
+        }
+
+        /*
             The manoeuvre of step s, said now, and the one right after it when it comes too soon
             for an announcement of its own.
         */
         function now(s, announcements) {
             var event = {kind: 'now', step: s};
             var next = s + 1;
-            if (next < steps.length && line.starts[next] - line.starts[s] < config.then_distance && steps[s].type != 'arrive' && steps[next].type != 'arrive') {
+            if (next < steps.length && line.starts[next] - line.starts[s] < paced(config.then_distance) && steps[s].type != 'arrive' && steps[next].type != 'arrive') {
                 event.then = next;
                 // said together with this one, and not again on its own a few metres on
                 tracker.said[next].prepare = true;
@@ -221,7 +249,7 @@ var guidance = (function() {
             var s = tracker.step;
             // rails in the road ahead: said once, just before them, not again on the next street with them
             var rails_at = line.starts[s] + (steps[s].rails_at || 0);
-            if (steps[s].rails && !tracker.said[s].rails && !(s > 0 && steps[s - 1].rails) && fix_along >= rails_at - config.rails_distance) {
+            if (steps[s].rails && !tracker.said[s].rails && !(s > 0 && steps[s - 1].rails) && fix_along >= rails_at - paced(config.rails_distance)) {
                 tracker.said[s].rails = true;
                 announcements.push({kind: 'rails', step: s});
             }
@@ -229,7 +257,7 @@ var guidance = (function() {
                 tracker.started = true;
                 // the first words: what to ride along - unless the first manoeuvre is so close that its words come at once
                 var first_next = s + 1 < steps.length ? line.starts[s + 1] - fix_along : line.total - fix_along;
-                if (first_next >= config.prepare_distance + config.now_distance) {
+                if (first_next >= paced(config.prepare_distance + config.now_distance)) {
                     announcements.push({kind: 'start', step: s, metres: roundDistance(first_next)});
                 }
                 tracker.said[s]['continue'] = true;
@@ -247,16 +275,16 @@ var guidance = (function() {
             // a long way to ride before anything happens: said once, when the step is entered
             if (!tracker.said[s]['continue']) {
                 tracker.said[s]['continue'] = true;
-                if (to_next >= config.continue_distance + config.prepare_distance && !tracker.said[next].prepare) {
+                if (to_next >= config.continue_distance + paced(config.prepare_distance) && !tracker.said[next].prepare) {
                     announcements.push({kind: 'continue', step: s, metres: roundDistance(to_next)});
                 }
             }
-            if (!tracker.said[next].prepare && to_next <= config.prepare_distance && length >= config.prepare_distance + config.now_distance) {
+            if (!tracker.said[next].prepare && to_next <= paced(config.prepare_distance) && length >= paced(config.prepare_distance + config.now_distance)) {
                 tracker.said[next].prepare = true;
-                announcements.push({kind: 'prepare', step: next, metres: roundDistance(Math.max(to_next, config.now_distance))});
+                announcements.push({kind: 'prepare', step: next, metres: roundDistance(Math.max(to_next, paced(config.now_distance)))});
             }
             // the arrival is its own announcement, made at the end itself
-            if (!tracker.said[next].now && to_next <= config.now_distance && steps[next].type != 'arrive') {
+            if (!tracker.said[next].now && to_next <= paced(config.now_distance) && steps[next].type != 'arrive') {
                 now(next, announcements);
             }
         }
@@ -319,6 +347,7 @@ var guidance = (function() {
             if (tracker.done || segments < 1 || fix == null) {
                 return answer(false);
             }
+            pace(fix);
             if (fix.accuracy != null && fix.accuracy > config.max_accuracy) {
                 return answer(false);
             }

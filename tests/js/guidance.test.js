@@ -229,6 +229,36 @@ test('rails are warned of once per stretch of them', function() {
     assert.deepStrictEqual(keys, ['rails:1']);
 });
 
+test('announcements come earlier at speed and later when slow', function() {
+    // the same ride with every fix reporting a speed (m/s): 26 km/h doubles the distances, 6.5 km/h halves them
+    var rideAt = function(speed) {
+        var tracker = guidance.create(route());
+        var said = [];
+        var path = [[0, 0], [500, 0], [500, -300], [560, -300], [560, 100]];
+        var d = 0;
+        for (var i = 0; i < path.length - 1; i++) {
+            var a = path[i];
+            var b = path[i + 1];
+            var length = Math.sqrt(Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2));
+            for (var m = 0; m <= length; m += 5) {
+                var f = fix(a[0] + (b[0] - a[0]) * m / length, a[1] + (b[1] - a[1]) * m / length);
+                f.speed = speed;
+                tracker.update(f).announcements.forEach(function(announcement) {
+                    said[announcement.kind + ':' + announcement.step] = Math.round(d + m);
+                });
+            }
+            d += length;
+        }
+        return said;
+    };
+    var fast = rideAt(26 / 3.6);
+    var slow = rideAt(6.5 / 3.6);
+    assert.ok(fast['now:1'] >= 395 && fast['now:1'] <= 405, 'fast: turn said 100 m before it, was at ' + fast['now:1']);
+    assert.ok(slow['now:1'] >= 470 && slow['now:1'] <= 480, 'slow: turn said 30 m before it, was at ' + slow['now:1']);
+    assert.ok(fast['prepare:1'] <= 105, 'fast: prepared 400 m before the turn, was at ' + fast['prepare:1']);
+    assert.ok(slow['prepare:1'] >= 375 && slow['prepare:1'] <= 385, 'slow: prepared 120 m before the turn, was at ' + slow['prepare:1']);
+});
+
 test('the fake source walks the route and reaches the end', function(t, done) {
     var source = guidance.fakeSource(route(), {speed: 90, multiplier: 100, interval: 1000, jitter: 0});
     var tracker = guidance.create(route());

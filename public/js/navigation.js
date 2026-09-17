@@ -1484,6 +1484,9 @@ var navigation = (function() {
         // following the rider, see startFollowing()
         follow: null,
         follow_message: null,
+        // the start is being asked from the phone, see startFromLocation()
+        locating: false,
+        locate_message: null,
         muted: false,
         audio: null,
         // what is waiting to be said, and what is being said, see speak()
@@ -1596,7 +1599,7 @@ var navigation = (function() {
         // the route goes into the address bar with the rest of the view, so a copied address carries it too
         if (window.core != undefined && Array.isArray(core.fragment_params)) {
             core.fragment_params.push(function() {
-                return state.active && state.from != null && state.to != null ? 'n=' + linkCode() : '';
+                return state.active && state.from != null && state.to != null ? 'n=' + linkCode() + (state.prefer_separated ? '&s=1' : '') : '';
             });
         }
         // another language: the panel, the steps and their names are written again in it
@@ -1672,12 +1675,21 @@ var navigation = (function() {
         setPoint('from', latlng);
     }
 
+    /* the bicycle button: on, then - when a path or a node has taken the sidebar - the panel back, and only then off */
     function toggle() {
-        if (state.active) {
-            deactivate();
-        } else {
+        if (!state.active) {
             activate();
+        } else if (state.follow == null && !panelShown()) {
+            showPanel();
+        } else {
+            deactivate();
         }
+    }
+
+    /* whether the sidebar is open with the navigation panel in it */
+    function panelShown() {
+        var sidebar = document.getElementById('sidebar');
+        return sidebar != null && sidebar.style.display == 'block' && sidebar.querySelector('.navigation-panel') != null;
     }
 
     function activate() {
@@ -1819,6 +1831,11 @@ var navigation = (function() {
                 state[which] = e.target.getLatLng();
                 cancelScheduledUpdate();
                 update();
+            }).on('click', function() {
+                // a tap on A or B brings the panel back when something else took the sidebar
+                if (state.follow == null && !panelShown()) {
+                    showPanel();
+                }
             }).addTo(state.points);
         } else {
             state.markers[which].setLatLng(latlng);
@@ -1826,10 +1843,40 @@ var navigation = (function() {
         update();
     }
 
+    /*
+        The start is where the phone is: one fix is asked for, which brings up the permission
+        prompt when it has not been given yet. The map goes there, so the destination can be picked around it.
+    */
+    function startFromLocation() {
+        if (state.locating || navigator.geolocation == undefined) {
+            return;
+        }
+        state.locating = true;
+        state.locate_message = null;
+        showPanel();
+        navigator.geolocation.getCurrentPosition(function(position) {
+            state.locating = false;
+            if (!state.active) {
+                return;
+            }
+            var latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+            state.map.setView(latlng, Math.max(state.map.getZoom(), 16));
+            setPoint('from', latlng);
+        }, function(error) {
+            state.locating = false;
+            state.locate_message = error != null && error.code == 1 ? t('Location access was denied') : t('Location is not available');
+            if (state.active) {
+                showPanel();
+            }
+        }, {enableHighAccuracy: true, maximumAge: 0, timeout: 20000});
+    }
+
     function clear() {
         state.from = null;
         state.to = null;
         state.result = null;
+        state.locating = false;
+        state.locate_message = null;
         state.markers = {};
         state.points.clearLayers();
         state.routes.clearLayers();
@@ -1884,6 +1931,12 @@ var navigation = (function() {
         if (params.get('sim')) {
             state.sim_pending = Math.max(0.1, parseFloat(params.get('sim')) || 1);
         }
+        var prefer = params.get('s') == '1';
+        if (prefer != state.prefer_separated) {
+            state.prefer_separated = prefer;
+            storePreference(prefer);
+            preferSeparated(state.graph, prefer);
+        }
         if (state.follow != null) {
             stopFollowing();
         }
@@ -1920,7 +1973,7 @@ var navigation = (function() {
         var hash = window.location.hash.replace(/^#/, '');
         var parts = hash.indexOf('|') != -1 ? [] : hash.split('&').filter(function(part) {
             var key = part.split('=')[0];
-            return part && key != 'map' && key != 'm' && key != 'p' && key != 'n';
+            return part && key != 'map' && key != 'm' && key != 'p' && key != 'n' && key != 's';
         });
         var has_layers = parts.some(function(part) {
             return part.indexOf('l=') === 0;
@@ -1934,6 +1987,10 @@ var navigation = (function() {
             }
         }
         parts.push('n=' + code);
+        // the route was found preferring separated routes: whoever opens the link gets the same one
+        if (state.prefer_separated) {
+            parts.push('s=1');
+        }
         return window.location.href.split('#')[0] + '#' + parts.join('&');
     }
 
@@ -1949,12 +2006,23 @@ var navigation = (function() {
         if (e.target == undefined || typeof e.target.closest != 'function') {
             return;
         }
+        // the sidebar of a path or a node closed while navigating: the panel comes back (main.js closes it after this handler)
+        if (e.target.closest('#sidebar .close') && state.active && state.follow == null && state.from != null && !panelShown()) {
+            window.setTimeout(function() {
+                if (state.active && state.follow == null && !panelShown()) {
+                    showPanel();
+                }
+            }, 0);
+            return;
+        }
         if (e.target.closest('.navigation-prefer')) {
             setPreferSeparated(!state.prefer_separated);
         } else if (e.target.closest('.navigation-reverse')) {
             reverse();
         } else if (e.target.closest('.navigation-end')) {
             deactivate();
+        } else if (e.target.closest('.navigation-locate')) {
+            startFromLocation();
         } else if (e.target.closest('.navigation-start')) {
             startFollowing();
         } else if (e.target.closest('.navigation-stop')) {
@@ -2377,7 +2445,7 @@ var navigation = (function() {
         if (typeof openSidebar != 'function' || state.follow != null) {
             return;
         }
-        var content = '<h2>' + escape(t('Navigation')) + ' ' + preferButtonHtml();
+        var content = '<div class="navigation-panel"><h2>' + escape(t('Navigation')) + ' ' + preferButtonHtml();
         if (state.from != null && state.to != null) {
             content = content + '<button class="btn btn-lg btn-outline-dark float-right navigation-share" data-toggle="tooltip" data-placement="bottom" title="' + escape(t('Copy link to clipboard')) + '">' + SHARE_ICON + ' <span data-i18n="Share">' + escape(t('Share')) + '</span></button>';
         }
@@ -2386,7 +2454,7 @@ var navigation = (function() {
         if (state.failed) {
             message = t('Paths could not be loaded');
         } else if (state.from == null) {
-            message = t('Click on the map to set the start');
+            message = state.locating ? t('Locating…') : t('Click on the map to set the start');
         } else if (state.to == null) {
             message = t('Click on the map to set the destination');
         } else if (state.graph == null) {
@@ -2400,6 +2468,13 @@ var navigation = (function() {
         }
         if (message != null) {
             content = content + '<p>' + escape(message) + '</p>';
+        }
+        // or the start is where the phone is; asking for the location asks for the permission too
+        if (!state.failed && state.from == null && navigator.geolocation != undefined) {
+            content = content + '<p><button class="btn btn-primary btn-block navigation-locate"' + (state.locating ? ' disabled' : '') + '><span class="navigation-locate-icon" aria-hidden="true"></span> ' + escape(t('From my location')) + '</button></p>';
+            if (state.locate_message) {
+                content = content + '<p class="text-danger">' + escape(state.locate_message) + '</p>';
+            }
         }
         var result = state.result;
         if (result != null && !result.error) {
@@ -2431,11 +2506,16 @@ var navigation = (function() {
             }
             content = content + stepsHtml(result.steps) + '<p class="text-secondary">' + escape(t('Drag A or B to change the route')) + '</p>';
         }
-        content = content + '<p>';
+        // the closing buttons share the panel's width equally
+        content = content + '<p class="navigation-panel-buttons">';
         if (state.from != null && state.to != null) {
-            content = content + '<button class="btn btn-sm btn-outline-primary navigation-reverse">⇅ ' + escape(t('Reverse')) + '</button> ';
+            content = content + '<button class="btn btn-sm btn-outline-primary navigation-reverse">⇅ ' + escape(t('Reverse')) + '</button>';
         }
-        content = content + '<button class="btn btn-sm btn-outline-danger navigation-end">' + escape(t('End navigation')) + '</button></p>';
+        content = content + '<button class="btn btn-sm btn-outline-danger navigation-end">' + escape(t('End navigation')) + '</button></p></div>';
+        // the path or node whose sidebar this replaces stops flashing
+        if (typeof removeHighlight == 'function') {
+            removeHighlight();
+        }
         openSidebar(content);
     }
 
@@ -2456,6 +2536,9 @@ var navigation = (function() {
     // the map follows the rider again this long after being dragged (ms)
     var DETACHED_FOR = 15000;
     var FOLLOW_ZOOM = 19;
+    // a fix moves the map this long (s), and not at all when it moved fewer pixels than this
+    var FOLLOW_PAN_DURATION = 0.4;
+    var FOLLOW_SNAP_PIXELS = 4;
     /*
         The map is turned when a turn is made - the rider passes onto the next step - and otherwise only
         when a long bend in one step has swung the way ahead round by more than this (degrees).
@@ -2529,7 +2612,7 @@ var navigation = (function() {
                     });
                 }, function(error) {
                     followError(error);
-                }, {enableHighAccuracy: true, maximumAge: 1000, timeout: 20000});
+                }, {enableHighAccuracy: true, maximumAge: 0, timeout: 20000});
             },
             stop: function() {
                 if (id != null) {
@@ -2934,6 +3017,43 @@ var navigation = (function() {
         }
     }
 
+    /*
+        Following fills the screen: the page goes fullscreen on the tap that starts it, and comes
+        back when it stops. Leaving fullscreen by the phone's back button leaves the following on.
+    */
+    function enterFullscreen() {
+        var element = document.documentElement;
+        var request = element.requestFullscreen || element.webkitRequestFullscreen;
+        if (request == undefined || document.fullscreenElement != null || document.webkitFullscreenElement != null) {
+            return;
+        }
+        try {
+            var promise = request.call(element, {navigationUI: 'hide'});
+            if (promise != null && typeof promise.catch == 'function') {
+                promise.catch(function() {
+                    // not allowed here: the page stays as it is
+                });
+            }
+        } catch (error) {
+            // iPhone Safari has no fullscreen for pages
+        }
+    }
+
+    function exitFullscreen() {
+        var exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit == undefined || (document.fullscreenElement == null && document.webkitFullscreenElement == null)) {
+            return;
+        }
+        try {
+            var promise = exit.call(document);
+            if (promise != null && typeof promise.catch == 'function') {
+                promise.catch(function() {});
+            }
+        } catch (error) {
+            // already out of it
+        }
+    }
+
     function isFollowing() {
         return state.follow != null;
     }
@@ -3016,6 +3136,7 @@ var navigation = (function() {
         renderBar();
         setupRotation();
         requestWakeLock();
+        enterFullscreen();
         emit('follow', true, source);
         source.start(onFix);
         return true;
@@ -3028,6 +3149,7 @@ var navigation = (function() {
         }
         follow.source.stop();
         releaseWakeLock();
+        exitFullscreen();
         teardownRotation();
         state.map.off('dragstart', onFollowDrag);
         if (follow.marker != null) {
@@ -3298,7 +3420,27 @@ var navigation = (function() {
         var radians = follow.rotation * Math.PI / 180;
         var offset = L.point(-down * Math.sin(radians), down * Math.cos(radians));
         var point = map.project(latlng, zoom).subtract(offset);
-        map.setView(map.unproject(point, zoom), zoom, {animate: true, duration: 0.9, easeLinearity: 0.5});
+        var target = map.unproject(point, zoom);
+        // a fix comes about every second: the pan must be over before the next one, or the rider trails the map
+        var moved = zoom == map.getZoom() ? map.project(map.getCenter(), zoom).distanceTo(point) : Infinity;
+        if (moved < FOLLOW_SNAP_PIXELS) {
+            map.setView(target, zoom, {animate: false});
+        } else {
+            map.setView(target, zoom, {animate: true, duration: FOLLOW_PAN_DURATION, easeLinearity: 0.5});
+        }
+    }
+
+    // a speaker, and one crossed out, for the mute button on the bar
+    var SPEAKER_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>';
+    var SPEAKER_MUTED_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>';
+
+    /* the speed of the last fix in km/h, under the turn; nothing when the phone gives none */
+    function speedHtml() {
+        var fix = state.follow != null && state.follow.last != null ? state.follow.last.fix : null;
+        if (fix == null || typeof fix.speed != 'number' || !isFinite(fix.speed) || fix.speed < 0) {
+            return '';
+        }
+        return '<span class="navigation-follow-speed">' + Math.round(fix.speed * 3.6) + ' ' + escape(t('km/h')) + '</span>';
     }
 
     function buildBar() {
@@ -3336,29 +3478,33 @@ var navigation = (function() {
         } else {
             var next = steps[event.next];
             var shown = stepPresentation(next, event.next, true);
-            main = '<span class="navigation-follow-icon">' + shown.icon.replace('width="16" height="16"', 'width="64" height="64"') + '</span>'
-                + '<span class="navigation-follow-text">'
-                + '<span class="navigation-follow-distance">' + formatDistance(event.distance) + '</span>'
-                + '<span class="navigation-follow-instruction">' + shown.text + '</span>'
-                + '</span>';
             var after = steps[event.next + 1];
             if (next != undefined && after != undefined && next.length < guidance.defaults.then_distance) {
                 var after_shown = stepPresentation(after, event.next + 1, true);
                 then = '<div class="navigation-follow-then">' + escape(t('then')) + ' ' + after_shown.icon + ' ' + after_shown.text + '</div>';
             }
+            // the turn and the speed in the left column, the words - and what comes then - in the right
+            main = '<span class="navigation-follow-icon">' + shown.icon.replace('width="16" height="16"', 'width="64" height="64"') + speedHtml() + '</span>'
+                + '<span class="navigation-follow-text">'
+                + '<span class="navigation-follow-distance">' + formatDistance(event.distance) + '</span>'
+                + '<span class="navigation-follow-instruction">' + shown.text + '</span>'
+                + then
+                + '</span>';
         }
         var remaining = '';
         if (event != null && !follow.arrived && follow.tracker != null) {
             remaining = '<span class="navigation-follow-remaining">~' + escape(formatTime(event.remaining_time)) + ' · ' + escape(formatDistance(event.remaining)) + '</span>';
         }
         var detached = follow.detached_at && Date.now() - follow.detached_at < DETACHED_FOR;
-        bar.innerHTML = '<div class="navigation-follow-main">' + main + '</div>' + then
+        bar.innerHTML = '<div class="navigation-follow-main">' + main + '</div>'
             + '<div class="navigation-follow-footer">' + remaining
             + '<span class="navigation-follow-buttons">'
             + (detached ? '<button class="btn btn-sm btn-outline-dark navigation-recentre">' + escape(t('Recentre')) + '</button> ' : '')
-            + '<button class="btn btn-sm btn-outline-dark navigation-mute" aria-pressed="' + (state.muted ? 'true' : 'false') + '">' + escape(t(state.muted ? 'Unmute' : 'Mute')) + '</button> '
             + '<button class="btn btn-sm btn-danger navigation-stop">' + escape(t('Stop')) + '</button>'
-            + '</span></div>';
+            + '</span></div>'
+            // top right corner: the speaker, pressed (filled) while the voice is muted
+            + '<button type="button" class="btn navigation-mute' + (state.muted ? ' active' : '') + '" aria-pressed="' + (state.muted ? 'true' : 'false') + '" title="' + escape(t(state.muted ? 'Unmute' : 'Mute')) + '" aria-label="' + escape(t(state.muted ? 'Unmute' : 'Mute')) + '">'
+            + (state.muted ? SPEAKER_MUTED_ICON : SPEAKER_ICON) + '</button>';
     }
 
     /* a route in a link: "…#n=…" as the share button writes it, or the whole address */

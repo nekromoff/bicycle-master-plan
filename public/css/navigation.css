@@ -481,6 +481,54 @@
     font-size: 1.25rem;
 }
 
+/* on a phone the bar is the bottom third of the screen, the map the rest */
+@media (max-width: 767.98px) {
+    #navigation-follow {
+        height: 33.333vh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* the instruction and "then" stay together at the top, the footer sits at the bottom */
+    #navigation-follow .navigation-follow-footer {
+        margin-top: auto;
+    }
+
+    #navigation-follow .navigation-follow-then {
+        font-size: 1.4rem;
+    }
+
+    #navigation-follow .navigation-follow-then svg {
+        width: 28px;
+        height: 28px;
+        vertical-align: -6px;
+    }
+
+    /* a third of the screen has room: everything a size up */
+    #navigation-follow .navigation-follow-distance {
+        font-size: 3.2rem;
+    }
+
+    #navigation-follow .navigation-follow-instruction {
+        font-size: 1.7rem;
+    }
+
+    #navigation-follow .navigation-follow-speed {
+        font-size: 1.2rem;
+    }
+
+    #navigation-follow .navigation-follow-remaining {
+        font-size: 1.45rem;
+    }
+
+    #navigation-follow .navigation-follow-footer .btn-sm {
+        font-size: 1.35rem;
+        padding: 0.55rem 1rem;
+    }
+}
+
 @media (min-width: 768px) {
     #navigation-follow {
         left: auto;
@@ -493,7 +541,7 @@
 
 .navigation-follow-main {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 1rem;
     min-height: 4.5rem;
 }
@@ -501,11 +549,20 @@
 .navigation-follow-icon {
     flex: 0 0 4.5rem;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 4.5rem;
-    height: 4.5rem;
+    min-height: 4.5rem;
     color: #0d6efd;
+}
+
+/* the rider's speed, under the turn */
+.navigation-follow-speed {
+    color: #212529;
+    font-size: 1rem;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
 .navigation-follow-icon svg {
@@ -553,18 +610,16 @@
 
 .navigation-follow-instruction {
     font-size: 1.4rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
+/* under the instruction, in the text column */
 .navigation-follow-then {
-    margin: 0.5rem 0 0 5.5rem;
+    margin-top: 0.5rem;
     /* dark, the bar has to be read in full sun */
     color: #212529;
     font-size: 1.15rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 .navigation-follow-then svg {
@@ -602,20 +657,73 @@
 
 
 .navigation-follow-remaining {
+    flex: 0 0 auto;
     color: #212529;
     white-space: nowrap;
     font-size: 1.2rem;
 }
 
+/* the buttons take what is left of the footer, and Stop takes what is left of that */
 .navigation-follow-buttons {
-    margin-left: auto;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
     white-space: nowrap;
+}
+
+.navigation-follow-buttons .navigation-stop {
+    flex: 1 1 auto;
+    min-width: 8rem;
+}
+
+/* the speaker in the bar's top right corner: a square, filled dark while muted */
+#navigation-follow .navigation-mute {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #212529;
+    border-radius: 0.375rem;
+    color: #212529;
+    background: #fff;
+}
+
+#navigation-follow .navigation-mute:hover,
+#navigation-follow .navigation-mute:focus-visible {
+    color: #fff;
+    background: #495057;
+    border-color: #495057;
+}
+
+#navigation-follow .navigation-mute.active,
+#navigation-follow .navigation-mute:not(:disabled):active {
+    color: #fff;
+    background: #212529;
+    border-color: #212529;
+}
+
+/* muted and hovered: a shade lighter, so the hover shows on the filled button too */
+#navigation-follow .navigation-mute.active:hover {
+    background: #495057;
+    border-color: #495057;
+}
+
+/* the instruction stops short of the button */
+#navigation-follow .navigation-follow-main {
+    padding-right: 3rem;
 }
 
 /* the map's bottom corner controls sit above the bar on phones */
 @media (max-width: 767.98px) {
     body.navigation-follow #map .leaflet-bottom {
-        bottom: 11rem;
+        bottom: 33.333vh;
     }
 }
 
@@ -665,4 +773,44 @@
 /* the map's own controls would turn with it; the bar has what is needed */
 body.navigation-follow .leaflet-control-container {
     display: none;
+}
+
+/* Reverse and Close navigation: each half of the panel's width, or the whole of it alone */
+.navigation-panel-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.navigation-panel-buttons .btn {
+    flex: 1 1 0;
+}
+
+/* the same target the map's "My location" button shows, in the button's own colour */
+.navigation-locate-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    position: relative;
+    vertical-align: -3px;
+    margin-right: 2px;
+}
+.navigation-locate-icon::before,
+.navigation-locate-icon::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 50%;
+}
+.navigation-locate-icon::before {
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid currentColor;
+}
+.navigation-locate-icon::after {
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0 -3px;
+    background: currentColor;
 }
