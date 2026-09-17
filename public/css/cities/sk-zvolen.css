@@ -333,7 +333,8 @@
     stroke: #1f78b4;
     stroke-width: 3;
 }
-.highway-living_street, .highway-residential.bicycle-yes, .highway-service.bicycle-yes, .oneway-yes.bicycle-yes:not([class*="cycleway"]), .ramp-yes, .highway-primary.bicycle-yes, .highway-secondary.bicycle-yes, .highway-tertiary.bicycle-yes {
+/* a road closed to motor traffic is separated (blue, rule above), not in traffic */
+.highway-living_street, .highway-residential.bicycle-yes:not(.motor_vehicle-no):not(.motorcar-no), .highway-service.bicycle-yes:not(.motor_vehicle-no):not(.motorcar-no), .oneway-yes.bicycle-yes:not([class*="cycleway"]):not(.motor_vehicle-no):not(.motorcar-no), .ramp-yes, .highway-primary.bicycle-yes:not(.motor_vehicle-no):not(.motorcar-no), .highway-secondary.bicycle-yes:not(.motor_vehicle-no):not(.motorcar-no), .highway-tertiary.bicycle-yes:not(.motor_vehicle-no):not(.motorcar-no) {
     stroke: #33a02c;
     stroke-width: 3;
 }
